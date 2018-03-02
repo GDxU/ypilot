@@ -1,2 +1,4 @@
 .*.swp
 old
+ypilot.js
+node_modules
