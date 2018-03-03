@@ -5,7 +5,10 @@ INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \
 	$(MAIN) \
-	peer-connection.js
+	define-methods.js \
+	peer-connection.js \
+	signaling-relay.js \
+	user-names.js
 
 all:: ypilot.js
 

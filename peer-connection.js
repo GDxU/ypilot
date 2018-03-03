@@ -1,29 +1,11 @@
-function defineMethods(constructor, methods) {
-  methods.map(function(fn) { constructor.prototype[fn.name] = fn; });
-}
+const defineMethods = require('./define-methods.js');
+const UserNames = require('./user-names.js');
 
 var peerConnections = {};
 var collaborationHub = undefined;
 
-// very simple attempt to generate pronounceable names
-var vowels = 'aeiou'; // no y
-var consonants = 'bcdfghjklmnprstvwxz'; // no q, y
 function generateRandomName(inputID) {
-  var name = '';
-  var cv = 's';
-  for (var i = Math.floor(Math.random() * 6) + 5; // 5-10 letters at random
-       i > 0;
-       i--) {
-    // alternate consonants and vowels, starting at random
-    switch (cv) {
-      case 's': cv = (Math.random() < 0.5 ? 'c' : 'v'); break;
-      case 'c': cv = 'v'; break;
-      case 'v': cv = 'c'; break;
-    }
-    // add a random consonant or vowel
-    var str = (cv == 'c' ? consonants : vowels);
-    name += str[Math.floor(Math.random() * str.length)];
-  }
+  var name = UserNames.generateRandom();
   if (inputID) {
     var input = document.getElementById(inputID);
     if (/^remote-user-\d+-name$/.test(input.id)) {
@@ -45,13 +27,13 @@ function onFocusRemoteUserName(input) {
 function onChangeRemoteUserName(input) {
   var id = input.id.replace(/-name$/, '-uri');
   var uriInput = document.getElementById(id);
-  if (isValidUserName(input.value) && isValidUserName(localUserName.value)) {
+  if (UserNames.isValid(input.value) && UserNames.isValid(localUserName.value)) {
     uriInput.value = blankWhiteboardUri.value + '#' + input.value + '+' + localUserName.value;
   } else {
     uriInput.value = '';
   }
   if (collaborationHub == localUserName.value) {
-    if (isValidUserName(input.value) && !isValidUserName(input.oldValue)) {
+    if (UserNames.isValid(input.value) && !UserNames.isValid(input.oldValue)) {
       // value became valid
       // open new peer connection
       if (!/^remote-user-(\d+)-name$/.test(input.id)) { throw new Error('WTF') }
@@ -63,8 +45,8 @@ function onChangeRemoteUserName(input) {
 	name: input.value,
 	status: getUserStatus(input.value)
       }, input.value);
-    } else if (isValidUserName(input.oldValue) &&
-	       !isValidUserName(input.value)) {
+    } else if (UserNames.isValid(input.oldValue) &&
+	       !UserNames.isValid(input.value)) {
       // value became invalid
       // close existing peer connection
       if (input.oldValue in peerConnections) {
@@ -274,91 +256,6 @@ function restoreDefaultSettings() {
     "]";
   enableSignalingFallback.checked = false;
 }
-
-//// SignalingRelay ////
-
-function isValidUserName(n) {
-  return /^[\w-]+$/.test(n);
-}
-
-function ensureValidUserName(n) {
-  if (!isValidUserName(n)) {
-    var msg = "Invalid user name: " + n + "\nUser names should contain only letters, numbers, hyphens, and underscores.";
-    alert(msg);
-    throw new Error(msg);
-  }
-  return n;
-}
-
-function SignalingRelay(url, localUser, remoteUser) {
-  this.url = url;
-  this.localUser = ensureValidUserName(localUser);
-  this.remoteUser = ensureValidUserName(remoteUser);
-  this.writeBuffer = [];
-  this.receive();
-}
-
-defineMethods(SignalingRelay, [
-
-  function receive() {
-    console.log('listening to ' + this.remoteUser + ' via signaling relay');
-    var that = this;
-    this.receiveXHR = new XMLHttpRequest();
-    this.receiveXHR.onload = function() {
-      try {
-	var text = that.receiveXHR.responseText;
-	console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
-	that.ondata(JSON.parse(text));
-      } catch (err) {
-	console.log(err.stack);
-      }
-      that.receive();
-    };
-    this.receiveXHR.onerror = function(e) {
-      console.log(e);
-    };
-    this.receiveXHR.open('POST', this.url, true);
-    this.receiveXHR.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    this.receiveXHR.send('k=' + this.remoteUser + '-' + this.localUser);
-  },
-
-  function sendBufferedMessages() {
-    if (this.writeBuffer.length > 0) {
-      var text = this.writeBuffer[0];
-      var xhr = new XMLHttpRequest();
-      // once we've sent this message, remove it from the buffer, and recurse
-      // to send the rest of them
-      var that = this;
-      xhr.onload = function() {
-	that.writeBuffer.shift();
-        that.sendBufferedMessages();
-      };
-      xhr.onerror = function(e) { console.log(e); };
-      console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
-      xhr.open('POST', this.url, true);
-      xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      xhr.send(
-	'k=' + this.localUser + '-' + this.remoteUser +
-	'&m=' + encodeURIComponent(text)
-      );
-    }
-  },
-
-  function write(data) {
-    var text = JSON.stringify(data);
-    this.writeBuffer.push(text);
-    // if we just pushed the only entry in the buffer, start
-    // sendBufferedMessages
-    if (this.writeBuffer.length == 1) {
-      this.sendBufferedMessages();
-    }
-  },
-
-  function close() {
-    this.receiveXHR.abort();
-  }
-
-]);
 
 //// PeerConnection ////
 
