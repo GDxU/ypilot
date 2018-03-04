@@ -9,6 +9,7 @@ SRCS = \
 	config.js \
 	peer-connection.js \
 	signaling-relay.js \
+	space.js \
 	user-names.js \
 	vec2.js
 
