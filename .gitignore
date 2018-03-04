@@ -1,4 +1,5 @@
 .*.swp
 old
 ypilot.js
+config.js
 node_modules

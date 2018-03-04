@@ -1,14 +1,16 @@
 NODE=node
 NPM=npm
-REQUIRES=browserify mocha
+REQUIRES=browserify mocha pegjs
 INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \
 	$(MAIN) \
 	define-methods.js \
+	config.js \
 	peer-connection.js \
 	signaling-relay.js \
-	user-names.js
+	user-names.js \
+	vec2.js
 
 all:: ypilot.js
 
@@ -17,6 +19,9 @@ node_modules/%/package.json:
 
 ypilot.js: $(INSTALLED_REQUIRES) $(SRCS)
 	node_modules/browserify/bin/cmd.js $(MAIN) >$@
+
+config.js: node_modules/pegjs/package.json config.pegjs
+	node_modules/pegjs/bin/pegjs --cache config.pegjs
 
 test:: $(INSTALLED_REQUIRES) $(SRCS) tests/*.js
 	cd tests && ../node_modules/mocha/bin/mocha *.js
