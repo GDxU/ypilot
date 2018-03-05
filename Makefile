@@ -8,6 +8,7 @@ SRCS = \
 	define-methods.js \
 	config.js \
 	peer-connection.js \
+	router.js \
 	signaling-relay.js \
 	space.js \
 	user-names.js \
