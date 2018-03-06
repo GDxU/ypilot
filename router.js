@@ -41,11 +41,11 @@ function emit(eventName, ...args) {
 
 function declareAdjective(adjective) {
   if (!(adjective in this.adjectives)) {
-    this.adjectives[adjective] = [];
+    this.adjectives[adjective] = {};
   }
 },
 
-function getAdjectivePropertiesArray(adjective) {
+function getAdjectivePropertiesMap(adjective) {
   this.declareAdjective(adjective); // make sure it exists first
   return this.adjectives[adjective];
 },
@@ -59,14 +59,14 @@ function become(thing, adjective, properties) {
   } else {
     this.adjectives[adjective][thing] = properties;
   }
-  this.emit('become', thing, adjective, properties, oldProperties);
+  this.emit('become' + adjective, thing, properties, oldProperties);
 },
 
 function unbecome(thing, adjective) {
   this.declareAdjective(adjective); // make sure it exists first
   oldProperties = this.adjectives[adjective][thing];
   delete this.adjectives[adjective][thing];
-  this.emit('unbecome', thing, adjective, oldProperties);
+  this.emit('unbecome' + adjective, thing, oldProperties);
 },
 
 //
@@ -87,9 +87,32 @@ function remove(thing) {
     }
   }
   this.emit('remove', thing);
-}
+},
 
-// TODO keypress tracking? hits? clockTicks?
+//
+// more events
+//
+
+function clockTick() {
+  this.emit('clockTick');
+},
+
+function hit(x, y) {
+  if (y < x) { // FIXME? sort by type instead of ID
+    this.emit('hit', y, x);
+  } else {
+    this.emit('hit', x, y);
+  }
+},
+
+// TODO track which keys are currently down for each player
+function press(player, key) {
+  this.emit('press', player, key);
+},
+
+function release(player, key) {
+  this.emit('release', player, key);
+}
 
 ]);
 
