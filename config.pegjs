@@ -49,8 +49,10 @@ event
     { return { op: 'release', player: player, key: key }; }
 
 effect
-  = a 'new' sp type:type_name 'is' sp 'added' sp 'which' sp 'is' sp adjectives:adjective_inst+
-    { return { op: 'add', type: type, adjectives: adjectives }; }
+  = a 'new' sp type:type_name thing:variable 'is' sp 'added' sp 'which' sp 'is' sp adjectives:adjective_inst+
+    { return { op: 'add', type: type, thing: thing, adjectives: adjectives }; }
+  / a 'new' sp type:type_name thing:variable 'is' sp 'added' sp
+    { return { op: 'add', type: type, thing: thing, adjectives: [] }; }
   / thing:variable 'is' sp 'removed' sp
     { return { op: 'remove', thing: thing }; }
   / thing:variable 'becomes' sp adjectives:adjective_inst+
@@ -82,15 +84,21 @@ adjective_inst
 value_expr
   = variable
   / parens
+  / constructor
   / array
   / number
   / string
   / boolean
+  / nothing
 
 // TODO math function calls, e.g. floor()?
 
 parens
   = '(' sp expr:cmp ')' sp { return expr; }
+
+constructor
+  = name:type_name args:array
+  { return { op: 'new', constructor: name, args: args.args }; }
 
 array
   = '[' sp first:(value_expr / cmp) rest:(',' sp arg:(value_expr / cmp) { return arg; })* ']' sp
@@ -121,6 +129,9 @@ string
 boolean
   = val:('true' { return true; } / 'false' { return false; }) sp { return val; }
 
+nothing
+  = 'nothing' sp { return null; }
+
 noun_def
   = a name:type_name 'is' sp
     first_art:a? first_name:type_name
@@ -144,6 +155,10 @@ adjective_def
     }; }
 
 property_decl
+  = p:property_decl_without_default d:defalt { return [...p, d]; }
+  / property_decl_without_default
+
+property_decl_without_default
   = 'a' sp 'number' sp 'of' sp name:property_name sp
     { return [name, 'number']; }
   / a name:property_name ilsp
@@ -159,20 +174,28 @@ property_decl
     return [name, ['Array', eltype]];
   }
 
+defalt
+  = '(' sp 'default' sp value_expr ')' sp
+
 singular_type
   = 'Array' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
   / name:type_name kind:('thing' / 'object') { return [kind, name]; }
+  / name1:type_name { return ['thing', name1]; }
   / 'boolean' / 'number' / 'string'
 
 plural_type
-  = 'Arrays' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; } /
-    scalar:
+  = 'Arrays' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
+  / scalar:
     ( name:type_name kind:('thing' / 'object') { return [kind, name]; }
     / 'boolean' / 'number' / 'string'
-    ) 's'? { return scalar; }
+    ) 's' { return scalar; }
+  / name1:plural_type_name { return ['thing', name1]; }
 
 type_name
   = name:$([A-Z] id_char*) sp { return name; }
+
+plural_type_name
+  = name:$([A-Z] (id_char &id_char)*) 's' sp { return name; }
 
 property_name
   = !reserved_word name:$([a-z] id_char*) { return name; }
