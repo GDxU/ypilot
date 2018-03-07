@@ -41,8 +41,8 @@ event
   / thing:variable 'is' sp 'added' sp { return { op: 'add', thing: thing }; }
   / thing:variable 'is' sp 'removed' sp
     { return { op: 'remove', thing: thing }; }
-  / thing:variable 'becomes' sp adjectives:adjective_inst+
-    { return { op: 'become', thing: thing, adjectives: adjectives }; }
+  / thing:variable 'becomes' sp adjective:adjective_inst
+    { return { op: 'become', thing: thing, adjectives: [adjective] }; }
   / player:variable 'presses' sp key:value_expr
     { return { op: 'press', player: player, key: key }; }
   / player:variable 'releases' sp key:value_expr

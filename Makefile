@@ -6,6 +6,7 @@ MAIN=main.js
 SRCS = \
 	$(MAIN) \
 	define-methods.js \
+	compile.js \
 	config.js \
 	peer-connection.js \
 	router.js \
@@ -32,7 +33,7 @@ test-%:: $(INSTALLED_REQUIRES) $(SRCS) tests/%.js
 	cd tests && ../node_modules/mocha/bin/mocha $*.js
 
 clean::
-	rm -f ypilot.js
+	rm -f ypilot.js config.js
 
 distclean:: clean
 	rm -rf node_modules
