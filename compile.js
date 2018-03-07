@@ -1,5 +1,6 @@
 function compileOp(ast) {
   switch (ast.op) {
+    // top-level statements
     case 'defineAdjective':
       return 'function ' + ast.name + '({' + properties.map(p => {
 	  return p[0] + ((p.length == 3) ? ' = ' + compile(p[2]) : '');
@@ -14,7 +15,7 @@ function compileOp(ast) {
         ast.supertypes.filter(t => (t[0] == 'noun')).map(t => t[1]);
       var defaultAdjectives =
         ast.supertypes.filter(t => (t[0] == 'adjective')).map(t => t[1]);
-      return 'function add' + ast.name + "(router, adjectivesProps) {\n" +
+      return 'function add' + ast.name + "(adjectivesProps) {\n" +
         "  var thing = router.newThing();\n" +
 	"  var adjectives = {};\n" +
 	"  for (var adjective in adjectiveProps) {\n" +
@@ -35,7 +36,6 @@ function compileOp(ast) {
 	  eventName = 'become' + adjective.name;
 	}
       }
-      // FIXME where does router come from? if it's global, remove its argument in defineNoun case above
       return "router.on('" + eventName + "', function(" +
 	  // TODO args for the specific event type
 	") {\n" +
@@ -45,6 +45,7 @@ function compileOp(ast) {
 	  // TODO do effects
 	"  }\n});\n";
     // TODO!!! (some (most?) of these might go away since they're taken care of by compilation farther up the AST, e.g. unadjective)
+    // events
     case 'clockTick':
     case 'hit':
     case 'add':
@@ -52,21 +53,35 @@ function compileOp(ast) {
     case 'become':
     case 'press':
     case 'release':
+    // conditions
     case 'isa':
     case 'is':
     case 'exists':
     case 'holdingDown':
     case 'notHoldingDown':
+    // adjective_inst?
     case 'adjective':
     case 'unadjective':
+    // expressions
     case 'new':
+      if (!/^()$/.test(ast.constructor)) {
+	throw new Error("constructing a new " + ast.constructor + " not allowed");
+      }
+      return 'new ' + ast.constructor + '(' + ast.args.map(compile).join(', ') + ')';
     case '[]':
+      return '[' + ast.args.map(compile).join(', ') + ']';
     default: // arithmetic and comparison operators
-      // TODO
-      // - check that the operator is really an operator
-      // - compile arguments
-      // - use the operator as-is in a parenthesized JS expression
-      break;
+      if ('r' in ast) { // infix
+	if (!/^([<=>!]=|[<>*/%+-])$/.test(ast.op)) {
+	  throw new Error("invalid infix operator: " + ast.op);
+	}
+	return '(' + compile(ast.l) + ' ' + ast.op + ' ' + compile(ast.r) + ')';
+      } else { // prefix
+        if (!/^[+-]$/.test(ast.op)) {
+	  throw new Error("invalid prefix operator: " + ast.op);
+	}
+	return '(' + compile(ast.l) + ' ' + ast.op + ')';
+      }
   }
 }
 
@@ -76,7 +91,7 @@ function compile(ast) {
       if (ast === null) {
 	return 'null';
       } else if (Array.isArray(ast)) { // top level statement list
-	return ast.map(compile).join("\n");
+	return "this.router = new Router();\n\n" + ast.map(compile).join("\n");
       } else if ('op' in ast) {
 	return compileOp(ast);
       } else {
