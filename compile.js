@@ -84,6 +84,10 @@ function compileOp(ast) {
         "}\n" +
     case 'rule':
       var eventName = ast.trigger.op;
+      var eventParams =
+        ['thing', 'player', 'key'].
+	filter(k => (k in ast.trigger)).
+	map(k => ast.trigger[k].name);
       if (eventName == 'become') {
 	var adjective = ast.trigger.adjectives[0]
 	if (adjective.op == 'unadjective') {
@@ -91,34 +95,61 @@ function compileOp(ast) {
 	} else {
 	  eventName = 'become' + adjective.name;
 	}
+	// TODO check that all property values are simple variables
+	eventParams.push('{ ' + adjective.properties.map(p => p[0] + ': ' + p[1].name) + ' }');
+      }
+      if ('args' in ast.trigger) {
+	ast.trigger.args.forEach(a => eventParams.push(a.name));
       }
       return "router.on('" + eventName + "', function(" +
-	  // TODO args for the specific event type
+	  eventParams.join(', ') +
 	") {\n" +
 	"  if (" +
-	  // TODO check conditions
+	  ast.conditions.map(compile).join(" &&\n      ") +
 	") {\n" +
-	  // TODO do effects
+	  ast.effects.map(compile).join('') +
 	"  }\n});\n";
-    // TODO!!! (some (most?) of these might go away since they're taken care of by compilation farther up the AST, e.g. unadjective)
-    // events / effects
+    /* events (handled as part of 'rule' case)
     case 'clockTick':
     case 'hit':
+    case 'press':
+    case 'release':*/
+    // TODO!!!
+    // effects (these can also be events, but if they are they're handled in
+    // the 'rule' case)
     case 'add':
     case 'remove':
     case 'become':
-    case 'press':
-    case 'release':
     // conditions
     case 'isa':
+      return '((' + ast.l.name + ' in router.adjectives.Typed) &&' +
+             ' subsumes(' + ast.r + ', ' +
+	         'router.adjectives.Typed[' + ast.l.name + '].type))';
     case 'is':
+      if (ast.r.op == 'adjective') {
+        return '(' +
+	  '(' + ast.l.name + ' in router.adjectives.' + ast.r.name + ') && ' +
+	  ast.r.properties.map(p =>
+	    'router.adjectives.' + ast.r.name + '[' + ast.l.name + '].' +
+	    // FIXME == or === ?
+	    p[0] + ' == ' + compile(p[1])
+	  ).join(' && ') +
+	')';
+      } else { // unadjective
+	return '(!(' + ast.l.name + ' in router.adjectives.' + ast.r.name +'))';
+      }
     case 'exists':
+      // TODO nested loop: for each thing that matches the description, if...
     case 'holdingDown':
     case 'notHoldingDown':
-    // adjective_inst?
+      // TODO how?
+      throw new Error("TODO");
+    /* adjective_inst handled in other cases
     case 'adjective':
-    case 'unadjective':
+    case 'unadjective':*/
     // expressions
+    case 'variable:
+      return ast.name;
     case 'new':
       // TODO? allow more constructors
       if (!/^(Vec2|Array)$/.test(ast.constructor)) {
@@ -152,6 +183,7 @@ function compile(ast) {
 	adjectiveDependencies = {};
 	nounDefaultAdjectives = {};
 	nounSupertypes = {};
+	// TODO define subsumes(nounID,nounID) after router
 	return "this.router = new Router();\n\n" + ast.map(compile).join("\n");
       } else if ('op' in ast) {
 	return compileOp(ast);

@@ -201,7 +201,7 @@ property_name
   = !reserved_word name:$([a-z] id_char*) { return name; }
 
 variable
-  = name:$('?' id_char+) sp { return name; }
+  = '?' name:$(id_char+) sp { return { op: 'var', name: name }; }
 
 id_char
   = '_' / [0-9] / [a-z]i
