@@ -1,10 +1,37 @@
+// yes, globals are usually bad, but these are global because otherwise we'd
+// have to pass them to literally every function in this file, so I think it's
+// OK.
+var adjectiveDependencies = {};
+var nounDefaultAdjectives = {};
+var nounSupertypes = {};
+
+function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
+  nounSupertypes[noun] = supertypes;
+  var included = {};
+  supertypes.forEach(pa => {
+    nounDefaultAdjectives[pa].forEach(grampa => {
+      included[grampa] = true;
+    });
+  });
+  var queue = Array.from(defaultAdjectives); // copy array so we can mod it
+  while (queue.length > 0) {
+    var adj = queue.shift();
+    if (!(adj in included)) {
+      included[adj] = true;
+      adjectiveDependencies[adj].forEach(d => queue.push(d));
+    }
+  }
+  return (nounDefaultAdjectives[noun] = Object.keys(included));
+}
+
 function compileOp(ast) {
   switch (ast.op) {
     // top-level statements
     case 'defineAdjective':
-      return 'function ' + ast.name + '({' + properties.map(p => {
+      adjectiveDependencies[ast.name] = ast.dependencies;
+      return 'function ' + ast.name + '({ ' + properties.map(p => {
 	  return p[0] + ((p.length == 3) ? ' = ' + compile(p[2]) : '');
-        }).join(', ') + "}) {\n" +
+        }).join(', ') + " }) {\n" +
 	properties.map(p => {
 	  // TODO? check that p[0] is of type p[1]
 	  return '  this.' + p[0] + ' = ' + p[0] + ";\n";
@@ -14,18 +41,47 @@ function compileOp(ast) {
       var supertypes =
         ast.supertypes.filter(t => (t[0] == 'noun')).map(t => t[1]);
       var defaultAdjectives =
-        ast.supertypes.filter(t => (t[0] == 'adjective')).map(t => t[1]);
-      return 'function add' + ast.name + "(adjectivesProps) {\n" +
+	expandNounDefaultAdjectives(ast.name, supertypes,
+	  ast.supertypes.filter(t => (t[0] == 'adjective')).map(t => t[1]));
+      return '' +
+        // define the type as a thing
+        'var ' + ast.name + " = router.newThing();\n" +
+        'router.add(' + ast.name + ', { ' +
+	  'Named: new Named({ name: "' + ast.name + '" }), ' +
+	  'Typing: new Typing({ supertypes: [' +
+	    supertypes.join(', ') + "] }) });\n" +
+	// define a function that makes a new instance of the type and adds it
+        'function add' + ast.name + "(adjectivesProps) {\n" +
         "  var thing = router.newThing();\n" +
-	"  var adjectives = {};\n" +
+	   // add Typed and all the defaultAdjectives, using the properties
+	   // from the argument when we have them
+	"  var adjectives = {\n" +
+	'    Typed: new Typed({ type: ' + ast.name  + " }),\n" +
+	defaultAdjectives.map(adj => {
+	  return adj + ': new ' + adj + '(' +
+	    '("' + adj + '" in adjectivesProps) ? adjectivesProps.' + adj +
+	    " : {})";
+	}).join(",\n    ") + "\n  };\n" +
+	   // add any extra adjectives from the argument, and put their
+	   // dependencies in the queue to be added
+	"  var queue = [];\n" +
 	"  for (var adjective in adjectiveProps) {\n" +
-	"    adjectives[adjective] = this[adjective](adjectiveProps);\n" +
+	"    if (!(adjective in adjectives)) {\n" +
+	"      adjectives[adjective] = this[adjective](adjectiveProps);\n" +
+	"      this[adjective].dependencies.forEach(d => queue.push(d));\n" +
+	"    }\n" +
 	"  }\n" +
-	// TODO add those of defaultAdjectives that are not in adjectiveProps, as well as any dependencies of either defaultAdjectives or adjectiveProps
-	// maybe add defaults first, checking for non-default props as we go, and then make a final pass through adjectiveProps adding things that aren't already in adjectives (need to resolve default dependencies at compile time, non-default dependencies at run time)
+	   // keep adding dependencies until we have them all
+	"  while (queue.length > 0) {\n" +
+	"    var d = queue.shift();\n" +
+	"    if (!(d in adjectives)) {\n" +
+	"      adjectives[d] = this[d]({});\n" +
+	"      this[d].dependencies.forEach(d2 => queue.push(d2));\n" +
+	"    }\n" +
+	"  }\n" +
+	   // finally, add the thing to the router with its adjectives
 	"  router.add(thing, adjectives);\n" +
         "}\n" +
-        'add' + ast.name + '.supertypes = [' + supertypes.join(', ') + "];\n";
     case 'rule':
       var eventName = ast.trigger.op;
       if (eventName == 'become') {
@@ -45,7 +101,7 @@ function compileOp(ast) {
 	  // TODO do effects
 	"  }\n});\n";
     // TODO!!! (some (most?) of these might go away since they're taken care of by compilation farther up the AST, e.g. unadjective)
-    // events
+    // events / effects
     case 'clockTick':
     case 'hit':
     case 'add':
@@ -64,7 +120,8 @@ function compileOp(ast) {
     case 'unadjective':
     // expressions
     case 'new':
-      if (!/^()$/.test(ast.constructor)) {
+      // TODO? allow more constructors
+      if (!/^(Vec2|Array)$/.test(ast.constructor)) {
 	throw new Error("constructing a new " + ast.constructor + " not allowed");
       }
       return 'new ' + ast.constructor + '(' + ast.args.map(compile).join(', ') + ')';
@@ -91,6 +148,10 @@ function compile(ast) {
       if (ast === null) {
 	return 'null';
       } else if (Array.isArray(ast)) { // top level statement list
+        // reset globals
+	adjectiveDependencies = {};
+	nounDefaultAdjectives = {};
+	nounSupertypes = {};
 	return "this.router = new Router();\n\n" + ast.map(compile).join("\n");
       } else if ('op' in ast) {
 	return compileOp(ast);
