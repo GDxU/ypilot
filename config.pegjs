@@ -5,7 +5,7 @@
   function nestInfix(first, rest) {
     var ret = first;
     rest.forEach(function(step) {
-      ret = { type: step.op, l: ret, r: step.r };
+      ret = { op: step.op, l: ret, r: step.r };
     });
     return ret;
   }
@@ -175,7 +175,7 @@ property_decl_without_default
   }
 
 defalt
-  = '(' sp 'default' sp value_expr ')' sp
+  = '(' sp 'default' sp v:value_expr ')' sp { return v; }
 
 singular_type
   = 'Array' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }

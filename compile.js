@@ -18,6 +18,9 @@ function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
     var adj = queue.shift();
     if (!(adj in included)) {
       included[adj] = true;
+      if (!(adj in adjectiveDependencies)) {
+	throw new Error("undefined adjective " + adj);
+      }
       adjectiveDependencies[adj].forEach(d => queue.push(d));
     }
   }
@@ -29,10 +32,10 @@ function compileOp(ast) {
     // top-level statements
     case 'defineAdjective':
       adjectiveDependencies[ast.name] = ast.dependencies;
-      return 'function ' + ast.name + '({ ' + properties.map(p => {
+      return 'function ' + ast.name + '({ ' + ast.properties.map(p => {
 	  return p[0] + ((p.length == 3) ? ' = ' + compile(p[2]) : '');
         }).join(', ') + " }) {\n" +
-	properties.map(p => {
+	ast.properties.map(p => {
 	  // TODO? check that p[0] is of type p[1]
 	  return '  this.' + p[0] + ' = ' + p[0] + ";\n";
 	}).join('') + "}\n" +
@@ -56,7 +59,7 @@ function compileOp(ast) {
 	   // add Typed and all the defaultAdjectives, using the properties
 	   // from the argument when we have them
 	"  var adjectives = {\n" +
-	'    Typed: new Typed({ type: ' + ast.name  + " }),\n" +
+	'    Typed: new Typed({ type: ' + ast.name  + " }),\n    " +
 	defaultAdjectives.map(adj => {
 	  return adj + ': new ' + adj + '(' +
 	    '("' + adj + '" in adjectivesProps) ? adjectivesProps.' + adj +
@@ -81,7 +84,7 @@ function compileOp(ast) {
 	"  }\n" +
 	   // finally, add the thing to the router with its adjectives
 	"  router.add(thing, adjectives);\n" +
-        "}\n" +
+        "}\n";
     case 'rule':
       var eventName = ast.trigger.op;
       var eventParams =
@@ -151,6 +154,7 @@ function compileOp(ast) {
 	  ast.r.properties.map(p =>
 	    'router.adjectives.' + ast.r.name + '[' + ast.l.name + '].' +
 	    // FIXME == or === ?
+	    // FIXME or = (on first use of variable)
 	    p[0] + ' == ' + compile(p[1])
 	  ).join(' && ') +
 	')';
@@ -188,7 +192,7 @@ function compileOp(ast) {
     case 'adjective':
     case 'unadjective':*/
     // expressions
-    case 'variable:
+    case 'var':
       return ast.name;
     case 'new':
       // TODO? allow more constructors
@@ -223,18 +227,30 @@ function compile(ast) {
 	adjectiveDependencies = {};
 	nounDefaultAdjectives = {};
 	nounSupertypes = {};
+	var compiledStatements =
+	  ast.map(s => {
+	    try {
+	      return compile(s);
+	    } catch (e) {
+	      console.warn("failed to compile statement; skipping");
+	      console.warn(s.text);
+	      console.warn(e);
+	      return "/* failed to compile statement */\n";
+	    }
+	  });
 	return "this.router = new Router();\n\n" +
 	  "function subsumes(ancestor, descendant) {\n" +
 	  "  return (ancestor == descendant ||\n" +
 	  "          router.adjectives.Typing[descendant].supertypes.\n" +
 	  "            some(t => subsumes(ancestor, t)));\n" +
 	  "}\n\n" +
-	  ast.map(compile).join("\n");
+	  compiledStatements.join("\n");
       } else if ('op' in ast) {
 	return compileOp(ast);
       } else {
 	throw new Error("expected AST object to be an Array or have op: " + JSON.stringify(ast));
       }
+    case 'boolean': // fall through
     case 'number': // fall through
     case 'string':
       return JSON.stringify(ast);
