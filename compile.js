@@ -118,12 +118,27 @@ function compileOp(ast) {
     case 'hit':
     case 'press':
     case 'release':*/
-    // TODO!!!
     // effects (these can also be events, but if they are they're handled in
     // the 'rule' case)
     case 'add':
+      if (ast.adjectives.some(adj => (adj.op == 'unadjective'))) {
+	// TODO? use unadjective to override defaults
+	throw new Error("negative adjectives not allowed on new things");
+      }
+      return '    var ' + ast.thing.name + ' = add' + ast.type + '({ ' +
+	ast.adjectives.map(adj =>
+	  adj.name + ': { ' +
+	  adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
+	  ' }'
+	).join(', ') +
+	" });\n";
     case 'remove':
+      return '    router.remove(' + ast.thing.name + ");\n";
     case 'become':
+      return ast.adjectives.map(adj =>
+        '    router.become(' + ast.thing.name + ", '" + adj.name + "', { " +
+	adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
+	" });\n").join('');
     // conditions
     case 'isa':
       return '((' + ast.l.name + ' in router.adjectives.Typed) &&' +
@@ -208,8 +223,13 @@ function compile(ast) {
 	adjectiveDependencies = {};
 	nounDefaultAdjectives = {};
 	nounSupertypes = {};
-	// TODO define subsumes(nounID,nounID) after router
-	return "this.router = new Router();\n\n" + ast.map(compile).join("\n");
+	return "this.router = new Router();\n\n" +
+	  "function subsumes(ancestor, descendant) {\n" +
+	  "  return (ancestor == descendant ||\n" +
+	  "          router.adjectives.Typing[descendant].supertypes.\n" +
+	  "            some(t => subsumes(ancestor, t)));\n" +
+	  "}\n\n" +
+	  ast.map(compile).join("\n");
       } else if ('op' in ast) {
 	return compileOp(ast);
       } else {
