@@ -101,6 +101,8 @@ function compileOp(ast) {
       if ('args' in ast.trigger) {
 	ast.trigger.args.forEach(a => eventParams.push(a.name));
       }
+      // count the 'there is' conditions so we can balance them at the end
+      var numExists = ast.conditions.filter(c => (c.op == 'exists')).length;
       return "router.on('" + eventName + "', function(" +
 	  eventParams.join(', ') +
 	") {\n" +
@@ -108,6 +110,8 @@ function compileOp(ast) {
 	  ast.conditions.map(compile).join(" &&\n      ") +
 	") {\n" +
 	  ast.effects.map(compile).join('') +
+	// balance 'there is' conditions
+	new Array(numExists).fill("}}\n").join('') +
 	"  }\n});\n";
     /* events (handled as part of 'rule' case)
     case 'clockTick':
@@ -139,7 +143,28 @@ function compileOp(ast) {
 	return '(!(' + ast.l.name + ' in router.adjectives.' + ast.r.name +'))';
       }
     case 'exists':
-      // TODO nested loop: for each thing that matches the description, if...
+      // iterate over all matches for ast.suchThat
+      // NOTE: this causes the output to be an unbalanced JS fragment; balance
+      // is restored with a hack in the 'rule' case above.
+      // first, identify an adjective that's not negated so we can use it to
+      // enumerate a list of things to check for matches
+      var positiveAdjective = ast.suchThat.find(a => (a.op == 'adjective'));
+      if (positiveAdjective === undefined) { // all unadjective
+	// TODO? use all the other adjectives as the positiveAdjective
+	throw new Error("'there is' condition must include at least one positive adjective");
+      }
+	      // terminate the outer 'if' condition with true
+      return "true) {\n" +
+	   // iterate the variable over the keys of the positiveAdjective
+        "  for (var " + ast.variable.name +
+		' in router.adjectives.' + positiveAdjective.name + ") {\n" +
+	     // start a new 'if'
+	'    if (' +
+	  // compile all the suchThat adjectives as if they were 'is' conditions
+	  ast.suchThat.map(adj =>
+	    compile({ op: 'is', l: ast.variable, r: adj })
+	  ).join(" &&\n\t");
+	  // end unbalanced, missing }} (see above)
     case 'holdingDown':
     case 'notHoldingDown':
       // TODO how?
