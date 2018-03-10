@@ -26,12 +26,19 @@ statement
     }
 
 rule
-  = 'when' sp trigger:event conditions:('and' sp c:condition+ { return c; })
+  = 'when' sp trigger:event 'and' sp conditions:condition+
     'then' sp effects:effect+
     { return {
 	op: 'rule',
 	trigger: trigger,
 	conditions: conditions,
+	effects: effects
+    }; }
+  / 'when' sp trigger:event 'then' sp effects:effect+
+    { return {
+        op: 'rule',
+	trigger: trigger,
+	conditions: [true],
 	effects: effects
     }; }
 
