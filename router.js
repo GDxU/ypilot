@@ -22,9 +22,9 @@ function on(eventName, listener) {
 
 function removeListener(eventName, listener) {
   if (eventName in this.listeners) {
-    var i = this.listeners.indexOf(listener);
+    var i = this.listeners[eventName].indexOf(listener);
     if (i >= 0) {
-      this.listeners.splice(i, 1);
+      this.listeners[eventName].splice(i, 1);
     }
   }
 },
@@ -33,7 +33,7 @@ function emit(eventName, ...args) {
   if (eventName in this.listeners) {
     // call each listener via setImmediate so that no listener gets called in
     // the middle of another listener and sees its effect only partly applied
-    this.listeners.forEach(listener => setImmediate(listener, ...args));
+    this.listeners[eventName].forEach(listener => setImmediate(listener, ...args));
   }
 },
 
