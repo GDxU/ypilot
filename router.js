@@ -31,7 +31,9 @@ function removeListener(eventName, listener) {
 
 function emit(eventName, ...args) {
   if (eventName in this.listeners) {
-    this.listeners.forEach(listener => listener(...args));
+    // call each listener via setImmediate so that no listener gets called in
+    // the middle of another listener and sees its effect only partly applied
+    this.listeners.forEach(listener => setImmediate(listener, ...args));
   }
 },
 
