@@ -4,6 +4,7 @@
 var adjectiveDependencies = {};
 var nounDefaultAdjectives = {};
 var nounSupertypes = {};
+var variableInitialized = {}; // contains "foo: true" if we've already compiled something that initializes foo in a rule
 
 function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
   nounSupertypes[noun] = supertypes;
@@ -86,11 +87,13 @@ function compileOp(ast) {
 	"  router.add(thing, adjectives);\n" +
         "}\n";
     case 'rule':
+      variableInitialized = {};
       var eventName = ast.trigger.op;
       var eventParams =
         ['thing', 'player', 'key'].
 	filter(k => (k in ast.trigger)).
 	map(k => ast.trigger[k].name);
+      eventParams.forEach(p => { variableInitialized[p] = true; });
       if (eventName == 'become') {
 	var adjective = ast.trigger.adjectives[0]
 	if (adjective.op == 'unadjective') {
@@ -100,9 +103,15 @@ function compileOp(ast) {
 	}
 	// TODO check that all property values are simple variables
 	eventParams.push('{ ' + adjective.properties.map(p => p[0] + ': ' + p[1].name) + ' }');
+	adjective.properties.forEach(p => {
+	  variableInitialized[p[1].name] = true;
+	});
       }
       if ('args' in ast.trigger) {
-	ast.trigger.args.forEach(a => eventParams.push(a.name));
+	ast.trigger.args.forEach(a => {
+	  eventParams.push(a.name);
+	  variableInitialized[a.name] = true;
+	});
       }
       // count the 'there is' conditions so we can balance them at the end
       var numExists = ast.conditions.filter(c => (c.op == 'exists')).length;
@@ -151,12 +160,23 @@ function compileOp(ast) {
       if (ast.r.op == 'adjective') {
         return '(' +
 	  '(' + ast.l.name + ' in router.adjectives.' + ast.r.name + ') && ' +
-	  ast.r.properties.map(p =>
-	    'router.adjectives.' + ast.r.name + '[' + ast.l.name + '].' +
-	    // FIXME == or === ?
-	    // FIXME or = (on first use of variable)
-	    p[0] + ' == ' + compile(p[1])
-	  ).join(' && ') +
+	  ast.r.properties.map(p => {
+	    var op;
+	    var rhs =
+	      'router.adjectives.' + ast.r.name + '[' + ast.l.name + '].' +
+	      p[0];
+	    if (('object' == typeof p[1]) && p[1] !== null && ('op' in p[1]) &&
+	        p[1].op == 'var' && !(p[1].name in variableInitialized)) {
+	      // p[1] is an uninitialized variable, assign to it, but make sure
+	      // the condition is true regardless of the value we assign
+	      return '((' + p[1].name + ' = ' + rhs + ') || true)';
+	    } else {
+	      // p[1] is an initialized variable or some other kind of value,
+	      // test equality
+	      // FIXME == or === ?
+	      return compile(p[1]) + ' == ' + rhs;
+	    }
+	  }).join(' && ') +
 	')';
       } else { // unadjective
 	return '(!(' + ast.l.name + ' in router.adjectives.' + ast.r.name +'))';
@@ -172,6 +192,7 @@ function compileOp(ast) {
 	// TODO? use all the other adjectives as the positiveAdjective
 	throw new Error("'there is' condition must include at least one positive adjective");
       }
+      variableInitialized[ast.variable.name] = true;
 	      // terminate the outer 'if' condition with true
       return "true) {\n" +
 	   // iterate the variable over the keys of the positiveAdjective
