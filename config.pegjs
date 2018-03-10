@@ -43,7 +43,8 @@ rule
     }; }
 
 event
-  = 'the' sp 'clock' sp 'ticks' sp { return { op: 'clockTick' }; }
+  = 'the' sp 'game' sp 'starts' sp { return { op: 'start' }; }
+  / 'the' sp 'clock' sp 'ticks' sp { return { op: 'clockTick' }; }
   / x:variable 'hits' sp y:variable { return { op: 'hit', args: [x,y] }; }
   / thing:variable 'is' sp 'added' sp { return { op: 'add', thing: thing }; }
   / thing:variable 'is' sp 'removed' sp

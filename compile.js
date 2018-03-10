@@ -69,9 +69,9 @@ function compileOp(ast) {
 	   // add any extra adjectives from the argument, and put their
 	   // dependencies in the queue to be added
 	"  var queue = [];\n" +
-	"  for (var adjective in adjectiveProps) {\n" +
+	"  for (var adjective in adjectivesProps) {\n" +
 	"    if (!(adjective in adjectives)) {\n" +
-	"      adjectives[adjective] = this[adjective](adjectiveProps);\n" +
+	"      adjectives[adjective] = this[adjective](adjectivesProps);\n" +
 	"      this[adjective].dependencies.forEach(d => queue.push(d));\n" +
 	"    }\n" +
 	"  }\n" +
@@ -126,6 +126,7 @@ function compileOp(ast) {
 	new Array(numExists).fill("}}\n").join('') +
 	"  }\n});\n";
     /* events (handled as part of 'rule' case)
+    case 'start':
     case 'clockTick':
     case 'hit':
     case 'press':
@@ -217,7 +218,7 @@ function compileOp(ast) {
       return ast.name;
     case 'new':
       // TODO? allow more constructors
-      if (!/^(Vec2|Array)$/.test(ast.constructor)) {
+      if (!/^(Vec2|Array|Space)$/.test(ast.constructor)) {
 	throw new Error("constructing a new " + ast.constructor + " not allowed");
       }
       return 'new ' + ast.constructor + '(' + ast.args.map(compile).join(', ') + ')';
@@ -259,13 +260,7 @@ function compile(ast) {
 	      return "/* failed to compile statement */\n";
 	    }
 	  });
-	return "this.router = new Router();\n\n" +
-	  "function subsumes(ancestor, descendant) {\n" +
-	  "  return (ancestor == descendant ||\n" +
-	  "          router.adjectives.Typing[descendant].supertypes.\n" +
-	  "            some(t => subsumes(ancestor, t)));\n" +
-	  "}\n\n" +
-	  compiledStatements.join("\n");
+	return compiledStatements.join("\n");
       } else if ('op' in ast) {
 	return compileOp(ast);
       } else {

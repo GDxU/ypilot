@@ -1,6 +1,7 @@
 const defineMethods = require('./define-methods.js');
 
 function Router() {
+  this.nextThing = 0;
   this.adjectives = {};
   this.listeners = {};
 }
@@ -74,6 +75,10 @@ function unbecome(thing, adjective) {
 //
 // things
 //
+
+function newThing() {
+  return this.nextThing++;
+},
 
 function add(thing, adjectives) {
   this.emit('add', thing);

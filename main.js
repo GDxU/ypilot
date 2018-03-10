@@ -1,1 +1,49 @@
-const PeerConnection = require('./peer-connection.js');
+// put certain things in window so that compiled configuration can use them
+require('setimmediate');
+window.PeerConnection = require('./peer-connection.js');
+const Router = require('./router.js');
+window.router = new Router();
+window.Vec2 = require('./vec2.js');
+window.Space = require('./space.js');
+
+window.subsumes = function(ancestor, descendant) {
+  return (ancestor == descendant ||
+          router.adjectives.Typing[descendant].supertypes.
+            some(t => subsumes(ancestor, t)));
+}
+
+const parse = require('./config.js').parse;
+const compile = require('./compile.js');
+const $ = require('jquery');
+
+$(function() {
+  $('#config-file').on('change', function(evt) {
+    try {
+      var file = evt.target.files[0];
+      var reader = new FileReader();
+      reader.onload = function() {
+	try {
+	  var ast = parse(reader.result);
+	} catch (e) {
+	  $('#welcome').append("<p>Error parsing config file:</p><pre>" + e.message + "</pre><p>At line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + "</p>");
+	  return;
+	}
+	try {
+	  var jsText = compile(ast);
+	  var script = document.createElement('script');
+	  script.setAttribute("type", "text/javascript");
+	  script.text = jsText;
+	  $('head').append(script);
+	  router.emit('start');
+	  $('#welcome').hide();
+	  // TODO request animation frame->clockTick, other interface plumbing
+	} catch (e) {
+	  $('#welcome').append("<p>Error compiling config file:</p><pre>" + e + "</pre>");
+	}
+      };
+      reader.readAsText(file);
+    } catch (e) {
+      $('#welcome').append("<p>Error loading config file:</p><pre>" + e + "</pre>");
+    }
+  });
+});

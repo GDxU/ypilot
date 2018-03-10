@@ -1,6 +1,6 @@
 NODE=node
 NPM=npm
-REQUIRES=browserify mocha pegjs
+REQUIRES=browserify jquery mocha pegjs setimmediate
 INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \

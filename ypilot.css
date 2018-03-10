@@ -14,3 +14,20 @@ html, body, svg {
   overflow: hidden;
 }
 
+#welcome {
+  position: absolute;
+  width: 80%;
+  top: 10%;
+  bottom: 10%;
+  left: 10%;
+  right: 10%;
+  padding: 1em;
+  background-color: #ddd;
+  border: 1px solid black;
+  overflow: auto;
+}
+
+h1 {
+  margin-top: 0px;
+  text-align: center;
+}

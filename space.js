@@ -1,6 +1,6 @@
 const defineMethods = require('./define-methods.js');
 
-function Space(router) {
+function Space() {
   this.bin2things = {};
   this.located = router.getAdjectivePropertiesMap('Located');
   this.solid = router.getAdjectivePropertiesMap('Solid');
@@ -21,7 +21,7 @@ defineMethods(Space, [
     } else {
       this.bin2things[bin].push(thing);
     }
-  }
+  },
 
   function removeFromBin(thing, bin) {
     var i = this.bin2things[bin].indexOf(thing)
