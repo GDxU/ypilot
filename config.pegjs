@@ -96,6 +96,7 @@ value_expr
   / array
   / number
   / string
+  / graphics
   / boolean
   / nothing
 
@@ -133,6 +134,33 @@ number
 
 string
   = expr:$('"' ("\\" . / [^"\\])* '"') sp { return JSON.parse(expr); }
+
+graphics
+  = str:$(
+    '<g' ![0-9a-z_-]i (graphics / !'</g>' .)* '</g>'
+    / '<' graphics_element_name ![0-9a-z_-]i (!'/>' [^<>])* '/>'
+    / '<' graphics_element_name ![0-9a-z_-]i
+      (!('</' graphics_element_name '>') . )*
+      '</' graphics_element_name '>'
+  ) sp {
+    if (/<script\b/i.test(str)) throw new Error("script tags not allowed");
+    if (/\bon[\w-]+=/i.test(str)) throw new Error("event handlers not allowed");
+    if ('object' == typeof document) {
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.innerHTML = str;
+      if (svg.childNodes.length != 1)
+	throw new Error("expected graphics to parse to exactly 1 element, but got " + svg.childNodes.length + " elements");
+      var node = svg.childNodes[0];
+      if (!(node instanceof SVGGraphicsElement))
+	throw new Error("expected graphics to parse to an SVGGraphicsElement, but got an " + node.constructor.name);
+    } else {
+      console.warn("not in browser; skipping trying to parse graphics markup");
+    }
+    return { op: 'graphics', string: str };
+  }
+
+graphics_element_name
+  = 'path' / 'rect' / 'circle' / 'ellipse' / 'line' / 'polyline' / 'polygon' / 'text'
 
 boolean
   = val:('true' { return true; } / 'false' { return false; }) sp { return val; }

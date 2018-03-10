@@ -12,6 +12,15 @@ window.subsumes = function(ancestor, descendant) {
             some(t => subsumes(ancestor, t)));
 }
 
+// turn a string from a 'graphics' ast node into an SVGGraphicsElement
+// NOTE: syntax error/security checking happens at parse time, and this
+// function just assumes the checks passed
+window.stringToSVGGraphicsElement = function(str) {
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.innerHTML = str;
+  return svg.childNodes[0];
+}
+
 const parse = require('./config.js').parse;
 const compile = require('./compile.js');
 const $ = require('jquery');

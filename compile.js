@@ -224,8 +224,10 @@ function compileOp(ast) {
       return 'new ' + ast.constructor + '(' + ast.args.map(compile).join(', ') + ')';
     case '[]':
       return '[' + ast.args.map(compile).join(', ') + ']';
+    case 'graphics':
+      return 'stringToSVGGraphicsElement(' + JSON.stringify(ast.string) + ')';
     default: // arithmetic and comparison operators
-      if ('r' in ast) { // infix
+      if ('l' in ast) { // infix
 	if (!/^([<=>!]=|[<>*/%+-])$/.test(ast.op)) {
 	  throw new Error("invalid infix operator: " + ast.op);
 	}
@@ -234,7 +236,7 @@ function compileOp(ast) {
         if (!/^[+-]$/.test(ast.op)) {
 	  throw new Error("invalid prefix operator: " + ast.op);
 	}
-	return '(' + compile(ast.l) + ' ' + ast.op + ')';
+	return '(' + ast.op + ' ' + compile(ast.r) + ')';
       }
   }
 }
