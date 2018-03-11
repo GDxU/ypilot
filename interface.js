@@ -99,8 +99,7 @@ function becomeLocated(thing, {space, position}, oldLocated) {
     this.setThingTransform(this.visible[thing].graphics,
       position, this.getThingOrientation(thing));
     if ((this.player in this.piloting) &&
-        thing === this.piloting[this.player].ship) { // just moved player's ship
-      // FIXME somehow this in only getting triggered at the start and not every frame the ship moves
+        thing == this.piloting[this.player].ship) { // just moved player's ship
       this.setViewBox();
       if (space !== oldLocated.space) this.changeSpace();
     }
