@@ -5,6 +5,7 @@ const Router = require('./router.js');
 window.router = new Router();
 window.Vec2 = require('./vec2.js');
 window.Space = require('./space.js');
+window.Interface = require('./interface.js');
 
 window.subsumes = function(ancestor, descendant) {
   return (ancestor == descendant ||

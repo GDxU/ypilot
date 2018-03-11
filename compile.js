@@ -218,10 +218,12 @@ function compileOp(ast) {
       return ast.name;
     case 'new':
       // TODO? allow more constructors
-      if (!/^(Vec2|Array|Space)$/.test(ast.constructor)) {
+      if (!/^(Vec2|Array|Space|Interface)$/.test(ast.constructor)) {
 	throw new Error("constructing a new " + ast.constructor + " not allowed");
       }
       return 'new ' + ast.constructor + '(' + ast.args.map(compile).join(', ') + ')';
+    case 'math':
+      return 'Math.' + ast.fn + '(' + compile(ast.arg) + ')';
     case '[]':
       return '[' + ast.args.map(compile).join(', ') + ']';
     case 'graphics':

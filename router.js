@@ -57,6 +57,7 @@ function become(thing, adjective, properties) {
   this.declareAdjective(adjective); // make sure it exists first
   var oldProperties = null;
   if (thing in this.adjectives[adjective]) {
+    // FIXME oldProperties is just an alias of the properties object that gets assigned to; need to make a copy (but is that too expensive to do all the time?)
     oldProperties = this.adjectives[adjective][thing];
     properties = Object.assign(this.adjectives[adjective][thing], properties);
   } else {

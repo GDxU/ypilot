@@ -93,6 +93,7 @@ value_expr
   = variable
   / parens
   / constructor
+  / math
   / array
   / number
   / string
@@ -100,14 +101,22 @@ value_expr
   / boolean
   / nothing
 
-// TODO math function calls, e.g. floor()?
-
 parens
   = '(' sp expr:cmp ')' sp { return expr; }
 
 constructor
   = name:type_name args:array
   { return { op: 'new', constructor: name, args: args.args }; }
+
+math
+  = name:$(
+      'a'? ('sin' / 'cos' / 'tan') 'h'?
+    / 'abs' / 'sign'
+    / 'ceil' / 'floor' / 'round'
+    / 'sqrt' / 'cbrt'
+    / 'log' ('2' / '10' / '1p' / '') / 'exp' 'm1'?
+  ) arg:parens
+  { return { op: 'math', fn: name, arg: arg }; }
 
 array
   = '[' sp first:(value_expr / cmp) rest:(',' sp arg:(value_expr / cmp) { return arg; })* ']' sp
