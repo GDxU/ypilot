@@ -59,7 +59,8 @@ function compileOp(ast) {
 	  // TODO? check that p[0] is of type p[1]
 	  return '  this.' + p[0] + ' = ' + p[0] + ";\n";
 	}).join('') + "}\n" +
-	ast.name + '.dependencies = [' + ast.dependencies.join(', ') + "];\n";
+	ast.name + '.dependencies = [' + ast.dependencies.join(', ') + "];\n" +
+	"router.declareAdjective('" + ast.name + "');\n";
     case 'defineNoun':
       var supertypes =
         ast.supertypes.filter(t => (t[0] == 'noun')).map(t => t[1]);
@@ -259,6 +260,8 @@ function compileOp(ast) {
 	   // iterate the variable over the keys of the positiveAdjective
         "  for (var " + ast.variable.name +
 		' in router.adjectives.' + positiveAdjective.name + ") {\n" +
+	     // make sure the thing is an integer, not a string
+	'    ' + ast.variable.name + " |= 0;\n" +
 	     // start a new 'if'
 	'    if (' +
 	  // compile all the suchThat adjectives as if they were 'is' conditions

@@ -57,6 +57,7 @@ function changeSpace() {
   this.svg.innerHTML = ''; // remove all children from the old space
   // add all graphics of visible things located in the new space
   for (var t in this.located) {
+    t |= 0; // enforce integer thing IDs (not strings)
     if (this.located[t].space === this.playerShipLocated.space &&
         (t in this.visible)) {
       this.becomeVisible(t, this.visible[t], undefined);

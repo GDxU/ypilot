@@ -19,6 +19,10 @@ function dot(other) {
   return this.x * other.x + this.y * other.y;
 },
 
+function cross(other) {
+  return this.x * other.y - this.y * other.x;
+},
+
 function scale(other) {
   if (other instanceof Vec2) {
     return new Vec2(this.x * other.x, this.y * other.y);
