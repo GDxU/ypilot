@@ -28,6 +28,25 @@ function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
   return (nounDefaultAdjectives[noun] = Object.keys(included));
 }
 
+// return an object whose keys are all the variable names used in ast at any
+// depth
+function getVars(ast) {
+  switch (typeof ast) {
+    case 'object':
+      var vars = {};
+      if (('op' in ast) && ast.op == 'var') {
+	vars[ast.name] = true;
+      } else {
+	for (var k in ast) {
+	  Object.assign(vars, getVars(ast[k]));
+	}
+      }
+      return vars;
+    default:
+      return {};
+  }
+}
+
 function compileOp(ast) {
   switch (ast.op) {
     // top-level statements
@@ -85,14 +104,32 @@ function compileOp(ast) {
 	"  }\n" +
 	   // finally, add the thing to the router with its adjectives
 	"  router.add(thing, adjectives);\n" +
+	"  return thing;\n" +
         "}\n";
     case 'rule':
       variableInitialized = {};
       var eventName = ast.trigger.op;
       var eventParams =
-        ['thing', 'player', 'key'].
+        ['thing', 'player'].
 	filter(k => (k in ast.trigger)).
 	map(k => ast.trigger[k].name);
+      var conditions = [].concat(ast.conditions);
+      if ('key' in ast.trigger) {
+	if (('object' == typeof ast.trigger.key) && ('op' in ast.trigger.key) &&
+	    ast.trigger.key.op == 'var') {
+	  // key is a variable, just use it directly
+	  eventParams.push(ast.trigger.key.name);
+	} else {
+	  // key is a value, make a key parameter and prepend a condition
+	  // checking its value
+	  eventParams.push('key');
+	  conditions.unshift({
+	    op: '==',
+	    l: ast.trigger.key,
+	    r: { op: 'var', name: 'key' }
+	  });
+	}
+      }
       eventParams.forEach(p => { variableInitialized[p] = true; });
       if (eventName == 'become') {
 	var adjective = ast.trigger.adjectives[0]
@@ -102,7 +139,8 @@ function compileOp(ast) {
 	  eventName = 'become' + adjective.name;
 	}
 	// TODO check that all property values are simple variables
-	eventParams.push('{ ' + adjective.properties.map(p => p[0] + ': ' + p[1].name) + ' }');
+	// alternatively, turn those that aren't into variables and prepended conditions, like key above
+	eventParams.push('{ ' + adjective.properties.map(p => p[0] + ': ' + p[1].name).join(', ') + ' }');
 	adjective.properties.forEach(p => {
 	  variableInitialized[p[1].name] = true;
 	});
@@ -113,18 +151,24 @@ function compileOp(ast) {
 	  variableInitialized[a.name] = true;
 	});
       }
+      var vars = getVars(conditions);
+      for (var v in variableInitialized) { delete vars[v]; }
+      vars = Object.keys(vars);
       // count the 'there is' conditions so we can balance them at the end
-      var numExists = ast.conditions.filter(c => (c.op == 'exists')).length;
+      var numExists = conditions.filter(c => (c.op == 'exists')).length;
       return "router.on('" + eventName + "', function(" +
 	  eventParams.join(', ') +
-	") {\n" +
+	") {try {\n" +
+	((vars.length > 0) ? '  var ' + vars.join(', ') + ";\n" : '') +
 	"  if (" +
-	  ast.conditions.map(compile).join(" &&\n      ") +
+	  conditions.map(compile).join(" &&\n      ") +
 	") {\n" +
 	  ast.effects.map(compile).join('') +
 	// balance 'there is' conditions
 	new Array(numExists).fill("}}\n").join('') +
-	"  }\n});\n";
+	"  }\n" +
+	"} catch (e) { console.error(e.message + \" while executing this rule:\\n\" + " + JSON.stringify(ast.text) + "); }\n" +
+	"});\n";
     /* events (handled as part of 'rule' case)
     case 'start':
     case 'clockTick':
@@ -138,13 +182,29 @@ function compileOp(ast) {
 	// TODO? use unadjective to override defaults
 	throw new Error("negative adjectives not allowed on new things");
       }
+      // separate adjectives into those that do and don't refer to the thing
+      // we're creating
+      var selfRefAdjs = [];
+      var nonSelfRefAdjs = [];
+      ast.adjectives.forEach(adj => {
+	if (ast.thing.name in getVars(adj)) {
+	  selfRefAdjs.push(adj);
+	} else {
+	  nonSelfRefAdjs.push(adj);
+	}
+      });
+	     // do nonSelfRefAdjs as part of the creation
       return '    var ' + ast.thing.name + ' = add' + ast.type + '({ ' +
-	ast.adjectives.map(adj =>
+	nonSelfRefAdjs.map(adj =>
 	  adj.name + ': { ' +
 	  adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
 	  ' }'
 	).join(', ') +
-	" });\n";
+	" });\n" +
+	// do selfRefAdjs (if any) as a separate 'become' effect
+	(selfRefAdjs.length > 0 ?
+	  compile({ op: 'become', thing: ast.thing, adjectives: selfRefAdjs })
+	  : '');
     case 'remove':
       return '    router.remove(' + ast.thing.name + ");\n";
     case 'become':
@@ -233,7 +293,20 @@ function compileOp(ast) {
 	if (!/^([<=>!]=|[<>*/%+-])$/.test(ast.op)) {
 	  throw new Error("invalid infix operator: " + ast.op);
 	}
-	return '(' + compile(ast.l) + ' ' + ast.op + ' ' + compile(ast.r) + ')';
+	if (/^[*+-]$/.test(ast.op)) {
+	  // TODO? use static types tp decide whether to use builtin operators
+	  // or methods
+	  var compiledL = compile(ast.l);
+	  var compiledR = compile(ast.r);
+	  return '(("object" == typeof ' + compiledL + ')? ' +
+		 compiledL +
+		 '.' + ({ '*': 'scale', '+': 'add', '-': 'subtract' })[ast.op] +
+		 '(' + compiledR + ') : (' +
+		 compiledL + ' ' + ast.op + ' ' + compiledR + '))';
+	} else {
+	  return '(' + compile(ast.l) + ' ' + ast.op + ' ' +
+		 compile(ast.r) + ')';
+	}
       } else { // prefix
         if (!/^[+-]$/.test(ast.op)) {
 	  throw new Error("invalid prefix operator: " + ast.op);

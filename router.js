@@ -11,7 +11,6 @@ defineMethods(Router, [
 //
 // EventEmitter-style methods
 //
-// FIXME need to select on more than just event name, and do variable bindings
 
 function on(eventName, listener) {
   if (eventName in this.listeners) {
@@ -57,8 +56,8 @@ function become(thing, adjective, properties) {
   this.declareAdjective(adjective); // make sure it exists first
   var oldProperties = null;
   if (thing in this.adjectives[adjective]) {
-    // FIXME oldProperties is just an alias of the properties object that gets assigned to; need to make a copy (but is that too expensive to do all the time?)
-    oldProperties = this.adjectives[adjective][thing];
+    // FIXME is copying to oldProperties all the time too expensive?
+    oldProperties = Object.assign({}, this.adjectives[adjective][thing]);
     properties = Object.assign(this.adjectives[adjective][thing], properties);
   } else {
     this.adjectives[adjective][thing] = properties;

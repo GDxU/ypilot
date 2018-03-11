@@ -15,10 +15,11 @@ function Interface(player) {
   this.oriented = router.getAdjectivePropertiesMap('Oriented');
   router.on('becomeOriented', this.becomeOriented.bind(this));
   router.on('unbecomeOriented', this.unbecomeOriented.bind(this));
-  this.svg = $('#svg-container svg');
-  this.svg.on('keydown', this.keydown.bind(this));
-  this.svg.on('keyup', this.keyup.bind(this));
+  this.svg = $('#svg-container svg')[0];
+  document.body.onkeydown = this.keydown.bind(this);
+  document.body.onkeyup = this.keyup.bind(this);
   if (this.player in this.piloting) {
+//    console.log('interface found player ' + this.player + ' piloting on creation');
     this.playerShipLocated = this.located[this.piloting[this.player].ship];
     this.setViewBox();
   }
@@ -33,8 +34,8 @@ function thingIsInPlayersSpace(thing) {
 
 function setViewBox() {
   if (this.playerShipLocated) {
-    var w = this.svg.width;
-    var h = this.svg.height;
+    var w = this.svg.width.baseVal.value;
+    var h = this.svg.height.baseVal.value;
     var pos = this.playerShipLocated.position;
     this.svg.setAttributeNS(null, 'viewBox',
       '' + (pos.x - w/2) + ' ' + (pos.y - h/2) + ' ' + w + ' ' + h);
@@ -44,30 +45,49 @@ function setViewBox() {
 function setThingTransform(graphics, position, orientation) {
   graphics.setAttributeNS(null, 'transform',
     'translate(' + position.x + ', ' + position.y + ') ' +
-    'rotate(' + orientation + ')');
+    'rotate(' + (orientation * 180 / Math.PI) + ')');
 },
 
 function getThingOrientation(thing) {
   return (thing in this.oriented) ? this.oriented[thing].orientation : 0;
 },
 
+function changeSpace() {
+//  console.log('Interface#changeSpace()');
+  this.svg.innerHTML = ''; // remove all children from the old space
+  // add all graphics of visible things located in the new space
+  for (var t in this.located) {
+    if (this.located[t].space === this.playerShipLocated.space &&
+        (t in this.visible)) {
+      this.becomeVisible(t, this.visible[t], undefined);
+    }
+  }
+},
+
 function becomePiloting(thing, {ship}, oldPiloting) {
+//  console.log('Interface#becomePiloting(' + thing + ', { ship: ' + ship + ' }, #)');
   if (thing == this.player) {
+//    console.log('interface found player ' + thing + ' piloting after creation');
     this.playerShipLocated = this.located[ship];
     this.setViewBox();
+    this.changeSpace();
   }
 },
 
 function becomeVisible(thing, {graphics}, oldVisible) {
-  if (oldVisible) this.unbecomeVisible(thing, oldVisible);
+//  console.log('Interface#becomeVisible(' + thing + ', #, #)');
   if (this.thingIsInPlayersSpace(thing)) {
+//    console.log("...is in player's space, appending");
     this.svg.appendChild(graphics);
     this.setThingTransform(graphics,
       this.located[thing].position, this.getThingOrientation(thing));
+  } else if (oldVisible) {
+    this.unbecomeVisible(thing, oldVisible);
   }
 },
 
 function unbecomeVisible(thing, {graphics}) {
+//  console.log('Interface#unbecomeVisible(' + thing + ', #)');
   if (graphics.parentNode === this.svg) {
     graphics.remove();
   }
@@ -75,28 +95,23 @@ function unbecomeVisible(thing, {graphics}) {
 
 function becomeLocated(thing, {space, position}, oldLocated) {
   if (!(thing in this.visible)) return;
-  if (oldLocated) this.unbecomeLocated(thing, oldLocated);
   if (this.playerShipLocated && space === this.playerShipLocated.space) {
     this.setThingTransform(this.visible[thing].graphics,
       position, this.getThingOrientation(thing));
     if ((this.player in this.piloting) &&
         thing === this.piloting[this.player].ship) { // just moved player's ship
+      // FIXME somehow this in only getting triggered at the start and not every frame the ship moves
       this.setViewBox();
-      if (space !== oldLocated.space) { // player just changed spaces
-	this.svg.innerHTML = ''; // remove all children from the old space
-	// add all graphics of visible things located in the new space
-	for (var t in this.located) {
-	  if (this.located[t].space === space && (t in this.visible)) {
-	    this.becomeVisible(t, this.visible[t], undefined);
-	  }
-	}
-      }
+      if (space !== oldLocated.space) this.changeSpace();
     }
+  } else if (oldLocated) {
+    this.unbecomeLocated(thing, oldLocated);
   }
 },
 
 function unbecomeLocated(thing, {space, position}) {
-  if (space === this.playerShipLocated.space && (thing in this.visible)) {
+  if (this.playerShipLocated && space === this.playerShipLocated.space &&
+      (thing in this.visible)) {
     this.unbecomeVisible(thing, this.visible[thing]);
   }
 },

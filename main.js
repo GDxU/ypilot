@@ -26,6 +26,11 @@ const parse = require('./config.js').parse;
 const compile = require('./compile.js');
 const $ = require('jquery');
 
+function clockTick(now) {
+  router.emit('clockTick');
+  requestAnimationFrame(clockTick);
+}
+
 $(function() {
   $('#config-file').on('change', function(evt) {
     try {
@@ -46,7 +51,7 @@ $(function() {
 	  $('head').append(script);
 	  router.emit('start');
 	  $('#welcome').hide();
-	  // TODO request animation frame->clockTick, other interface plumbing
+	  requestAnimationFrame(clockTick);
 	} catch (e) {
 	  $('#welcome').append("<p>Error compiling config file:</p><pre>" + e + "</pre>");
 	}
