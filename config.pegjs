@@ -46,6 +46,15 @@ event
   = 'the' sp 'game' sp 'starts' sp { return { op: 'start' }; }
   / 'the' sp 'clock' sp 'ticks' sp { return { op: 'clockTick' }; }
   / x:variable 'hits' sp y:variable { return { op: 'hit', args: [x,y] }; }
+  / x:variable 'point' sp p:variable 'penetrates' sp
+    y:variable 'edge' sp 'from' sp from:variable 'to' sp to:variable
+    t:variable 'ticks' sp 'ago' sp 'with' sp 'velocity' sp v:variable
+    { return {
+	op: 'penetrate',
+	penetrator: x, point: p,
+	penetrated: y, edgeFrom: from, edgeTo: to,
+	ticksAgo: t, relativeVelocity: v
+    }; }
   / thing:variable 'is' sp 'added' sp { return { op: 'add', thing: thing }; }
   / thing:variable 'is' sp 'removed' sp
     { return { op: 'remove', thing: thing }; }
@@ -65,6 +74,10 @@ effect
     { return { op: 'remove', thing: thing }; }
   / thing:variable 'becomes' sp adjectives:adjective_inst+
     { return { op: 'become', thing: thing, adjectives: adjectives }; }
+  / 'let' sp variable:variable 'be' sp value:value_expr
+    { return { op: 'let', variable: variable, value: value }; }
+  / 'debug' sp value:value_expr
+    { return { op: 'debug', value: value }; }
 
 condition
   = parens
@@ -91,6 +104,7 @@ adjective_inst
 
 value_expr
   = variable
+  / constant
   / parens
   / constructor
   / math
@@ -132,11 +146,11 @@ add
   { return nestInfix(first, rest); }
 
 mul
-  = first:sgn rest:(op:[*/%] sp r:sgn { return { op: op, r: r }; })*
+  = first:sgn rest:(op:$([*/%\.·×] / 'x' !id_char) sp r:sgn { return { op: op, r: r }; })*
   { return nestInfix(first, rest); }
 
 sgn
-  = op:[+-]? r:value_expr { return (op ? { op: op, r: r } : r ); }
+  = op:[+-]? sp r:value_expr { return (op ? { op: op, r: r } : r ); }
 
 number
   = expr:$([0-9]+ ('.' [0-9]+)?) sp { return JSON.parse(expr); }
@@ -248,6 +262,12 @@ property_name
 variable
   = '?' name:$(id_char+) sp { return { op: 'var', name: name }; }
 
+// FIXME since these are "var"s, but aren't in variableInitialized, they might
+// get assigned to if they're used in the wrong place
+constant
+  = ('PI' / 'π') !id_char sp { return { op: 'var', name: 'Math.PI' }; }
+  / ('E' / 'e') !id_char sp { return { op: 'var', name: 'Math.E' }; }
+
 id_char
   = '_' / [0-9] / [a-z]i
 
@@ -261,7 +281,7 @@ reserved_word
     / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there'
     / 'which' / 'with' / 'when' / 'then' / 'of' / 'new'
     / ('thing' / 'object' / 'flag' / 'boolean' / 'number' / 'string') 's'?
-    / 'the' / 'clock' / 'ticks' / 'hits'
+    / 'the' / 'clock' / 'ticks' / 'hits' / 'penetrates'
     / 'presses' / 'releases' / 'holding' / 'down'
     ) !id_char
 

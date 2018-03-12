@@ -104,6 +104,12 @@ function clockTick() {
   this.emit('clockTick');
 },
 
+function penetrate(penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity) {
+  this.emit('penetrate', penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity);
+  // TODO deduplicate hits for a given clock tick
+  this.hit(penetrator, penetrated);
+},
+
 function hit(x, y) {
   if (y < x) { // FIXME? sort by type instead of ID
     this.emit('hit', y, x);

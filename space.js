@@ -36,10 +36,11 @@ function pointIsInPolygon(point, polygon) {
 function Space() {
   this.bin2things = {};
   this.located = router.getAdjectivePropertiesMap('Located');
-  this.solid = router.getAdjectivePropertiesMap('Solid');
-  this.oriented = router.getAdjectivePropertiesMap('Oriented');
   router.on('becomeLocated', this.becomeLocated.bind(this));
   router.on('unbecomeLocated', this.unbecomeLocated.bind(this));
+  this.solid = router.getAdjectivePropertiesMap('Solid');
+  this.oriented = router.getAdjectivePropertiesMap('Oriented');
+  this.mobile = router.getAdjectivePropertiesMap('Mobile');
   router.on('clockTick', this.clockTick.bind(this));
 }
 
@@ -111,6 +112,85 @@ defineMethods(Space, [
     }
   },
 
+  function penetrate(penetrator, point, penetrated, penetratedShape) {
+//    console.log('penetrator ' + penetrator + ' at point ' + point.x + ',' + point.y + '; penetrated ' + penetrated);
+    // TODO find which side of penetratedShape point just passed through, so we can get its slope and do a bounce properly
+    var penetratorVelocity =
+      ((penetrator in this.mobile) ?
+        this.mobile[penetrator].velocity : new Vec2(0,0));
+    var penetratedVelocity =
+      ((penetrated in this.mobile) ?
+        this.mobile[penetrated].velocity : new Vec2(0,0));
+    var relativeVelocity = penetratorVelocity.subtract(penetratedVelocity);
+    if (relativeVelocity.x == 0 && relativeVelocity.y == 0) {
+//      console.log('relative velocity 0');
+      router.hit(penetrator, penetrated); // FIXME maybe don't even do this, just return?
+      return;
+    }
+    var edgeFrom, edgeTo;
+    var maxTicksAgo = 0;
+    var prev = penetratedShape[penetratedShape.length-1];
+    penetratedShape.forEach(next => {
+//      console.log('edge from ' + prev.x + ',' + prev.y + ' to ' + next.x + ',' + next.y);
+      // figure out how many ticks ago point would have been on this edge's
+      // line extension
+      var ticksAgo = -1;
+      var edge = next.subtract(prev);
+      if (edge.x == 0) {
+	if (edge.y != 0 && relativeVelocity.y != 0) {
+	  ticksAgo = (point.y - edge.y) / relativeVelocity.y;
+	  // make sure the intersection is between prev and next (excluding
+	  // next itself)
+	  var intersectionY = point.y - ticksAgo * relativeVelocity.y;
+	  if (edge.y > 0) {
+	    if (intersectionY < prev.y || intersectionY >= next.y) ticksAgo =-1;
+	  } else { // edge.y < 0
+	    if (intersectionY > prev.y || intersectionY <= next.y) ticksAgo =-1;
+	  }
+//	  if (ticksAgo == -1) console.log('horizontal edge, intersection out of bounds');
+	} // else edge and velocity are parallel (and horizontal)
+      } else { // edge.x nonzero, can have edgeSlope
+        // FIXME this branch doesn't work right
+	var edgeSlope = edge.y / edge.x;
+	// FIXME there's probably a more understandable formula for this
+	var numerator = edgeSlope * (point.x - prev.x) + prev.y - point.y;
+	var denominator = edgeSlope * relativeVelocity.x - relativeVelocity.y;
+	if (denominator != 0) {
+	  ticksAgo = numerator / denominator;
+	  // make sure the intersection is between prev and next (excluding
+	  // next itself)
+	  var intersectionX = point.x - ticksAgo * relativeVelocity.x;
+	  if (edge.x > 0) {
+	    if (intersectionX < prev.x || intersectionX >= next.x) ticksAgo =-1;
+	  } else { // edge.x < 0
+	    if (intersectionX > prev.x || intersectionX <= next.x) ticksAgo =-1;
+	  }
+//	  if (ticksAgo == -1) console.log('nonhorizontal edge, intersection out of bounds');
+	} // else edge and velocity are parallel
+      }
+//      console.log('ticksAgo = ' + ticksAgo);
+      if (ticksAgo <= 1 && ticksAgo > maxTicksAgo) {
+//	console.log('...max!')
+	maxTicksAgo = ticksAgo;
+	edgeFrom = prev;
+	edgeTo = next;
+      }/* else {
+	console.log('not the max, or past prev position of point');
+      }*/
+      prev = next;
+    });
+    if (maxTicksAgo == 0) { // didn't actually penetrate yet
+//      console.log('no penetration');
+      return;
+    }
+    console.log('' + penetrator + ' point ' + point + ' penetrates ' + penetrated + ' edge from ' + edgeFrom + ' to ' + edgeTo + ' ' + maxTicksAgo + ' ticks ago with velocity ' + relativeVelocity);
+    router.penetrate(
+      penetrator, point,
+      penetrated, edgeFrom, edgeTo,
+      maxTicksAgo, relativeVelocity
+    );
+  },
+
   function clockTick() {
     for (var bin in this.bin2things) {
       // everything in this bin can be the first of the two things we check for
@@ -134,19 +214,18 @@ defineMethods(Space, [
 	  secondThings.forEach((second, secondIndex) => {
 	       // TODO also check first != second, in case some things go into
 	       // more than one bin in the future?
-	    if (firstIndex < secondIndex && (second in this.solid)) {
+	    if (firstIndex < secondIndex && (second in this.solid) &&
+	        // don't check collisions between two immobile things
+	        ((first in this.mobile) || (second in this.mobile))) {
 	      var secondShape = this.getShape(second);
 	      secondShape.forEach(secondPoint => {
 		if (pointIsInPolygon(secondPoint, firstShape)) {
-		  // FIXME want to find which side of firstShape secondPoint just passed through, so we can get its slope and do a bounce properly
-		  console.log(first + ' contains point from ' + second);
-		  router.hit(first, second);
+		  this.penetrate(second, secondPoint, first, firstShape);
 		}
 	      });
 	      firstShape.forEach(firstPoint => {
 		if (pointIsInPolygon(firstPoint, secondShape)) {
-		  console.log(first + ' has a point contained in ' + second);
-		  router.hit(first, second);
+		  this.penetrate(first, firstPoint, second, secondShape);
 		}
 	      });
 	    }

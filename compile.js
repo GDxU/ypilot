@@ -111,7 +111,7 @@ function compileOp(ast) {
       variableInitialized = {};
       var eventName = ast.trigger.op;
       var eventParams =
-        ['thing', 'player'].
+        ['thing', 'player', 'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity'].
 	filter(k => (k in ast.trigger)).
 	map(k => ast.trigger[k].name);
       var conditions = [].concat(ast.conditions);
@@ -213,6 +213,12 @@ function compileOp(ast) {
         '    router.become(' + ast.thing.name + ", '" + adj.name + "', { " +
 	adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
 	" });\n").join('');
+    case 'let':
+      var val = compile(ast.value);
+      variableInitialized[ast.variable.name] = true;
+      return '    let ' + ast.variable.name + ' = ' + val + ";\n";
+    case 'debug':
+      return '    console.log(' + compile(ast.value) + ");\n";
     // conditions
     case 'isa':
       return '((' + ast.l.name + ' in router.adjectives.Typed) &&' +
@@ -291,6 +297,12 @@ function compileOp(ast) {
       return '[' + ast.args.map(compile).join(', ') + ']';
     case 'graphics':
       return 'stringToSVGGraphicsElement(' + JSON.stringify(ast.string) + ')';
+    case '.': // dot product
+    case '·': // (unicode)
+      return compile(ast.l) + '.dot(' + compile(ast.r) + ')';
+    case 'x': // cross product
+    case '×': // (unicode)
+      return compile(ast.l) + '.cross(' + compile(ast.r) + ')';
     default: // arithmetic and comparison operators
       if ('l' in ast) { // infix
 	if (!/^([<=>!]=|[<>*/%+-])$/.test(ast.op)) {
