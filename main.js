@@ -40,7 +40,9 @@ $(function() {
 	try {
 	  var ast = parse(reader.result);
 	} catch (e) {
-	  $('#welcome').append("<p>Error parsing config file:</p><pre>" + e.message + "</pre><p>At line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + "</p>");
+	  $('#welcome').
+	    append("<p>Error parsing config file:</p><pre>" + e.message + "</pre>").
+	    append("<p>At line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + "</p>");
 	  return;
 	}
 	try {

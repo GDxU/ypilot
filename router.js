@@ -125,6 +125,25 @@ function press(player, key) {
 
 function release(player, key) {
   this.emit('release', player, key);
+},
+
+//
+// map reading
+//
+
+function readMap(mapThing) {
+  var { space, position: mapPosition } = this.adjectives.Located[mapThing];
+  var { blockSize, map } = this.adjectives.Mapped[mapThing];
+  var blockPosition = new Vec2(0,0).add(mapPosition);
+  for (var i = 0; i < map.length; i++) {
+    var character = map[i];
+    if (/\n/.test(character)) {
+      blockPosition = new Vec2(mapPosition.x, blockPosition.y + blockSize.y);
+    } else {
+      this.emit('read' + character, mapThing, blockPosition);
+      blockPosition = new Vec2(blockPosition.x + blockSize.x, blockPosition.y);
+    }
+  }
 }
 
 ]);

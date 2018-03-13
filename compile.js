@@ -111,7 +111,9 @@ function compileOp(ast) {
       variableInitialized = {};
       var eventName = ast.trigger.op;
       var eventParams =
-        ['thing', 'player', 'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity'].
+        ['thing', 'player',
+	 'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity',
+	 'map', 'position'].
 	filter(k => (k in ast.trigger)).
 	map(k => ast.trigger[k].name);
       var conditions = [].concat(ast.conditions);
@@ -145,6 +147,8 @@ function compileOp(ast) {
 	adjective.properties.forEach(p => {
 	  variableInitialized[p[1].name] = true;
 	});
+      } else if (eventName == 'read') {
+	eventName += ast.trigger.character;
       }
       if ('args' in ast.trigger) {
 	ast.trigger.args.forEach(a => {
@@ -213,6 +217,8 @@ function compileOp(ast) {
         '    router.become(' + ast.thing.name + ", '" + adj.name + "', { " +
 	adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
 	" });\n").join('');
+    case 'read':
+      return '    router.readMap(' + compile(ast.thing) + ");\n";
     case 'let':
       var val = compile(ast.value);
       variableInitialized[ast.variable.name] = true;

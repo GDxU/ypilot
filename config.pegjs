@@ -45,6 +45,13 @@ rule
 event
   = 'the' sp 'game' sp 'starts' sp { return { op: 'start' }; }
   / 'the' sp 'clock' sp 'ticks' sp { return { op: 'clockTick' }; }
+  / map:variable sp 'reads' sp character:string 'at' sp position:variable
+    { return {
+        op: 'read',
+	map: map,
+	character: character,
+	position: position
+    }; }
   / x:variable 'hits' sp y:variable { return { op: 'hit', args: [x,y] }; }
   / x:variable 'point' sp p:variable 'penetrates' sp
     y:variable 'edge' sp 'from' sp from:variable 'to' sp to:variable
@@ -74,6 +81,7 @@ effect
     { return { op: 'remove', thing: thing }; }
   / thing:variable 'becomes' sp adjectives:adjective_inst+
     { return { op: 'become', thing: thing, adjectives: adjectives }; }
+  / thing:variable 'is' sp 'read' sp { return { op: 'read', thing: thing }; }
   / 'let' sp variable:variable 'be' sp value:value_expr
     { return { op: 'let', variable: variable, value: value }; }
   / 'debug' sp value:value_expr
