@@ -113,16 +113,23 @@ defineMethods(Space, [
     }
   },
 
-  // FIXME this doesn't take into account angularVelocity, so you can spin the
-  // point of your ship through a wall and not "penetrate" it
+  // get the linear velocity of point on thing, including any contribution from
+  // thing's angularVelocity. point is in world coordinates
+  function getPointVelocity(thing, point) {
+    // immobile things always have zero velocity
+    if (!(thing in this.mobile)) return new Vec2(0,0);
+    var center = this.located[thing].position;
+    var linearVel = this.mobile[thing].velocity;
+    var angularVel = this.mobile[thing].angularVelocity;
+    var centerToPoint = point.subtract(center);
+    var tangent = centerToPoint.rotate(Math.PI/2);
+    return linearVel.add(tangent.scale(angularVel));
+  },
+
   function penetrate(penetrator, point, penetrated, penetratedShape) {
 //    console.log('penetrator ' + penetrator + ' at point ' + point.x + ',' + point.y + '; penetrated ' + penetrated);
-    var penetratorVelocity =
-      ((penetrator in this.mobile) ?
-        this.mobile[penetrator].velocity : new Vec2(0,0));
-    var penetratedVelocity =
-      ((penetrated in this.mobile) ?
-        this.mobile[penetrated].velocity : new Vec2(0,0));
+    var penetratorVelocity = this.getPointVelocity(penetrator, point);
+    var penetratedVelocity = this.getPointVelocity(penetrated, point);
     var relativeVelocity = penetratorVelocity.subtract(penetratedVelocity);
     if (relativeVelocity.x == 0 && relativeVelocity.y == 0) {
 //      console.log('relative velocity 0');
@@ -197,15 +204,18 @@ defineMethods(Space, [
       // everything in this bin can be the first of the two things we check for
       // collision
       var firstThings = this.bin2things[bin];
-      // everything in this bin or the adjacent 3 bins with greater coordinates
-      // can be the second of the two things we check for collision
+      // everything in {this bin or the adjacent 4 bins in the Moore
+      // neighborhood that are after this bin in raster order} can be the
+      // second of the two things we check for collision
       var secondThings = [].concat(firstThings);
       var here = JSON.parse(bin);
-      here[0]++;
+      here[0]++; // move right, to east bin
       secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
-      here[1]++;
+      here[1]++; // move down, to southeast bin
       secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
-      here[0]--;
+      here[0]--; // move left, to south bin
+      secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
+      here[0]--; // move left, to southwest bin
       secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
       // check whether each point of each shape of secondThings is inside the
       // shape of each firstThing, and vice versa
@@ -213,8 +223,6 @@ defineMethods(Space, [
 	if (first in this.solid) {
 	  var firstShape = this.getShape(first);
 	  secondThings.forEach((second, secondIndex) => {
-	       // TODO also check first != second, in case some things go into
-	       // more than one bin in the future?
 	    if (firstIndex < secondIndex && (second in this.solid) &&
 	        // don't check collisions between two immobile things
 	        ((first in this.mobile) || (second in this.mobile))) {
