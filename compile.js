@@ -308,7 +308,7 @@ function compileOp(ast) {
 	if (!/^([<=>!]=|[<>*/%+-])$/.test(ast.op)) {
 	  throw new Error("invalid infix operator: " + ast.op);
 	}
-	if (/^[*+-]$/.test(ast.op)) {
+	if (/^[*+-]$/.test(ast.op) && 'number' != typeof ast.l) {
 	  // TODO? use static types tp decide whether to use builtin operators
 	  // or methods
 	  var compiledL = compile(ast.l);

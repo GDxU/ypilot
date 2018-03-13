@@ -1,4 +1,5 @@
 const defineMethods = require('./define-methods.js');
+const Vec2 = require('./vec2.js');
 
 // return true if point is inside polygon
 function pointIsInPolygon(point, polygon) {
@@ -112,9 +113,10 @@ defineMethods(Space, [
     }
   },
 
+  // FIXME this doesn't take into account angularVelocity, so you can spin the
+  // point of your ship through a wall and not "penetrate" it
   function penetrate(penetrator, point, penetrated, penetratedShape) {
 //    console.log('penetrator ' + penetrator + ' at point ' + point.x + ',' + point.y + '; penetrated ' + penetrated);
-    // TODO find which side of penetratedShape point just passed through, so we can get its slope and do a bounce properly
     var penetratorVelocity =
       ((penetrator in this.mobile) ?
         this.mobile[penetrator].velocity : new Vec2(0,0));
@@ -137,8 +139,8 @@ defineMethods(Space, [
       var ticksAgo = -1;
       var edge = next.subtract(prev);
       if (edge.x == 0) {
-	if (edge.y != 0 && relativeVelocity.y != 0) {
-	  ticksAgo = (point.y - edge.y) / relativeVelocity.y;
+	if (edge.y != 0 && relativeVelocity.x != 0) {
+	  ticksAgo = (point.x - prev.x) / relativeVelocity.x;
 	  // make sure the intersection is between prev and next (excluding
 	  // next itself)
 	  var intersectionY = point.y - ticksAgo * relativeVelocity.y;
@@ -147,10 +149,9 @@ defineMethods(Space, [
 	  } else { // edge.y < 0
 	    if (intersectionY > prev.y || intersectionY <= next.y) ticksAgo =-1;
 	  }
-//	  if (ticksAgo == -1) console.log('horizontal edge, intersection out of bounds');
+//	  if (ticksAgo == -1) console.log('vertical edge, intersection out of bounds');
 	} // else edge and velocity are parallel (and horizontal)
       } else { // edge.x nonzero, can have edgeSlope
-        // FIXME this branch doesn't work right
 	var edgeSlope = edge.y / edge.x;
 	// FIXME there's probably a more understandable formula for this
 	var numerator = edgeSlope * (point.x - prev.x) + prev.y - point.y;
@@ -165,7 +166,7 @@ defineMethods(Space, [
 	  } else { // edge.x < 0
 	    if (intersectionX > prev.x || intersectionX <= next.x) ticksAgo =-1;
 	  }
-//	  if (ticksAgo == -1) console.log('nonhorizontal edge, intersection out of bounds');
+//	  if (ticksAgo == -1) console.log('nonvertical edge, intersection out of bounds');
 	} // else edge and velocity are parallel
       }
 //      console.log('ticksAgo = ' + ticksAgo);
@@ -183,7 +184,7 @@ defineMethods(Space, [
 //      console.log('no penetration');
       return;
     }
-    console.log('' + penetrator + ' point ' + point + ' penetrates ' + penetrated + ' edge from ' + edgeFrom + ' to ' + edgeTo + ' ' + maxTicksAgo + ' ticks ago with velocity ' + relativeVelocity);
+//    console.log('' + penetrator + ' point ' + point + ' penetrates ' + penetrated + ' edge from ' + edgeFrom + ' to ' + edgeTo + ' ' + maxTicksAgo + ' ticks ago with velocity ' + relativeVelocity);
     router.penetrate(
       penetrator, point,
       penetrated, edgeFrom, edgeTo,
