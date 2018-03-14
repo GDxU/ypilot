@@ -164,7 +164,8 @@ number
   = expr:$([0-9]+ ('.' [0-9]+)?) sp { return JSON.parse(expr); }
 
 string
-  = expr:$('"' ("\\" . / [^"\\])* '"') sp { return JSON.parse(expr); }
+  = '"""\n' str:$((!'\n"""' .)*) '\n"""' sp { return str; }
+  / expr:$('"' ("\\" . / [^"\\])* '"') sp { return JSON.parse(expr); }
 
 graphics
   = str:$(
