@@ -46,12 +46,17 @@ function Space() {
 }
 
 Space.position2bin = function(position) {
-  return JSON.stringify([Math.floor(position.x / 32), Math.floor(position.y / 32)]);
+  return Math.floor(position.x / 32) + ',' + Math.floor(position.y / 32);
 }
+
+// avoid allocating new empty array objects all the time when we're not going
+// to modify them
+const emptyArray = [];
+Object.freeze(emptyArray);
 
 defineMethods(Space, [
   function getThings(bin) {
-    return ((bin in this.bin2things) ? this.bin2things[bin] : []);
+    return ((bin in this.bin2things) ? this.bin2things[bin] : emptyArray);
   },
 
   function addToBin(thing, bin) {
@@ -200,44 +205,68 @@ defineMethods(Space, [
   },
 
   function clockTick() {
-    for (var bin in this.bin2things) {
+    // get all bins in the Moore neighborhood of any mobile thing in this space
+    var bins = {};
+    for (var thing in this.mobile) {
+      var { space, position } = this.located[thing];
+      if (space === this) {
+	var bin = Space.position2bin(position);
+	bins[bin] = true;
+        var here = bin.split(',',2);
+	here[0]++; bins[here[0]+','+here[1]] = true;
+	here[1]++; bins[here[0]+','+here[1]] = true;
+	here[0]--; bins[here[0]+','+here[1]] = true;
+	here[0]--; bins[here[0]+','+here[1]] = true;
+	here[1]--; bins[here[0]+','+here[1]] = true;
+	here[1]--; bins[here[0]+','+here[1]] = true;
+	here[0]++; bins[here[0]+','+here[1]] = true;
+	here[0]++; bins[here[0]+','+here[1]] = true;
+      }
+    }
+    // iterate over only the mobile-neighbor bins
+    for (var bin in bins) {
+      if (!(bin in this.bin2things)) continue;
       // everything in this bin can be the first of the two things we check for
       // collision
       var firstThings = this.bin2things[bin];
       // everything in {this bin or the adjacent 4 bins in the Moore
       // neighborhood that are after this bin in raster order} can be the
       // second of the two things we check for collision
-      var secondThings = [].concat(firstThings);
-      var here = JSON.parse(bin);
+      var secondThingses = new Array(5);
+      secondThingses[0] = firstThings;
+      var here = bin.split(',',2);
       here[0]++; // move right, to east bin
-      secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
+      secondThingses[1] = this.getThings(here[0]+','+here[1]);
       here[1]++; // move down, to southeast bin
-      secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
+      secondThingses[2] = this.getThings(here[0]+','+here[1]);
       here[0]--; // move left, to south bin
-      secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
+      secondThingses[3] = this.getThings(here[0]+','+here[1]);
       here[0]--; // move left, to southwest bin
-      secondThings = secondThings.concat(this.getThings(JSON.stringify(here)));
+      secondThingses[4] = this.getThings(here[0]+','+here[1]);
       // check whether each point of each shape of secondThings is inside the
       // shape of each firstThing, and vice versa
       firstThings.forEach((first, firstIndex) => {
 	if (first in this.solid) {
 	  var firstShape = this.getShape(first);
-	  secondThings.forEach((second, secondIndex) => {
-	    if (firstIndex < secondIndex && (second in this.solid) &&
-	        // don't check collisions between two immobile things
-	        ((first in this.mobile) || (second in this.mobile))) {
-	      var secondShape = this.getShape(second);
-	      secondShape.forEach(secondPoint => {
-		if (pointIsInPolygon(secondPoint, firstShape)) {
-		  this.penetrate(second, secondPoint, first, firstShape);
-		}
-	      });
-	      firstShape.forEach(firstPoint => {
-		if (pointIsInPolygon(firstPoint, secondShape)) {
-		  this.penetrate(first, firstPoint, second, secondShape);
-		}
-	      });
-	    }
+	  secondThingses.forEach((secondThings, secondThingsIndex) => {
+	    secondThings.forEach((second, secondIndex) => {
+	      if ((secondThingsIndex > 0 || firstIndex < secondIndex) &&
+		  (second in this.solid) &&
+		  // don't check collisions between two immobile things
+		  ((first in this.mobile) || (second in this.mobile))) {
+		var secondShape = this.getShape(second);
+		secondShape.forEach(secondPoint => {
+		  if (pointIsInPolygon(secondPoint, firstShape)) {
+		    this.penetrate(second, secondPoint, first, firstShape);
+		  }
+		});
+		firstShape.forEach(firstPoint => {
+		  if (pointIsInPolygon(firstPoint, secondShape)) {
+		    this.penetrate(first, firstPoint, second, secondShape);
+		  }
+		});
+	      }
+	    });
 	  });
 	}
       });
