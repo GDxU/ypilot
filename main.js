@@ -26,8 +26,14 @@ const parse = require('./config.js').parse;
 const compile = require('./compile.js');
 const $ = require('jquery');
 
+var prevFrameStart = performance.now();
+const fps = 20;
+const frameDuration = 1000 / fps - 2; // milliseconds (-2 is a fudge term)
 function clockTick(now) {
-  router.emit('clockTick');
+  if (now - prevFrameStart >= frameDuration) {
+    prevFrameStart = now;
+    router.emit('clockTick');
+  }
   requestAnimationFrame(clockTick);
 }
 
