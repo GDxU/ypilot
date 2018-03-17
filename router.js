@@ -62,6 +62,7 @@ function become(thing, adjective, properties) {
   } else {
     this.adjectives[adjective][thing] = properties;
   }
+  // FIXME? since emit() calls listeners via setImmediate, more changes could have happened between now and when the listeners are actually called
   this.emit('become' + adjective, thing, properties, oldProperties);
 },
 

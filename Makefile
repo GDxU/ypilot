@@ -22,7 +22,7 @@ node_modules/%/package.json:
 	$(NPM) install $*
 
 ypilot.js: $(INSTALLED_REQUIRES) $(SRCS)
-	node_modules/browserify/bin/cmd.js $(MAIN) >$@
+	node_modules/browserify/bin/cmd.js --debug $(MAIN) >$@
 
 config.js: node_modules/pegjs/package.json config.pegjs
 	node_modules/pegjs/bin/pegjs --cache config.pegjs

@@ -68,8 +68,9 @@ defineMethods(Space, [
   },
 
   function removeFromBin(thing, bin) {
-    var i = this.bin2things[bin].indexOf(thing)
-    if (i < 0) { throw new Error("WTF tried to remove thing " + JSON.stringify(thing) + ", which is not in bin " + JSON.stringify(bin) + "; these are: " + JSON.stringify(this.bin2things[bin])); }
+    if (!(bin in this.bin2things)) { throw new Error("WTF tried to remove thing " + thing + " from bin " + bin + ", but the bin is empty; thing is " + ((thing in this.located) ? "located at " + this.located[thing].position : "not located")); }
+    var i = this.bin2things[bin].indexOf(thing);
+    if (i < 0) { throw new Error("WTF tried to remove thing " + thing + ", which is not in bin " + bin + "; these are: " + JSON.stringify(this.bin2things[bin]) + "; thing " + thing + " is " + ((thing in this.located) ? "located at " + this.located[thing].position : "not located")); }
     this.bin2things[bin].splice(i, 1);
     if (this.bin2things[bin].length == 0) {
       delete this.bin2things[bin];
@@ -92,6 +93,9 @@ defineMethods(Space, [
       }
       if (oldBin) {
 	this.removeFromBin(thing, oldBin);
+      }
+      if (newBin && oldBin) {
+	console.log('' + thing + ' move from bin ' + oldBin + ' to ' + newBin);
       }
     }
   },

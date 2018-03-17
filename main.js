@@ -52,7 +52,7 @@ $(function() {
 	  return;
 	}
 	try {
-	  var jsText = compile(ast);
+	  var jsText = compile(ast) + "\n//# sourceURL=" + encodeURI(file.name) + "\n";
 	  var script = document.createElement('script');
 	  script.setAttribute("type", "text/javascript");
 	  script.text = jsText;
