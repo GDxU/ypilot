@@ -7,7 +7,7 @@ SRCS = \
 	$(MAIN) \
 	define-methods.js \
 	compile.js \
-	config.js \
+	parser.js \
 	interface.js \
 	peer-connection.js \
 	router.js \
@@ -24,8 +24,8 @@ node_modules/%/package.json:
 ypilot.js: $(INSTALLED_REQUIRES) $(SRCS)
 	node_modules/browserify/bin/cmd.js --debug $(MAIN) >$@
 
-config.js: node_modules/pegjs/package.json config.pegjs
-	node_modules/pegjs/bin/pegjs --cache config.pegjs
+parser.js: node_modules/pegjs/package.json parser.pegjs
+	node_modules/pegjs/bin/pegjs --cache parser.pegjs
 
 test:: $(INSTALLED_REQUIRES) $(SRCS) tests/*.js
 	cd tests && ../node_modules/mocha/bin/mocha *.js
@@ -34,7 +34,7 @@ test-%:: $(INSTALLED_REQUIRES) $(SRCS) tests/%.js
 	cd tests && ../node_modules/mocha/bin/mocha $*.js
 
 clean::
-	rm -f ypilot.js config.js
+	rm -f ypilot.js parser.js
 
 distclean:: clean
 	rm -rf node_modules

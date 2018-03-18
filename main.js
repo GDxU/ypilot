@@ -22,7 +22,7 @@ window.stringToSVGGraphicsElement = function(str) {
   return svg.childNodes[0];
 }
 
-const parse = require('./config.js').parse;
+const parse = require('./parser.js').parse;
 const compile = require('./compile.js');
 const $ = require('jquery');
 

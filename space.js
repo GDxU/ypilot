@@ -271,6 +271,7 @@ defineMethods(Space, [
       // check whether each point of each shape of secondThings is inside the
       // shape of each firstThing, and vice versa
       // FIXME for mobile things, their points should be extended to line segments according to relativeVelocity and checked against each edge of the other shape, instead of merely checking whether the point is inside the shape, since the point may have entirely moved through the shape
+      // ...but in order to do that, we need to save the time of the last bounce so we don't find it again by mistake
       firstThings.forEach((first, firstIndex) => {
 	if (first in this.solid) {
 	  var firstShape = this.getShape(first);
