@@ -106,9 +106,11 @@ function clockTick() {
 },
 
 function penetrate(penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity) {
+  // TODO deduplicate penetrations for a given clock tick, point, and penetrated; the penetrator with the first edge from point you encounter going clockwise from relativeVelocity wins
   this.emit('penetrate', penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity);
-  // TODO deduplicate hits for a given clock tick
+  // TODO deduplicate hits for a given clock tick and {penetrator, penetrated} set (but only emit a hit if the corresponding penetration was also emitted)
   this.hit(penetrator, penetrated);
+  // TODO maybe this should be back in Space?
 },
 
 function hit(x, y) {
