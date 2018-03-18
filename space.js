@@ -42,7 +42,7 @@ function Space() {
   this.solid = router.getAdjectivePropertiesMap('Solid');
   this.oriented = router.getAdjectivePropertiesMap('Oriented');
   this.mobile = router.getAdjectivePropertiesMap('Mobile');
-  router.on('clockTick', this.clockTick.bind(this));
+  router.on('idle', this.idle.bind(this));
 }
 
 Space.position2bin = function(position) {
@@ -226,8 +226,7 @@ defineMethods(Space, [
     };
   },
 
-  // TODO? instead of checking all mobile things' neighborhoods at each clock tick, check each mobile thing as it moves, including in response to a collision, so we can have a chain of collisions within a single clock tick instead of just ignoring all but the first
-  function clockTick() {
+  function idle() {
     // get all bins in the Moore neighborhood of any mobile thing in this space
     var bins = {};
     for (var thing in this.mobile) {
@@ -271,6 +270,7 @@ defineMethods(Space, [
       secondThingses[4] = this.getThings(here[0]+','+here[1]);
       // check whether each point of each shape of secondThings is inside the
       // shape of each firstThing, and vice versa
+      // FIXME for mobile things, their points should be extended to line segments according to relativeVelocity and checked against each edge of the other shape, instead of merely checking whether the point is inside the shape, since the point may have entirely moved through the shape
       firstThings.forEach((first, firstIndex) => {
 	if (first in this.solid) {
 	  var firstShape = this.getShape(first);

@@ -4,6 +4,7 @@ function Router() {
   this.nextThing = 0;
   this.adjectives = {};
   this.listeners = {};
+  this.numPendingListeners = 0;
 }
 
 defineMethods(Router, [
@@ -32,8 +33,27 @@ function removeListener(eventName, listener) {
 function emit(eventName, ...args) {
   if (eventName in this.listeners) {
     // call each listener via setImmediate so that no listener gets called in
-    // the middle of another listener and sees its effect only partly applied
-    this.listeners[eventName].forEach(listener => setImmediate(listener, ...args));
+    // the middle of another listener and sees its effect only partly applied.
+    // Also (if this isn't already an 'idle' event) keep track of how many
+    // setImmediate calls are outstanding, and when that count drops to 0, emit
+    // an 'idle' event, which is used for e.g. detecting secondary collisions
+    // that happen when a primary collision causes something to move (bounce)
+    if (eventName == 'idle') {
+      this.listeners.idle.forEach(listener => setImmediate(listener));
+    } else {
+      this.listeners[eventName].forEach(listener => {
+	this.numPendingListeners++;
+	setImmediate(() => {
+	  try {
+	    listener(...args);
+	  } finally {
+	    if ((--this.numPendingListeners) == 0) {
+	      this.emit('idle');
+	    }
+	  }
+	});
+      });
+    }
   }
 },
 
