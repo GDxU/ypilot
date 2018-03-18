@@ -226,6 +226,7 @@ defineMethods(Space, [
     };
   },
 
+  // TODO? instead of checking all mobile things' neighborhoods at each clock tick, check each mobile thing as it moves, including in response to a collision, so we can have a chain of collisions within a single clock tick instead of just ignoring all but the first
   function clockTick() {
     // get all bins in the Moore neighborhood of any mobile thing in this space
     var bins = {};
@@ -320,10 +321,29 @@ defineMethods(Space, [
 	}
       });
     }
-    // report the least-cost penetration for each point,penetrated pair
+    // map penetrators and penetrateds to the first penetration they
+    // participate in (greatest ticksAgo)
+    var hits = {};
     for (var key in penetrations) {
       var p = penetrations[key];
-      router.penetrate(p.penetrator, p.point, p.penetrated, p.edgeFrom, p.edgeTo, p.ticksAgo, p.relativeVelocity);
+      if ((!(p.penetrator in hits)) ||
+	  hits[p.penetrator].ticksAgo < p.ticksAgo) {
+	hits[p.penetrator] = p;
+      }
+      if ((!(p.penetrated in hits)) ||
+	  hits[p.penetrated].ticksAgo < p.ticksAgo) {
+	hits[p.penetrated] = p;
+      }
+    }
+    // emit one penetrate and two hit events for each (first, least-cost)
+    // penetration
+    for (var thing in hits) {
+      var p = hits[thing];
+      if (thing == p.penetrator) {
+        router.emit('penetrate', p.penetrator, p.point, p.penetrated, p.edgeFrom, p.edgeTo, p.ticksAgo, p.relativeVelocity);
+	router.emit('hit', p.penetrator, p.penetrated);
+	router.emit('hit', p.penetrated, p.penetrator);
+      }
     }
   }
 ]);

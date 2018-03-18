@@ -135,12 +135,13 @@ function unbecomeOriented(thing, {orientation}) {
   }
 },
 
+// TODO track which keys are currently down
 function keydown(evt) {
-  router.press(this.player, evt.code);
+  router.emit('press', this.player, evt.code);
 },
 
 function keyup(evt) {
-  router.release(this.player, evt.code);
+  router.emit('release', this.player, evt.code);
 }
 
 ]);

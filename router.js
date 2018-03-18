@@ -98,40 +98,6 @@ function remove(thing) {
 },
 
 //
-// more events
-//
-
-function clockTick() {
-  this.emit('clockTick');
-},
-
-function penetrate(penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity) {
-  // TODO deduplicate penetrations for a given clock tick, point, and penetrated; the penetrator with the first edge from point you encounter going clockwise from relativeVelocity wins
-  this.emit('penetrate', penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity);
-  // TODO deduplicate hits for a given clock tick and {penetrator, penetrated} set (but only emit a hit if the corresponding penetration was also emitted)
-  // maybe even only report the first (in terms of ticksAgo) penetration/hit for any given object (penetrator or penetrated)
-  this.hit(penetrator, penetrated);
-  // TODO maybe this should be back in Space?
-},
-
-function hit(x, y) {
-  if (y < x) { // FIXME? sort by type instead of ID
-    this.emit('hit', y, x);
-  } else {
-    this.emit('hit', x, y);
-  }
-},
-
-// TODO track which keys are currently down for each player
-function press(player, key) {
-  this.emit('press', player, key);
-},
-
-function release(player, key) {
-  this.emit('release', player, key);
-},
-
-//
 // map reading
 //
 
