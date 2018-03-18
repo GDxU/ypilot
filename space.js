@@ -135,15 +135,15 @@ defineMethods(Space, [
     return linearVel.add(tangent.scale(angularVel));
   },
 
-  function penetrate(penetrator, point, penetrated, penetratedShape) {
+  function penetrate(penetrator, penetratorShape, pointIndex, penetrated, penetratedShape) {
+    var point = penetratorShape[pointIndex];
 //    console.log('penetrator ' + penetrator + ' at point ' + point.x + ',' + point.y + '; penetrated ' + penetrated);
     var penetratorVelocity = this.getPointVelocity(penetrator, point);
     var penetratedVelocity = this.getPointVelocity(penetrated, point);
     var relativeVelocity = penetratorVelocity.subtract(penetratedVelocity);
     if (relativeVelocity.x == 0 && relativeVelocity.y == 0) {
 //      console.log('relative velocity 0');
-      router.hit(penetrator, penetrated); // FIXME maybe don't even do this, just return?
-      return;
+      return null;
     }
     var edgeFrom, edgeTo;
     var maxTicksAgo = 0;
@@ -198,14 +198,32 @@ defineMethods(Space, [
     });
     if (maxTicksAgo == 0) { // didn't actually penetrate yet
 //      console.log('no penetration');
-      return;
+      return null;
     }
 //    console.log('' + penetrator + ' point ' + point + ' penetrates ' + penetrated + ' edge from ' + edgeFrom + ' to ' + edgeTo + ' ' + maxTicksAgo + ' ticks ago with velocity ' + relativeVelocity);
-    router.penetrate(
-      penetrator, point,
-      penetrated, edgeFrom, edgeTo,
-      maxTicksAgo, relativeVelocity
-    );
+    // Calculate the cost of this penetration relative to others for the same
+    // point in the same penetrated thing, which is the clockwise angle from
+    // the relativeVelocity to the edge of the penetrator shape following the
+    // point. If all penetrator shapes are clockwise-wound, this means that
+    // each point sticking out of the surface of a solid tesselated into
+    // separate things "belongs to" exactly one of those things, in the sense
+    // that things penetrated by that point will only ever see the penetration
+    // event with the point's owner as the penetrator, not its neighbors.
+    // (You could still have a point owned by different things if it belongs to
+    // more than one outer surface, e.g. a shape like this: >< . But such
+    // points can only really penetrate other things with at most one of those
+    // surfaces, the convex one, e.g. the bottom of this shape: \V/ .)
+    var nextPoint = penetratorShape[(pointIndex + 1) % penetratorShape.length];
+    var rvUnit = relativeVelocity.normalize();
+    var edgeUnit = nextPoint.subtract(point).normalize();
+    var angle = Math.atan2(rvUnit.cross(edgeUnit), rvUnit.dot(edgeUnit));
+    var cost = angle + (angle < 0 ? 2*Math.PI : 0);
+    return {
+      penetrator: penetrator, point: point,
+      penetrated: penetrated, edgeFrom: edgeFrom, edgeTo: edgeTo,
+      ticksAgo: maxTicksAgo, relativeVelocity: relativeVelocity,
+      cost: cost
+    };
   },
 
   function clockTick() {
@@ -227,6 +245,9 @@ defineMethods(Space, [
 	here[0]++; bins[here[0]+','+here[1]] = true;
       }
     }
+    // map "x,y,penetrated" to the least-cost penetration object returned by
+    // penetrate()
+    var penetrations = {};
     // iterate over only the mobile-neighbor bins
     for (var bin in bins) {
       if (!(bin in this.bin2things)) continue;
@@ -259,14 +280,38 @@ defineMethods(Space, [
 		  // don't check collisions between two immobile things
 		  ((first in this.mobile) || (second in this.mobile))) {
 		var secondShape = this.getShape(second);
-		secondShape.forEach(secondPoint => {
+		secondShape.forEach((secondPoint, secondPointIndex) => {
 		  if (pointIsInPolygon(secondPoint, firstShape)) {
-		    this.penetrate(second, secondPoint, first, firstShape);
+		    var penetration =
+		      this.penetrate(second, secondShape, secondPointIndex,
+				     first, firstShape);
+		    if (penetration !== null) {
+		      var key =
+		        Math.floor(secondPoint.x) + ',' +
+			Math.floor(secondPoint.y) + ',' +
+			first;
+		      if ((!(key in penetrations)) ||
+			  penetration.cost < penetrations[key].cost) {
+			penetrations[key] = penetration;
+		      }
+		    }
 		  }
 		});
-		firstShape.forEach(firstPoint => {
+		firstShape.forEach((firstPoint, firstPointIndex) => {
 		  if (pointIsInPolygon(firstPoint, secondShape)) {
-		    this.penetrate(first, firstPoint, second, secondShape);
+		    var penetration =
+		      this.penetrate(first, firstShape, firstPointIndex,
+				     second, secondShape);
+		    if (penetration !== null) {
+		      var key =
+		        Math.floor(firstPoint.x) + ',' +
+			Math.floor(firstPoint.y) + ',' +
+			second;
+		      if ((!(key in penetrations)) ||
+			  penetration.cost < penetrations[key].cost) {
+			penetrations[key] = penetration;
+		      }
+		    }
 		  }
 		});
 	      }
@@ -274,6 +319,11 @@ defineMethods(Space, [
 	  });
 	}
       });
+    }
+    // report the least-cost penetration for each point,penetrated pair
+    for (var key in penetrations) {
+      var p = penetrations[key];
+      router.penetrate(p.penetrator, p.point, p.penetrated, p.edgeFrom, p.edgeTo, p.ticksAgo, p.relativeVelocity);
     }
   }
 ]);
