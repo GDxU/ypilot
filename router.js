@@ -114,7 +114,7 @@ function remove(thing) {
       this.unbecome(thing, adjective);
     }
   }
-  this.emit('remove', thing);
+  this.emit('remove', thing); // FIXME this event is pretty useless unless it comes before the unbecome events
 },
 
 //
