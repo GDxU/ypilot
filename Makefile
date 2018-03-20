@@ -33,8 +33,17 @@ test:: $(INSTALLED_REQUIRES) $(SRCS) tests/*.js
 test-%:: $(INSTALLED_REQUIRES) $(SRCS) tests/%.js
 	cd tests && ../node_modules/mocha/bin/mocha $*.js
 
+%.html: %.md
+	ruby -e " \
+	  require 'github/markup'; \
+	  file=\"$<\"; \
+	  IO.write(\"$@\", \
+	    \"<!DOCTYPE html>\\n<html><meta charset=\\\"utf-8\\\">\n\" + \
+	    GitHub::Markup.render(file, IO.read(file) + \
+	    \"<html>\n\"))"
+
 clean::
-	rm -f ypilot.js parser.js
+	rm -f ypilot.js parser.js README.html README-yp.html
 
 distclean:: clean
 	rm -rf node_modules

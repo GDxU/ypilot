@@ -24,7 +24,8 @@ The following is a list of ways to define properties with different types. In th
     a foo flag			# shorthand for the previous one
     a foo which is a number	# foo is a number, like 1, 2.3, or PI
     a foo which is a string	# foo is a text string, like "hello, world!"
-    a foo which is an Array of Bar things	# foo is an array whose elements are of the type "Bar thing" (any pluralized type can go here, including another "Arrays of ...")
+    a foo which is an Array of Bar things	# foo is an array whose elements are of the type "Bar thing"
+	# (any pluralized type can go here, including another "Arrays of ...")
     some foo which are Bar things		# shorthand for the previous one
 
 ## Noun definitions
@@ -81,18 +82,18 @@ This event happens for each character of a `Map` as it is read. `?map` is the ma
 
     ?x hits ?y
 
-This event happens twice for every collision between Solid things, once for each ordering of ?x and ?y.
+This event happens twice for every collision between `Solid` things, once for each ordering of `?x` and `?y`.
 
     ?penetrator point ?point
     penetrates ?penetrated edge from ?from to ?to
     ?ticks ticks ago with velocity ?velocity
 
 (line breaks not required but included here for ease of reading)
-This event happens once for every collision between Solid things, and gives more detailed information than the `?x hits ?y` event does. When two Solid things collide, a point (`Vec2` object) `?point` from the shape of one of the things, the `?penetrator`, penetrates inside the shape of the other thing, the `?penetrated`. The individual line segment, or edge, that that point passed through is given by its endpoints, `?from` and `?to`. The time that it passed through is given as a fractional number of ticks ago, `?ticks`, which will always be in the interval `[0, 1)`. And the current relative velocity of the two things is given in `?velocity` (if something isn't `Mobile` its velocity is considered to be `Vec2[0,0]`).
+This event happens once for every collision between `Solid` things, and gives more detailed information than the `?x hits ?y` event does. When two `Solid` things collide, a point (`Vec2` object) `?point` from the `shape` of one of the things, the `?penetrator`, penetrates inside the `shape` of the other thing, the `?penetrated`. The individual line segment, or edge, that that point passed through is given by its endpoints, `?from` and `?to`. All three points are given relative to the `Space`, not the `Solid`s they belong to. The time at which the point passed through the edge is given as a fractional number of ticks ago, `?ticks`, which will always be in the interval `[0, 1)`. And the current relative velocity of the two things is given in `?velocity` (if something isn't `Mobile` its velocity is considered to be `Vec2[0,0]`).
 
     ?player presses "ControlLeft"
 
-This event happens when the player `?player` starts pressing the identified key on their keyboard (in this case, the control key on the left side of the keyboard). The string identifying the key must match the value of the `code` property of the `KeyboardEvent` object; see the [MDN page for KeyboardEvent.code] for some tables of values.
+This event happens when the player `?player` starts pressing the identified key on their keyboard (in this case, the control key on the left side of the keyboard). The string identifying the key must match the value of the `code` property of the `KeyboardEvent` object; see the [MDN page for KeyboardEvent.code](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code) for some tables of values.
 
     ?player releases "ControlLeft"
 
