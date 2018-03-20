@@ -213,6 +213,7 @@ function compileOp(ast) {
     case 'remove':
       return '    router.remove(' + ast.thing.name + ");\n";
     case 'become':
+      // TODO? add any missing dependencies, recursively
       return ast.adjectives.map(adj =>
         '    router.become(' + ast.thing.name + ", '" + adj.name + "', { " +
 	adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
@@ -317,6 +318,7 @@ function compileOp(ast) {
 	if (/^[*+-]$/.test(ast.op) && 'number' != typeof ast.l) {
 	  // TODO? use static types tp decide whether to use builtin operators
 	  // or methods
+	  // TODO? define + and * for strings and Arrays, meaning concatenation and repetition (actually string+string should already work, and string*number will convert to number and multiply instead of doing repetition)
 	  var compiledL = compile(ast.l);
 	  var compiledR = compile(ast.r);
 	  return '(("object" == typeof ' + compiledL + ')? ' +

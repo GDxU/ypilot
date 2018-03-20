@@ -17,15 +17,15 @@ Note that adjectives always start with a capital letter, and properties always s
 
 The following is a list of ways to define properties with different types. In this list, `foo` stands in for the property name, and `Bar` is a noun or object type name. Each line has a comment after it describing its meaning.
 
-    a foo	# no type, anything can go in foo
+    a foo			# no type, anything can go in foo
     a foo which is a Bar thing	# Bar is an adjective describing the thing foo
     a foo which is a Bar object	# foo instanceof Bar in JavaScript
     a foo which is a boolean	# foo is either true or false
-    a foo flag	# shorthand for the previous one
+    a foo flag			# shorthand for the previous one
     a foo which is a number	# foo is a number, like 1, 2.3, or PI
     a foo which is a string	# foo is a text string, like "hello, world!"
-    a foo which is an Array of Bar things # foo is an array whose elements are of the type "Bar thing" (any pluralized type can go here, including another "Arrays of ...")
-    some foo which are Bar things # shorthand for the previous one
+    a foo which is an Array of Bar things	# foo is an array whose elements are of the type "Bar thing" (any pluralized type can go here, including another "Arrays of ...")
+    some foo which are Bar things		# shorthand for the previous one
 
 ## Noun definitions
 
@@ -33,7 +33,7 @@ A noun definition gives a name for a noun, and a list of other nouns and adjecti
 
     a Worm is a Ship and Wiggly
 
-This defines the noun `Worm`, which implies the noun `Ship` (which in turn may implies other nouns and adjectives...) and the adjective `Wiggly`. According to this definition, all `Worm`s are also `Ship`s, but a `Ship` is not necessarily a `Worm`. And when a new `Worm` is added to the game, it becomes `Wiggly`, and gains the properties of a `Wiggly` thing. It may later become not `Wiggly`. A new `Worm` also becomes all the other adjectives that `Ship` implies, and gains all of their properties.
+This defines the noun `Worm`, which implies the noun `Ship` (which in turn may imply other nouns and adjectives...) and the adjective `Wiggly`. According to this definition, all `Worm`s are also `Ship`s, but a `Ship` is not necessarily a `Worm`. And when a new `Worm` is added to the game, it becomes `Wiggly`, and gains the properties of a `Wiggly` thing. It may later become not `Wiggly`. A new `Worm` also becomes all the other adjectives that `Ship` implies, and gains all of their properties.
 
 ## Rules
 
@@ -100,11 +100,100 @@ This event happens when the player `?player` stops pressing the identified key.
 
 ### Conditions
 
-TODO
+Conditions can be true or false, depending on the state of the game, and if true, can capture values from the game into variables that can be used later in the rule (in effects or other conditions). If any of a rule's conditions is false, the rule's effects don't happen.
+
+    ?thing is a Worm
+
+This condition is true when `?thing` is described by the noun `Worm`.
+
+    ?thing is Wiggly with frequency ?f and amplitude ?a
+
+This condition is true when `?thing` is described by the adjective `Wiggly`, and it captures the `frequency` and `amplitude` properties in the variables `?f` and `?a`, respectively.
+
+    ?thing is not Wiggly
+
+This condition is true when `?thing` is not described by the adjective `Wiggly`. As with the `becomes not` event, no properties can be assigned to variables.
+
+    there is a thing ?thing which is
+      Wiggly with phase ?phase
+      not Mortal
+
+This condition searches the game for a thing described by all of the given adjectives (or `not`), and if found, assigns it to the `?thing` variable and makes the condition true. If a variable like `?phase` is bound to a property like `phase`, it can mean one of two things. If the variable was already assigned, it further constrains the search by requiring that the property have the same value. If the variable was not already assigned, the value of the property is assigned to the variable. More complex expressions can be bound to a property, not just variables, and in this case the first meaning is used. A `there is` condition must include at least one adjective without `not` in front of it.
+
+    ?player is holding down "ControlLeft"
+
+This condition is true when the player `?player` has pressed the identified key and has not yet released it.
+
+    ?player is not holding down "ControlLeft"
+
+This condition is true when the previously described condition is false.
+
+    (?x <= ?y)
+
+This condition is used to compare values. `?x` and `?y` can be arbitrary value expressions, not just variables. The comparison operation (here `<=`) can be any of the usual C-style operators: `<`, `<=`, `==`, `!=`, `>=`, or `>`.
 
 ### Effects
 
-TODO
+Effects describe what happens when the triggering event happens and all the conditions are satisfied. Effects happen in the order they are listed in the rule.
+
+    a new Worm ?worm is added which is
+      Wiggly with frequency 42
+      Located with position ?pos
+
+This effect adds a new thing to the game which is described by the noun `Worm` and the adjectives `Wiggly` and `Located`, with the `frequency` property of `Wiggly` set to `42`, and the `position` property of `Located` set to the value of the `?pos` variable. It also assigns the new thing to the `?worm` variable for use in later effects in the same rule. Other adjectives and their properties may apply automatically, as described in the relevant noun and adjective definitions. If a new thing is described by an adjective (even implicitly) that has properties without default values, you must supply values for those properties when the thing is added.
+
+    a new Worm ?worm is added
+
+This alternate form of the above effect should be used when no adjectives are explicitly specified.
+
+    ?thing is removed
+
+This effect removes a previously-added thing from the game completely, including all of its adjectives and properties.
+
+    ?thing becomes
+      Wiggly with frequency 42
+      Located with position ?pos
+
+This effect causes `?thing` to be described by the adjectives that follow, with the given property values. For now, it's up to you to include any other adjectives that those adjectives imply; it's not done automatically like with `a new Worm ?worm is added`.
+
+    ?map is read
+
+This effect causes `?map` to be read, which causes a `map reads` event for each character in the `map` string of `?map` (except for line break characters).
+
+    let ?x be (?y + 42)
+
+This effect assigns the value of the expression the right (`(?y + 42)` in this case) to the variable on the left (`?x`) for use in later effects in the same rule.
+
+    debug (?y + 42)
+
+This effect prints the value of the expression `(?y + 42)` to the browser console for debugging purposes.
+
+### Value expressions
+
+Several conditions and effects can use value expressions instead of just variables in some places. A value expression can be one of several things:
+
+A variable as always.
+
+A numeric constant, `π` or `e` (or equivalently `PI` or `E`), a boolean constant `true` or `false`, or the `nothing` constant (equivalent to `null` in JavaScript).
+
+A decimal number, e.g. `1.23`. If the decimal point is included, there must be some digits on both sides of it, e.g. `1.` and `.23` are not allowed (use `1.0` or `0.23` instead).
+
+A string in double quotes, e.g. `"Hello, world!\n"`. This supports escape sequences as in JSON.
+
+Arithmetic and comparison operations with other value expressions as the operands. These obey the usual precedence rules, but at the top level you must include parentheses, e.g. `debug (?x + ?y * ?z)` is OK, and does the multiplication before the addition, but `debug ?x + ?y * z` won't parse. In addition to the usual addition `+`, subtraction `-`, multiplication `*`, division `/`, and remainder `%` operators, you also have cross product `x` or `×`, and dot product `.` or `·` operators for use with `Vec2` operands. The other operators can also work with `Vec2`s in certain ways, as long as at least the first operand is a `Vec2`. With `Vec2`s, `*` means scaling. And with strings, `+` means concatenation.
+
+Math functions with one argument in parentheses, including trigonometric functions, `abs`, `sign`, `ceil`, `floor`, `round`, `sqrt`, `cbrt`, various logarithms, and exponentials. These use the methods on the [JavaScript `Math` object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math). For now, methods with more than one argument aren't supported.
+
+Constructors for a few JavaScript object types, with arguments in square brackets (no `new` keyword required):
+
+    Array[?length]
+    Interface[?player]
+    Space[]
+    Vec2[?x, ?y]
+
+Array literals in square brackets, e.g. `[1, 2, "buckle my shoe"]`.
+
+[SVG](https://www.w3.org/TR/SVG11/) literals. These are used for the `graphics` property of the builtin adjective `Visible`. An SVG literal must be a single valid SVG element of the type `SVGGraphicsElement`, which includes `<g>`, `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>`, and `<text>`. It must not include any `<script>` elements or event handler attributes like `onclick="launchTheNukes()"`.
 
 ## Builtins
 
@@ -115,6 +204,10 @@ These names are defined in the YPilot language (see [base.yp](base.yp)), but sin
 TODO
 
 ### Nouns
+
+TODO
+
+## Standard libraries
 
 TODO
 

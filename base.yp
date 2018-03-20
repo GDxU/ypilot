@@ -117,6 +117,7 @@ a Stackable thing is Located and has
 
 # can be seen by at least some Agents (allow/deny work similarly to those in Slot)
 a Visible thing is Located and has
+  # FIXME this declares graphics as an array, but below it's instantiated as singular, and it's used as such in interface.js
   some graphics which are SVGGeometryElement objects
   some allowedAgents which are Agents (default [])
   some deniedAgents which are Agents (default [])
