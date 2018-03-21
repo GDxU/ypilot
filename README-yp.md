@@ -1,6 +1,6 @@
 # YPilot Language
 
-YPilot's game rules and maps are described in a simple English-like language, described in this document. Files written in this language normally have the extension `.yp`. A `.yp` file contains a sequence of statements. Statements can be adjective definitions, noun definitions, or rules. A `.yp` file may also contain comments anywhere (including within statements). Comments start with a `#` character and continue until the end of the line. Comments are treated as whitespace. For the most part, any amount of whitespace is treated the same as a single space character, but there are a few situations where line breaks are significant.
+YPilot's game rules and maps are described in a simple English-like language, described in this document. Files written in this language normally have the extension `.yp`. A `.yp` file contains a sequence of statements. Statements can be adjective definitions, noun definitions, rules, or uses of other `.yp` files. A `.yp` file may also contain comments anywhere (including within statements). Comments start with a `#` character and continue until the end of the line. Comments are treated as whitespace. For the most part, any amount of whitespace is treated the same as a single space character, but there are a few situations where line breaks are significant.
 
 ## Adjective definitions
 
@@ -196,9 +196,38 @@ Array literals in square brackets, e.g. `[1, 2, "buckle my shoe"]`.
 
 [SVG](https://www.w3.org/TR/SVG11/) literals. These are used for the `graphics` property of the built-in adjective `Visible`. An SVG literal must be a single valid SVG element of the type `SVGGraphicsElement`, which includes `<g>`, `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>`, and `<text>`. It must not include any `<script>` elements or event handler attributes like `onclick="launchTheNukes()"`.
 
+## Uses of other `.yp` files
+
+One file can `use` another file (specified as a URL in a string), meaning that the other file is loaded as if its contents were included in place of the `use` statement. Only the first `use` of a given URL has this effect; later `use`s of the same URL are ignored.
+
+For now, only standard libraries can be used, which all have URLs of the form `standard:foo.yp`, where `foo` is the name of the library. In the future, (CORS-enabled) `http:` and `https:` URLs, and possibly certain relative URLs, will be supported.
+
+For example, someone might host a file like this at `http://www.example.com/ypilot/fish.yp`:
+
+    use "standard:mortal.yp"
+
+    a Fish is Mortal
+
+Which uses the standard library called `mortal`, which defines the adjectives `Mortal` and `Respawning` (among others things). Then you could write another file like this to use that file:
+
+    use "standard:mortal.yp"
+    use "http://www.example.com/ypilot/fish.yp"
+
+    a Salmon is a Fish and Respawning
+
+In this case, the `mortal.yp` standard library is loaded first, and then `fish.yp` is loaded. The `use` statement in `fish.yp` sees that `mortal.yp` is already loaded and does nothing. So we only see the definitions of `Mortal` and `Respawning` once.
+
 ## Built-in adjectives
 
 These adjectives are defined in the YPilot language, but since the core JavaScript code refers to them, they are always included. They are defined in [base.yp](base.yp), along with other adjectives that they use, and some nouns and rules that use them. See that file for the precise definitions; described below is only how each is used by the core JavaScript code.
+
+    Audible
+
+Describes things that can be heard. Used by `Interface` objects (or will be, when I implement it).
+
+    Local
+
+Describes players that play on the local machine, and thus have an `Interface` object.
 
     Located
 
@@ -218,7 +247,11 @@ Describes things that have a non-trivial orientation. Used by the `Space` object
 
     Piloting
 
-Describes players that are currently controlling a `Ship`. Used by the players' `Interface` objects.
+Describes players that are currently controlling a `BasicShip`. Used by the players' `Interface` objects.
+
+    Remote
+
+Describes players that are not `Local`, i.e. they're connected over the network.
 
     Solid
 
@@ -239,4 +272,11 @@ Describes things that can be seen (drawn on screen). Used by `Interface` objects
 ## Standard libraries
 
 TODO
+
+    bouncy.yp
+    bullet.yp
+    holding.yp
+    inertial.yp
+    mortal.yp
+    motile.yp
 

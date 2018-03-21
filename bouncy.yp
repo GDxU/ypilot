@@ -1,0 +1,59 @@
+use "standard:inertial.yp"
+
+a Bouncy thing is Solid and has
+  # 0 = perfectly inelastic collisions
+  # 1 = perfectly elastic collisions
+  # >1 = flubber
+  a coefficientOfRestitution which is a number (default 1)
+
+# mobile penetrator
+when ?penetrator point ?point penetrates
+     ?penetrated edge from ?from to ?to
+     ?t ticks ago with velocity ?rv and
+  ?penetrated is not Mobile
+  ?penetrator is Bouncy with coefficientOfRestitution ?r1
+  ?penetrated is Bouncy with coefficientOfRestitution ?r2
+  ?penetrator is Inertial with mass ?mass
+  ?penetrator is Mobile with velocity ?v
+  ?penetrator is Located with position ?pos
+then
+  let ?r be (?r1 * ?r2)
+  let ?edge be (?to - ?from)
+  # get ?rv reflected in ?edge
+  let ?reflRV be (?edge * (2 * (?rv · ?edge) / (?edge · ?edge)) - ?rv)
+  # replace the ?rv part of ?v with proportion ?r of ?reflRV
+  let ?newV be (?v - ?rv + (?reflRV * ?r))
+  ?penetrator becomes Mobile with velocity ?newV
+  ?penetrator becomes Located with position (?pos + (?newV - ?rv) * ?t)
+
+# mobile penetrated
+when ?penetrator point ?point penetrates
+     ?penetrated edge from ?from to ?to
+     ?t ticks ago with velocity ?negRV and
+  ?penetrator is not Mobile
+  ?penetrator is Bouncy with coefficientOfRestitution ?r1
+  ?penetrated is Bouncy with coefficientOfRestitution ?r2
+  ?penetrated is Inertial with mass ?mass
+  ?penetrated is Mobile with velocity ?v
+  ?penetrated is Located with position ?pos
+then
+  debug (?pos * (1/32))
+  let ?r be (?r1 * ?r2)
+  let ?rv be (?negRV * -1)
+  let ?edge be (?to - ?from)
+  # get ?rv reflected in ?edge
+  let ?reflRV be (?edge * (2 * (?rv · ?edge) / (?edge · ?edge)) - ?rv)
+  # replace the ?rv part of ?v with proportion ?r of ?reflRV
+  let ?newV be (?v - ?rv + (?reflRV * ?r))
+  ?penetrated becomes Mobile with velocity ?newV
+  let ?newPos be (?pos + (?newV - ?rv) * ?t)
+  debug (?newPos * (1/32))
+  ?penetrated becomes Located with position ?newPos
+
+# mobile penetrator and penetrated
+# TODO
+
+# FIXME the above doesn't handle multiple collisions in the same frame well
+# in particular, it's possible for a single frame to cause two penetrate events leading to two parallel(ish) becomeLocated events, which is a problem when both becomeLocated events moves the thing to a new bin, because the second becomeLocated event has already saved the old location, so it will try to remove the thing from the old bin again
+# more commonly, if the ship is penetrated by a point shared by two walls, double (or more?) velocity is added
+

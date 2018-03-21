@@ -1,0 +1,136 @@
+use "standard:bouncy.yp"
+use "standard:motile.yp"
+use "standard:bullet.yp"
+use "standard:holding.yp"
+
+a Map is Mapped
+a Wall is Bouncy and Visible
+a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
+an Item is Fleeting and Mobile and Solid and Visible
+an Agent is Named
+a Player is an Agent
+a LocalPlayer is a Player and Local
+a RemotePlayer is a Player and Remote
+a Team is an Agent
+
+when the game starts
+then
+  a new Map ?map is added which is
+    Located with space Space[] and position Vec2[-64,-64]
+    Mapped with mapSize Vec2[10,10] and map (
+      "xxxxxxxxxx\n" +
+      "xs      ax\n" +
+      "x        x\n" +
+      "x        x\n" +
+      "x        x\n" +
+      "x        x\n" +
+      "x        x\n" +
+      "x        x\n" +
+      "x        x\n" +
+      "xw      qx\n" +
+      "xxxxxxxxxx")
+  ?map is read
+
+when ?map reads "x" at ?pos and
+  ?map is Located with space ?space
+then
+  a new Wall ?wall is added which is
+    Located with space ?space and position ?pos
+    Solid with shape [Vec2[0,0], Vec2[32,0], Vec2[32,32], Vec2[0,32]]
+    Visible with graphics [<rect x="0" y="0" width="32" height="32" stroke="#4e7cfe" />]
+
+when ?map reads "q" at ?pos and
+  ?map is Located with space ?space
+then
+  a new Wall ?wall is added which is
+    Located with space ?space and position ?pos
+    Solid with shape [Vec2[32,0], Vec2[32,32], Vec2[0,32]]
+    Visible with graphics [<polygon points="32,0 32,32 0,32" stroke="#4e7cfe" />]
+
+when ?map reads "w" at ?pos and
+  ?map is Located with space ?space
+then
+  a new Wall ?wall is added which is
+    Located with space ?space and position ?pos
+    Solid with shape [Vec2[0,0], Vec2[32,32], Vec2[0,32]]
+    Visible with graphics [<polygon points="0,0 32,32 0,32" stroke="#4e7cfe" />]
+
+when ?map reads "s" at ?pos and
+  ?map is Located with space ?space
+then
+  a new Wall ?wall is added which is
+    Located with space ?space and position ?pos
+    Solid with shape [Vec2[0,0], Vec2[32,0], Vec2[0,32]]
+    Visible with graphics [<polygon points="0,0 32,0 0,32" stroke="#4e7cfe" />]
+
+when ?map reads "a" at ?pos and
+  ?map is Located with space ?space
+then
+  a new Wall ?wall is added which is
+    Located with space ?space and position ?pos
+    Solid with shape [Vec2[0,0], Vec2[32,0], Vec2[32,32]]
+    Visible with graphics [<polygon points="0,0 32,0 32,32" stroke="#4e7cfe" />]
+
+when ?map is added and
+  ?map is a Map
+  ?map is Located with space ?space
+then
+  a new LocalPlayer ?player is added which is
+    Named with name "Player1" # TODO
+    Local with interface Interface[?player]
+
+when ?player is added and
+  ?player is a Player
+  there is a thing ?map which is
+    Located with space ?space
+  ?map is a Map
+then
+  a new Slot ?slot1 is added
+  a new Slot ?slot2 is added
+  # TODO 3-10
+  a new Ship ?ship is added which is
+    Located with space ?space
+    Oriented with orientation (-π/2)
+    Solid with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
+    Bouncy with coefficientOfRestitution 0.2
+    Visible with graphics [<polygon points="15,0 -9,8 -9,-8" stroke="white" />]
+    Holding with slots [?slot1, ?slot2] # TODO 3-10
+  ?player becomes Piloting with ship ?ship
+
+when ?player presses "ArrowUp" and
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with isThrusting true
+
+when ?player releases "ArrowUp" and
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with isThrusting false
+
+when ?player presses "ArrowRight" and
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with turnDirection 1
+
+when ?player releases "ArrowRight" and
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+  ?ship is Motile with turnDirection 1
+then
+  ?ship becomes Motile with turnDirection 0
+
+when ?player presses "ArrowLeft" and
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with turnDirection (-1)
+
+when ?player releases "ArrowLeft" and
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+  ?ship is Motile with turnDirection (-1)
+then
+  ?ship becomes Motile with turnDirection 0

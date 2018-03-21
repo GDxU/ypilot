@@ -1,0 +1,27 @@
+# can be damaged and destroyed
+a Mortal thing has
+  a number of hitPoints (default 1)
+
+# can damage other things
+a Damaging thing has
+  a number of hitPoints (default 1)
+
+when ?a hits ?b and
+  ?a is Damaging with hitPoints ?damage
+  ?b is Mortal with hitPoints ?hp
+then
+  ?b becomes
+    Mortal with hitPoints (?hp - ?damage)
+
+when ?a becomes Mortal with hitPoints ?hp and
+  (?hp <= 0)
+then
+  ?a is removed
+
+# expires after some time has elapsed (distinct from hitpoints)
+a Fleeting thing has
+  a timeToLive which is a number (default 1)
+
+# comes back after being destroyed, after a delay
+a Respawning thing is Mortal and has
+  a timeToRespawn which is a number (default 1)

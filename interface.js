@@ -43,9 +43,11 @@ function setViewBox() {
 },
 
 function setThingTransform(graphics, position, orientation) {
-  graphics.setAttributeNS(null, 'transform',
+  // TODO maybe put everything in a <g> instead of setting transform on each?
+  var attrVal =
     'translate(' + position.x + ', ' + position.y + ') ' +
-    'rotate(' + (orientation * 180 / Math.PI) + ')');
+    'rotate(' + (orientation * 180 / Math.PI) + ')';
+  graphics.forEach(g => g.setAttributeNS(null, 'transform', attrVal));
 },
 
 function getThingOrientation(thing) {
@@ -79,7 +81,9 @@ function becomeVisible(thing, {graphics}, oldVisible) {
 //  console.log('Interface#becomeVisible(' + thing + ', #, #)');
   if (this.thingIsInPlayersSpace(thing)) {
 //    console.log("...is in player's space, appending");
-    this.svg.appendChild(graphics);
+    graphics.forEach(g => {
+      this.svg.appendChild(g);
+    });
     this.setThingTransform(graphics,
       this.located[thing].position, this.getThingOrientation(thing));
   } else if (oldVisible) {
@@ -89,9 +93,11 @@ function becomeVisible(thing, {graphics}, oldVisible) {
 
 function unbecomeVisible(thing, {graphics}) {
 //  console.log('Interface#unbecomeVisible(' + thing + ', #)');
-  if (graphics.parentNode === this.svg) {
-    graphics.remove();
-  }
+  graphics.forEach(g => {
+    if (g.parentNode === this.svg) {
+      g.remove();
+    }
+  });
 },
 
 function becomeLocated(thing, {space, position}, oldLocated) {

@@ -1,9 +1,12 @@
+const parse = require('./parser.js').parse;
+const stdlib = require('./stdlib.js');
 // yes, globals are usually bad, but these are global because otherwise we'd
 // have to pass them to literally every function in this file, so I think it's
 // OK.
 var adjectiveDependencies = {};
 var nounDefaultAdjectives = {};
 var nounSupertypes = {};
+var usedUrls = {};
 var variableInitialized = {}; // contains "foo: true" if we've already compiled something that initializes foo in a rule
 
 function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
@@ -50,6 +53,21 @@ function getVars(ast) {
 function compileOp(ast) {
   switch (ast.op) {
     // top-level statements
+    case 'use':
+      if (/^standard:/.test(ast.url)) {
+	var name = ast.url.substring(9);
+	if (name in usedUrls) {
+	  return '';
+	} else if (name in stdlib) {
+	  usedUrls[name] = true;
+	  return compileStatements(parse(stdlib[name]));
+	}
+      } else {
+	console.log(JSON.stringify(ast));
+	throw new Error("for now, use url must begin with \"standard:\"");
+	// TODO fetch http(s) URLs
+	// need to use callbacks instead of returns
+      }
     case 'defineAdjective':
       adjectiveDependencies[ast.name] = ast.dependencies;
       return 'function ' + ast.name + '({ ' + ast.properties.map(p => {
@@ -339,6 +357,21 @@ function compileOp(ast) {
   }
 }
 
+function compileStatements(statements) {
+  var compiledStatements =
+    statements.map(s => {
+      try {
+	return compile(s);
+      } catch (e) {
+	console.warn("failed to compile statement; skipping");
+	console.warn(s.text);
+	console.warn(e);
+	return "/* failed to compile statement */\n";
+      }
+    });
+  return compiledStatements.join("\n");
+}
+
 function compile(ast) {
   switch (typeof ast) {
     case 'object':
@@ -349,18 +382,8 @@ function compile(ast) {
 	adjectiveDependencies = {};
 	nounDefaultAdjectives = {};
 	nounSupertypes = {};
-	var compiledStatements =
-	  ast.map(s => {
-	    try {
-	      return compile(s);
-	    } catch (e) {
-	      console.warn("failed to compile statement; skipping");
-	      console.warn(s.text);
-	      console.warn(e);
-	      return "/* failed to compile statement */\n";
-	    }
-	  });
-	return compiledStatements.join("\n");
+	return compile({ op: 'use', url: 'standard:base.yp' }) + "\n" +
+	       compileStatements(ast);
       } else if ('op' in ast) {
 	return compileOp(ast);
       } else {

@@ -1,0 +1,18 @@
+# can hold a single (type of) thing at a time
+a Capacious thing has
+  a content (default nothing)
+  a capacity which is a number (default 1)
+  # restrictions on the type of thing this slot can hold; the arrays of types here are treated as unions; may use special types "Any" (top) or "No" (bottom)
+  some allowedContentTypes which are Typing things (default [])
+  some deniedContentTypes which are Typing things (default [])
+
+# can hold several different things in different slots
+a Holding thing has
+  some slots which are Capacious things (default [])
+
+# can fill a slot with multiple "copies" of itself (not actually copied)
+a Stackable thing is Located and has
+  a currentStackSize which is a number (default 1)
+  a maximumStackSize which is a number (default 64)
+
+a Slot is Capacious

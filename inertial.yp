@@ -1,0 +1,11 @@
+# keeps going when forced to move
+an Inertial thing is Mobile and has
+  a mass which is a number (default 16)
+  a force which is a Vec2 object (default Vec2[0,0])
+
+when the clock ticks and
+  there is a thing ?t which is
+    Inertial with mass ?m and force ?f
+    Mobile with velocity ?v
+then
+  ?t becomes Mobile with velocity (?v + ?f * (1.0 / ?m))

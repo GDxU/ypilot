@@ -1,18 +1,19 @@
 NODE=node
 NPM=npm
-REQUIRES=browserify jquery mocha pegjs setimmediate
+REQUIRES=brfs browserify jquery mocha pegjs setimmediate
 INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \
 	$(MAIN) \
-	define-methods.js \
 	compile.js \
-	parser.js \
+	define-methods.js \
 	interface.js \
+	parser.js \
 	peer-connection.js \
 	router.js \
 	signaling-relay.js \
 	space.js \
+	stdlib.js \
 	user-names.js \
 	vec2.js
 
@@ -22,7 +23,7 @@ node_modules/%/package.json:
 	$(NPM) install $*
 
 ypilot.js: $(INSTALLED_REQUIRES) $(SRCS)
-	node_modules/browserify/bin/cmd.js --debug $(MAIN) >$@
+	node_modules/browserify/bin/cmd.js -t brfs --debug $(MAIN) >$@
 
 parser.js: node_modules/pegjs/package.json parser.pegjs
 	node_modules/pegjs/bin/pegjs --cache parser.pegjs

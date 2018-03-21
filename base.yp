@@ -1,25 +1,4 @@
-# base.yp - base configuration file for YPilot.
-
-# component definitions
-# format:
-#
-# a ComponentAdjective thing is OtherAdj1 and OtherAdj2 and has
-#   a propertyName which is a PropertyType
-#   ...
-#
-# where PropertyType can be:
-#   OtherAdj thing
-#   JSConstructor object
-#   jstype (string, number, etc.)
-#   Array of PropertyType
-#
-# Since "has an isFoo which is a boolean" sounds awkward, the alternate syntax
-# "has an isFoo flag" is available for this case.
-# Similarly "has a foos which is an Array of bar" can be rephrased as "has some
-# foos which are bars".
-# The whole "which is a PropertyType" part can be omitted, meaning anything can
-# be a value of this property.
-
+# base.yp - base library for YPilot, always used implicitly
 
 a Named thing has 
   a name which is a string
@@ -33,16 +12,12 @@ a Typing thing is Named and has
 a Typed thing has
   a type which is a Typing thing
 
-# physical size (radius?)
-a Sized thing has
-  a size which is a number (default 32)
-
 a Located thing has
   a space which is a Space object
   a position which is a Vec2 object (default Vec2[0,0])
 
 # solid things participate in collisions
-a Solid thing is Sized and Located and has
+a Solid thing is Located and has
   a shape which is an Array of Vec2 objects
 
 a Mapped thing is Located and has
@@ -58,211 +33,6 @@ a Mobile thing is Located and Oriented and has
   a velocity which is a Vec2 object (default Vec2[0,0])
   an angularVelocity which is a number (default 0) # radians per tick
 
-# keeps going when forced to move
-an Inertial thing is Mobile and has
-  a mass which is a number (default 16)
-  a force which is a Vec2 object (default Vec2[0,0])
-
-a Bouncy thing is Solid and has
-  # 0 = perfectly inelastic collisions
-  # 1 = perfectly elastic collisions
-  # >1 = flubber
-  a coefficientOfRestitution which is a number (default 1)
-
-# can do things at the request of an Agent
-# FIXME don't like the name of this. do I even need this?
-an Animate thing has
-  some agents which are Agents (default [])
-
-# can hold a single (type of) thing at a time
-a Capacious thing has
-  a content (default nothing)
-  a capacity which is a number (default 1)
-  # restrictions on the type of thing this slot can hold; the arrays of types here are treated as unions; may use special types "Any" (top) or "No" (bottom)
-  some allowedContentTypes which are Typing things (default [])
-  some deniedContentTypes which are Typing things (default [])
-
-# can hold several different things in different slots
-a Holding thing has
-  some slots which are Capacious things (default [])
-
-# can move itself using thrusters and fuel
-a Motile thing is Inertial and Animate and Holding and has
-  a turnSpeed which is a number (default 0.3)
-  a thrustForce which is a number (default 4.5)
-  a turnDirection which is a number (default 0) # -1=CCW, 1=CW, 0=not turning
-  an isThrusting flag (default false)
-
-# can be damaged and destroyed
-a Mortal thing has
-  a number of hitPoints (default 1)
-
-# can damage other things
-a Damaging thing has
-  a number of hitPoints (default 1)
-  # TODO? agent allow/deny lists, for e.g. friendly fire detection
-
-# expires after some time has elapsed (distinct from hitpoints)
-a Fleeting thing has
-  a timeToLive which is a number (default 1)
-
-# comes back after being destroyed, after a delay
-a Respawning thing is Mortal and has
-  a timeToRespawn which is a number (default 1)
-
-# can fill a slot with multiple "copies" of itself (not actually copied)
-a Stackable thing is Located and has
-  a currentStackSize which is a number (default 1)
-  a maximumStackSize which is a number (default 64)
-
-# can be seen by at least some Agents (allow/deny work similarly to those in Slot)
-a Visible thing is Located and has
-  # FIXME this declares graphics as an array, but below it's instantiated as singular, and it's used as such in interface.js
-  some graphics which are SVGGeometryElement objects
-  some allowedAgents which are Agents (default [])
-  some deniedAgents which are Agents (default [])
-
-# can be heard by at least some agents (ditto)
-an Audible thing has # is Located and?
-  some audioSources which are AudioScheduledSourceNode objects
-  some allowedAgents which are Agents (default [])
-  some deniedAgents which are Agents (default [])
-
-a Piloting thing has
-  a ship which is a Ship
-
-# local on the network (see Located for located in space)
-a Local thing has
-  an interface which is an SVGSVGElement object
-# TODO what about NPCs? they don't need an interface
-
-# remote on the network
-a Remote thing has
-  a connection which is a PeerConnection object
-
-# NOTE: originally the above two shared a "Perceptible" component, but
-# sometimes we might want to be seen and not heard, or vice versa, or seen by
-# different agents than those who hear
-
-# Entity type definitions
-# format:
-# a EntityTypeName is a SuperTypeName1 and a SuperTypeName2 ... and Adj1 and Adj2 ...
-# FIXME I'm not sure I really need the adjective part of these, since the adjectives should all be specified at creation time with their property values
-
-a Map is Mapped
-a Wall is Bouncy and Visible
-a Ship is Mortal and Motile and Bouncy and Visible
-a Bullet is Damaging and Fleeting and Mobile and Solid and Visible
-an Item is Fleeting and Mobile and Solid and Visible
-a Slot is Capacious
-an Agent is Named
-a Player is an Agent
-a LocalPlayer is a Player and Local
-a RemotePlayer is a Player and Remote
-a Team is an Agent
-
-# rules
-# format:
-# when causingEvent and
-#   condition1
-#   condition2
-#   ...
-# then
-#   effectEvent1
-#   effectEvent2
-#   ...
-#
-# where events and conditions can use ?variables
-# events can be things like:
-#   the clock ticks
-#   ?a hits ?b
-#   ?a becomes
-#     Adjective1 with propertyName propertyValueExpr and pn pve
-#     Adjective2 with ...
-#       (if ?a was already Adjective then any unmentioned properties retain
-#       their old values)
-#     not Adjective3
-#   ?a is removed
-#   a new ThingType is added which is
-#     Adjective1 with ...
-#   ?player presses ?key
-#   ?player releases ?key
-#
-# conditions can be things like:
-#   there is a thing/ThingType ?a which is
-#     Adjective1 with ...
-#   ?a is a ThingType
-#   ?a is Adjective with ...
-#   (?a <= ?b) 
-#     (or other boolean expressions in parens)
-#   ?player is (not) holding down ?key
-
-when the game starts
-then
-  a new Map ?map is added which is
-    Located with space Space[] and position Vec2[-64,-64]
-    Mapped with mapSize Vec2[10,10] and map (
-      "xxxxxxxxxx\n" +
-      "xs      ax\n" +
-      "x        x\n" +
-      "x        x\n" +
-      "x        x\n" +
-      "x        x\n" +
-      "x        x\n" +
-      "x        x\n" +
-      "x        x\n" +
-      "xw      qx\n" +
-      "xxxxxxxxxx")
-  ?map is read
-
-when ?map reads "x" at ?pos and
-  ?map is Located with space ?space
-then
-  a new Wall ?wall is added which is
-    Located with space ?space and position ?pos
-    Solid with shape [Vec2[0,0], Vec2[32,0], Vec2[32,32], Vec2[0,32]]
-    Visible with graphics <rect x="0" y="0" width="32" height="32" stroke="#4e7cfe" />
-
-when ?map reads "q" at ?pos and
-  ?map is Located with space ?space
-then
-  a new Wall ?wall is added which is
-    Located with space ?space and position ?pos
-    Solid with shape [Vec2[32,0], Vec2[32,32], Vec2[0,32]]
-    Visible with graphics <polygon points="32,0 32,32 0,32" stroke="#4e7cfe" />
-
-when ?map reads "w" at ?pos and
-  ?map is Located with space ?space
-then
-  a new Wall ?wall is added which is
-    Located with space ?space and position ?pos
-    Solid with shape [Vec2[0,0], Vec2[32,32], Vec2[0,32]]
-    Visible with graphics <polygon points="0,0 32,32 0,32" stroke="#4e7cfe" />
-
-when ?map reads "s" at ?pos and
-  ?map is Located with space ?space
-then
-  a new Wall ?wall is added which is
-    Located with space ?space and position ?pos
-    Solid with shape [Vec2[0,0], Vec2[32,0], Vec2[0,32]]
-    Visible with graphics <polygon points="0,0 32,0 0,32" stroke="#4e7cfe" />
-
-when ?map reads "a" at ?pos and
-  ?map is Located with space ?space
-then
-  a new Wall ?wall is added which is
-    Located with space ?space and position ?pos
-    Solid with shape [Vec2[0,0], Vec2[32,0], Vec2[32,32]]
-    Visible with graphics <polygon points="0,0 32,0 32,32" stroke="#4e7cfe" />
-
-when ?map is added and
-  ?map is a Map
-  ?map is Located with space ?space
-then
-  a new LocalPlayer ?player is added which is
-    Named with name "Player1" # TODO
-    Local with interface Interface[?player]
-
 when the clock ticks and
   there is a thing ?m which is
     Mobile with velocity ?v
@@ -277,147 +47,27 @@ when the clock ticks and
 then
   ?m becomes Oriented with orientation (?o + ?av)
 
-when ?a hits ?b and
-  ?a is Damaging with hitPoints ?damage
-  ?b is Mortal with hitPoints ?hp
-then
-  ?b becomes
-    Mortal with hitPoints (?hp - ?damage)
+# can be seen
+a Visible thing is Located and has
+  some graphics which are SVGGeometryElement objects
 
-when ?b hits ?a and
-  ?b is a Bullet
-then
-  ?b is removed
+# can be heard
+# TODO JS implementation
+an Audible thing has # is Located and?
+  some audioSources which are AudioScheduledSourceNode objects
 
-when ?a becomes Mortal with hitPoints ?hp and
-  (?hp <= 0)
-then
-  ?a is removed
+# this is the only requirement for a ship in the JS core, but you probably want
+# to add other things like Solid and Motile and Visible in a subtype
+a BasicShip is Located
+a Piloting thing has
+  a ship which is a BasicShip
 
-when ?player is added and
-  ?player is a Player
-  there is a thing ?map which is
-    Located with space ?space
-  ?map is a Map
-then
-  a new Slot ?slot1 is added
-  a new Slot ?slot2 is added
-  # TODO 3-10
-  a new Ship ?ship is added which is
-    Animate with agents [?player]
-    Located with space ?space
-    Oriented with orientation (-π/2)
-    Solid with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
-    Bouncy with coefficientOfRestitution 0.2
-    Visible with graphics <polygon points="15,0 -9,8 -9,-8" stroke="white" />
-    Holding with slots [?slot1, ?slot2] # TODO 3-10
-  ?player becomes Piloting with ship ?ship
+# local on the network (see Located for located in space)
+a Local thing has
+  an interface which is an Interface object
+# TODO what about NPCs? they don't need an interface
 
-when ?player presses "ArrowUp" and
-  ?player is a Player
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with isThrusting true
-
-when ?player releases "ArrowUp" and
-  ?player is a Player
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with isThrusting false
-
-when ?m becomes Motile with isThrusting ?it and thrustForce ?f and
-  (?it)
-  ?m is Oriented with orientation ?o
-then
-  ?m becomes Inertial with force (Vec2[cos(?o), sin(?o)] * ?f)
-
-when ?m becomes Motile with isThrusting ?it and thrustForce ?f and
-  (?it != true)
-then ?m becomes Inertial with force Vec2[0, 0]
-
-when the clock ticks and
-  there is a thing ?t which is
-    Inertial with mass ?m and force ?f
-    Mobile with velocity ?v
-then
-  ?t becomes Mobile with velocity (?v + ?f * (1.0 / ?m))
-
-when ?player presses "ArrowRight" and
-  ?player is a Player
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with turnDirection 1
-
-when ?player releases "ArrowRight" and
-  ?player is a Player
-  ?player is Piloting with ship ?ship
-  ?ship is Motile with turnDirection 1
-then
-  ?ship becomes Motile with turnDirection 0
-
-when ?player presses "ArrowLeft" and
-  ?player is a Player
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with turnDirection (-1)
-
-when ?player releases "ArrowLeft" and
-  ?player is a Player
-  ?player is Piloting with ship ?ship
-  ?ship is Motile with turnDirection (-1)
-then
-  ?ship becomes Motile with turnDirection 0
-
-when ?m becomes Motile with turnDirection ?d and turnSpeed ?s
-then ?m becomes Mobile with angularVelocity (?d * ?s)
-
-# mobile penetrator
-when ?penetrator point ?point penetrates
-     ?penetrated edge from ?from to ?to
-     ?t ticks ago with velocity ?rv and
-  ?penetrated is not Mobile
-  ?penetrator is Bouncy with coefficientOfRestitution ?r1
-  ?penetrated is Bouncy with coefficientOfRestitution ?r2
-  ?penetrator is Inertial with mass ?mass
-  ?penetrator is Mobile with velocity ?v
-  ?penetrator is Located with position ?pos
-then
-  let ?r be (?r1 * ?r2)
-  let ?edge be (?to - ?from)
-  # get ?rv reflected in ?edge
-  let ?reflRV be (?edge * (2 * (?rv · ?edge) / (?edge · ?edge)) - ?rv)
-  # replace the ?rv part of ?v with proportion ?r of ?reflRV
-  let ?newV be (?v - ?rv + (?reflRV * ?r))
-  ?penetrator becomes Mobile with velocity ?newV
-  ?penetrator becomes Located with position (?pos + (?newV - ?rv) * ?t)
-
-# mobile penetrated
-when ?penetrator point ?point penetrates
-     ?penetrated edge from ?from to ?to
-     ?t ticks ago with velocity ?negRV and
-  ?penetrator is not Mobile
-  ?penetrator is Bouncy with coefficientOfRestitution ?r1
-  ?penetrated is Bouncy with coefficientOfRestitution ?r2
-  ?penetrated is Inertial with mass ?mass
-  ?penetrated is Mobile with velocity ?v
-  ?penetrated is Located with position ?pos
-then
-  debug (?pos * (1/32))
-  let ?r be (?r1 * ?r2)
-  let ?rv be (?negRV * -1)
-  let ?edge be (?to - ?from)
-  # get ?rv reflected in ?edge
-  let ?reflRV be (?edge * (2 * (?rv · ?edge) / (?edge · ?edge)) - ?rv)
-  # replace the ?rv part of ?v with proportion ?r of ?reflRV
-  let ?newV be (?v - ?rv + (?reflRV * ?r))
-  ?penetrated becomes Mobile with velocity ?newV
-  let ?newPos be (?pos + (?newV - ?rv) * ?t)
-  debug (?newPos * (1/32))
-  ?penetrated becomes Located with position ?newPos
-
-# mobile penetrator and penetrated
-# TODO
-
-# FIXME the above doesn't handle multiple collisions in the same frame well
-# in particular, it's possible for a single frame to cause two penetrate events leading to two parallel(ish) becomeLocated events, which is a problem when both becomeLocated events moves the thing to a new bin, because the second becomeLocated event has already saved the old location, so it will try to remove the thing from the old bin again
-# more commonly, if the ship is penetrated by a point shared by two walls, double (or more?) velocity is added
+# remote on the network
+# TODO connect up the JS implementation
+a Remote thing has
+  a connection which is a PeerConnection object

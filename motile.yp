@@ -1,0 +1,23 @@
+use "standard:inertial.yp"
+#use "standard:holding.yp"
+
+# can move itself using thrusters and fuel
+a Motile thing is Inertial and has # and Holding (fuel)?
+  a turnSpeed which is a number (default 0.3)
+  a thrustForce which is a number (default 4.5)
+  a turnDirection which is a number (default 0) # -1=CCW, 1=CW, 0=not turning
+  an isThrusting flag (default false)
+
+when ?m becomes Motile with isThrusting ?it and thrustForce ?f and
+  (?it)
+  ?m is Oriented with orientation ?o
+then
+  ?m becomes Inertial with force (Vec2[cos(?o), sin(?o)] * ?f)
+
+when ?m becomes Motile with isThrusting ?it and thrustForce ?f and
+  (?it != true)
+then ?m becomes Inertial with force Vec2[0, 0]
+
+when ?m becomes Motile with turnDirection ?d and turnSpeed ?s
+then ?m becomes Mobile with angularVelocity (?d * ?s)
+

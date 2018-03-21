@@ -15,7 +15,8 @@ config
   = sp statements:statement* { return statements; }
 
 statement
-  = s:( adjective_def
+  = s:( use
+      / adjective_def
       / noun_def
       / rule
       )
@@ -24,6 +25,9 @@ statement
       s.src = peg$computeLocation(peg$savedPos, peg$currPos);
       return s;
     }
+
+use
+  = 'use' sp url:string { return { op: 'use', url: url }; }
 
 rule
   = 'when' sp trigger:event 'and' sp conditions:condition+
@@ -288,7 +292,7 @@ reserved_word
   = ( 'true' / 'false'
     / 'added' / 'removed' / 'becomes'
     / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there'
-    / 'which' / 'with' / 'when' / 'then' / 'of' / 'new'
+    / 'which' / 'with' / 'when' / 'then' / 'of' / 'new' / 'use'
     / ('thing' / 'object' / 'flag' / 'boolean' / 'number' / 'string') 's'?
     / 'the' / 'clock' / 'ticks' / 'hits' / 'penetrates'
     / 'presses' / 'releases' / 'holding' / 'down'
