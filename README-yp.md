@@ -194,19 +194,47 @@ Constructors for a few JavaScript object types, with arguments in square bracket
 
 Array literals in square brackets, e.g. `[1, 2, "buckle my shoe"]`.
 
-[SVG](https://www.w3.org/TR/SVG11/) literals. These are used for the `graphics` property of the builtin adjective `Visible`. An SVG literal must be a single valid SVG element of the type `SVGGraphicsElement`, which includes `<g>`, `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>`, and `<text>`. It must not include any `<script>` elements or event handler attributes like `onclick="launchTheNukes()"`.
+[SVG](https://www.w3.org/TR/SVG11/) literals. These are used for the `graphics` property of the built-in adjective `Visible`. An SVG literal must be a single valid SVG element of the type `SVGGraphicsElement`, which includes `<g>`, `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>`, and `<text>`. It must not include any `<script>` elements or event handler attributes like `onclick="launchTheNukes()"`.
 
-## Builtins
+## Built-in adjectives
 
-These names are defined in the YPilot language (see [base.yp](base.yp)), but since the core JavaScript code refers to them, they are always included.
+These adjectives are defined in the YPilot language, but since the core JavaScript code refers to them, they are always included. They are defined in [base.yp](base.yp), along with other adjectives that they use, and some nouns and rules that use them. See that file for the precise definitions; described below is only how each is used by the core JavaScript code.
 
-### Adjectives
+    Located
 
-TODO
+Describes things that have a single physical location in a space. Used by the `Space` object for collision detection, by `Interface` objects for drawing, and by the map reading functionality.
 
-### Nouns
+    Mapped
 
-TODO
+Describes things that can be `read` as a map.
+
+    Mobile
+
+Describes things that move and/or spin through space. Used by the `Space` object for collision detection.
+
+    Oriented
+
+Describes things that have a non-trivial orientation. Used by the `Space` object for collision detection, and by `Interface` objects for drawing.
+
+    Piloting
+
+Describes players that are currently controlling a `Ship`. Used by the players' `Interface` objects.
+
+    Solid
+
+Describes things that participate in collision detection (whether they bounce, blow up, or something else). Used by the `Space` object.
+
+    Typed
+
+Describes things that have a type, which should be everything. Used by the compiler.
+
+    Typing
+
+Describes things that serve as types for other things, and may have supertypes. Used by the compiler.
+
+    Visible
+
+Describes things that can be seen (drawn on screen). Used by `Interface` objects.
 
 ## Standard libraries
 
