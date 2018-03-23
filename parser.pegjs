@@ -100,9 +100,10 @@ condition
     { return { op: 'exists', variable: v, suchThat: st }; }
   / player:variable 'is' sp not:('not' sp)? 'holding' sp 'down' sp key:value_expr
     { return {
-	op: (not ? 'notHoldingDown' : 'holdingDown'),
+	op: 'keyState',
 	player: player,
-	key: key
+	key: key,
+	state: (!not)
     }; }
 
 adjective_inst

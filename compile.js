@@ -300,10 +300,10 @@ function compileOp(ast) {
 	    compile({ op: 'is', l: ast.variable, r: adj })
 	  ).join(" &&\n\t");
 	  // end unbalanced, missing }} (see above)
-    case 'holdingDown':
-    case 'notHoldingDown':
-      // TODO how?
-      throw new Error("TODO");
+    case 'keyState':
+      return '(' + (ast.state ? '' : '!') +
+	       'router.playerKeyState(' +
+		 compile(ast.player) + ', ' + compile(ast.key) + '))';
     /* adjective_inst handled in other cases
     case 'adjective':
     case 'unadjective':*/

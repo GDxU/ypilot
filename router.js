@@ -5,6 +5,9 @@ function Router() {
   this.adjectives = {};
   this.listeners = {};
   this.numPendingListeners = 0;
+  this.playerKeysDown = {};
+  this.on('press',   (player,code) => this.playerKeyState(player, code, true));
+  this.on('release', (player,code) => this.playerKeyState(player, code, false));
 }
 
 defineMethods(Router, [
@@ -133,6 +136,24 @@ function readMap(mapThing) {
       this.emit('read' + character, mapThing, blockPosition);
       blockPosition = new Vec2(blockPosition.x + blockSize.x, blockPosition.y);
     }
+  }
+},
+
+//
+// key state tracking
+//
+
+function playerKeyState(player, code, state) {
+  if (!(player in this.playerKeysDown)) {
+    this.playerKeysDown[player] = {};
+  }
+  if (!(code in this.playerKeysDown[player])) {
+    this.playerKeysDown[player][code] = false;
+  }
+  if (state === undefined) { // get
+    return this.playerKeysDown[player][code];
+  } else { // set
+    this.playerKeysDown[player][code] = state;
   }
 }
 
