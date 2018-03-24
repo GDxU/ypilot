@@ -11,8 +11,79 @@
 </div>
 <div id="welcome">
 <h1>Welcome to YPilot</h1>
-<form action="#">
-<label>Load config file: <input type="file" name="config-file" id="config-file"></label>
+<div class="tabs">
+<ul>
+ <li class="selected"><a href="#profile">Your profile</a>
+ <li><a href="#players">Players you have met</a>
+ <li><a href="#new-game">Start a new game</a>
+ <li><a href="#join-game">Join a game in progress</a>
+</ul>
+<div id="profile" class="selected">
+<label>Your ID: <input type="text" id="id" disabled></label><button>Generate random ID</button><br>
+<label>Your handle: <input type="text" id="handle"></label><button>Generate random handle</button><br>
+<!-- TODO your shipshape -->
+<!-- TODO key pair? -->
+<label><input type="checkbox" id="use-local-storage" checked> Save profile in browser (local storage/site data)</label><br>
+<button>Export profile</button><br>
+<label>Import profile: <input type="file" id="import-profile"></label><br>
+</div>
+<div id="players">
+<table>
+ <caption>Players you have met</caption>
+ <tr><th>UUID</th><th>Handle(s)</th><th>If they ask your status</th><th>If they ask to join</th><th>Ask their status</th><th>Forget</th></tr>
+ <tr>
+  <td>0123456789abcdef</td>
+  <td>Foo, Bar</td>
+  <td><select id="0123456789abcdef-status-response-policy">
+   <option>ask me</option>
+   <option>always give it</option>
+   <option>always ignore</option>
+  </select></td>
+  <td><select id="0123456789abcdef-join-policy">
+   <option>ask me</option>
+   <option>always allow/vouch</option>
+   <option>always ignore/reject</option>
+  </select></td>
+  <td>
+   <button>Now</button>
+   <select id="0123456789abcdef-status-request-policy">
+    <option>only on request</option>
+    <option>when I search</option>
+   </select>
+  </td>
+  <td><button>Forget</button></td>
+ </tr>
+</table>
+</div>
+<div id="new-game">
+<!-- TODO display link to share for invites -->
+<table>
+ <caption>Games you can start</caption>
+ <tr><th>Start</th><th>Title</th><th>Author</th><th>Config URL</th></tr>
+ <tr>
+  <td><button>Start</button></td>
+  <td>Asteroids</td>
+  <td>Alice</td>
+  <td><a href="https://www.example.com/asteroids.yp">https://www.example.com/asteroids.yp</a></td>
+ </tr>
+</table>
+<label>Add game from URL: <input type="url" id="config-url"></label><br>
+<label>Load config from file: <input type="file" id="config-file"></label>
+</div>
+<div id="join-game">
+<button>Look for games my friends are playing</button>
+<table id="games-to-join">
+<caption>Games you can join</caption>
+ <tr><th>Join</th><th>Title</th><th>Current players</th><th>Config URL</th></tr>
+ <tr>
+  <td><button>Join</button></td>
+  <td>Asteroids</td>
+  <td>Alice, Bob, Charlie</td>
+  <td><a href="https://www.example.com/asteroids.yp">https://www.example.com/asteroids.yp</a></td>
+ </tr>
+</table>
+</div>
+</div>
 </div>
 </body>
 </html>

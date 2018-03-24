@@ -28,13 +28,67 @@ html, body, svg {
   bottom: 10%;
   left: 10%;
   right: 10%;
-  padding: 1em;
-  background-color: #ddd;
-  border: 1px solid black;
-  overflow: auto;
+  padding-top: 1em;
+  background-color: #4e7cfe;
+  color: white;
 }
 
 h1 {
   margin-top: 0px;
   text-align: center;
+  filter: drop-shadow(2px 2px black);
+}
+
+.tabs {
+  width: 100%;
+  height: 80%;
+}
+
+.tabs ul {
+  display: block;
+  margin: 0;
+  padding: 0;
+  padding-left: 1em;
+  border-bottom: 1px solid black;
+  height: calc(2em + 1px);
+  width: 100%;
+  line-height: 2em;
+}
+
+.tabs ul li {
+  display: inline;
+  border: 1px solid black;
+  border-top-left-radius: 0.5em;
+  border-top-right-radius: 0.5em;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  /* border-collapse only works with table display, and rounded corners don't work with table cells */
+  margin-right: -1px;
+  background: linear-gradient(#ddd, #777);
+}
+
+.tabs ul li.selected {
+  background: #ddd;
+  border-bottom: 1px solid #ddd; /* NOTE: none doesn't work */
+}
+
+.tabs ul li a {
+  color: black;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.tabs div {
+  display: none;
+}
+
+.tabs div.selected {
+  display: block;
+  padding: 1em;
+  overflow: auto;
+  background-color: #ddd;
+  color: black;
+  border-bottom: 1px solid black;
 }

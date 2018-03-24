@@ -15,7 +15,8 @@ SRCS = \
 	space.js \
 	stdlib.js \
 	user-names.js \
-	vec2.js
+	vec2.js \
+	welcome.js
 
 all:: ypilot.js
 

@@ -25,6 +25,7 @@ window.stringToSVGGraphicsElement = function(str) {
 const parse = require('./parser.js').parse;
 const compile = require('./compile.js');
 const $ = require('jquery');
+require('./welcome.js');
 
 var prevFrameStart = performance.now();
 const fps = 20;
