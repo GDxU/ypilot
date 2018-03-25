@@ -1,6 +1,6 @@
 NODE=node
 NPM=npm
-REQUIRES=brfs browserify jquery mocha pegjs setimmediate
+REQUIRES=brfs browserify jquery mocha pegjs setimmediate uuid
 INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \
@@ -10,6 +10,7 @@ SRCS = \
 	interface.js \
 	parser.js \
 	peer-connection.js \
+	profile.js \
 	router.js \
 	signaling-relay.js \
 	space.js \

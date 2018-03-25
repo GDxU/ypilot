@@ -19,20 +19,24 @@
  <li><a href="#join-game">Join a game in progress</a>
 </ul>
 <div id="profile" class="selected">
-<label>Your ID: <input type="text" id="id" disabled></label><button>Generate random ID</button><br>
-<label>Your handle: <input type="text" id="handle"></label><button>Generate random handle</button><br>
+<label>Your ID: <input type="text" id="id" size="36" disabled></label><br>
+<label>Your handle: <input type="text" id="handle"></label><button id="generate-handle">Generate random handle</button><br>
 <!-- TODO your shipshape -->
 <!-- TODO key pair? -->
 <label><input type="checkbox" id="use-local-storage" checked> Save profile in browser (local storage/site data)</label><br>
-<button>Export profile</button><br>
+<hr>
+<button id="export-profile">Export profile</button>
+<div class="dangerous">
+<p>These buttons will erase the profile currently loaded in your browser. If you want to keep the currently loaded profile, export it to a file first.</p>
 <label>Import profile: <input type="file" id="import-profile"></label><br>
+<button id="new-profile">New profile</button>
+</div>
 </div>
 <div id="players">
 <table>
- <caption>Players you have met</caption>
- <tr><th>UUID</th><th>Handle(s)</th><th>If they ask your status</th><th>If they ask to join</th><th>Ask their status</th><th>Forget</th></tr>
+ <tr><th>ID</th><th>Handle(s)</th><th>If they ask your status</th><th>If they ask to join</th><th>Ask their status</th><th>Forget</th></tr>
  <tr>
-  <td>0123456789abcdef</td>
+  <td class="id">eab71dfb-d77c-49b5-8dba-842876fe8df0</td>
   <td>Foo, Bar</td>
   <td><select id="0123456789abcdef-status-response-policy">
    <option>ask me</option>
