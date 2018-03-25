@@ -53,19 +53,25 @@ $('#generate-handle').on('click', evt => {
 });
 
 $('#handle').on('change', evt => {
-  window.profile.id = $('#handle').val();
-  $('h1').text("Welcome to YPilot, " + window.profile.id);
+  window.profile.handle = $('#handle').val();
+  $('h1').text("Welcome to YPilot, " + window.profile.handle);
   changedProfile();
 });
 
 $('#import-profile').on('change', evt => {
-  Profile.fromFile(evt.target.files[0], setProfile);
+  var file = evt.target.files[0]
+  Profile.fromFile(file, setProfile);
+  // keep the filename we opened as the one to save back to
+  $('#export-profile-link').prop('download', file.name);
+  $('#export-profile-link').text(file.name); // why not
 });
 
 $('#export-profile').on('click', evt => {
   window.profile.toObject(o => {
-    // TODO make a download link with a data URI in the href, and click it
-    console.log(JSON.stringify(o));
+    $('#export-profile-link').attr('href',
+      'data:application/json;charset=utf-8,' +
+      encodeURIComponent(JSON.stringify(o))
+    ).click();
   });
 });
 
@@ -82,7 +88,9 @@ try {
 
 try {
   assert($('#use-local-storage').prop('checked'));
-  Profile.fromString(window.localStorage.getItem('profile'), setProfile);
+  var profileStr = window.localStorage.getItem('profile');
+  assert(profileStr !== null);
+  Profile.fromString(profileStr, setProfile);
   // FIXME some errors just get printed to console
 } catch (e) {
   newProfile();

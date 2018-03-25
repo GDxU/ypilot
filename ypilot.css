@@ -37,6 +37,10 @@ html, body, svg {
   font-family: monospace;
 }
 
+#export-profile-link {
+  display: none;
+}
+
 h1 {
   margin-top: 0px;
   text-align: center;
