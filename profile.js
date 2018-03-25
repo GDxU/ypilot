@@ -24,7 +24,8 @@ function Profile(opts) {
   this.handle = opts.handle;
   this.useLocalStorage = opts.useLocalStorage;
   this.keyPair = opts.keyPair;
-  this.knownPlayers = {};
+  this.knownPlayers = opts.knownPlayers;
+  this.onKnownPlayersChange = function() {};
 }
 
 defineMethods(Profile, [
@@ -129,6 +130,7 @@ function verify(msgStr, sig, msg, senderID, key, callback) {
 	  if (newOldIndex != -1) {
 	    player.oldHandles.splice(newOldIndex, 1);
 	  }
+	  this.onKnownPlayersChange();
 	}
       } else { // just met
         // save sender and add default policies
@@ -139,6 +141,7 @@ function verify(msgStr, sig, msg, senderID, key, callback) {
 	    joinPolicy: 'askMe',
 	    statusRequestPolicy: 'onlyOnRequest'
 	  }, msg.sender);
+	this.onKnownPlayersChange();
       }
       callback(msg);
     } else { // not valid
