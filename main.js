@@ -38,36 +38,44 @@ function clockTick(now) {
   requestAnimationFrame(clockTick);
 }
 
-$(function() {
-  $('#config-file').on('change', function(evt) {
-    try {
-      var file = evt.target.files[0];
-      var reader = new FileReader();
-      reader.onload = function() {
-	try {
-	  var ast = parse(reader.result);
-	} catch (e) {
-	  $('#welcome').
-	    append("<p>Error parsing config file:</p><pre>" + e.message + "</pre>").
-	    append("<p>At line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + "</p>");
-	  return;
-	}
-	try {
-	  var jsText = compile(ast) + "\n//# sourceURL=" + encodeURI(file.name) + "\n";
-	  var script = document.createElement('script');
-	  script.setAttribute("type", "text/javascript");
-	  script.text = jsText;
-	  $('head').append(script);
-	  router.emit('start');
-	  $('#welcome').hide();
-	  requestAnimationFrame(clockTick);
-	} catch (e) {
-	  $('#welcome').append("<p>Error compiling config file:</p><pre>" + e + "</pre>");
-	}
-      };
-      reader.readAsText(file);
-    } catch (e) {
-      $('#welcome').append("<p>Error loading config file:</p><pre>" + e + "</pre>");
+window.tryToParseString = function(ypText) {
+  try {
+    return parse(ypText);
+  } catch (e) {
+    $('#welcome').
+      append("<p>Error parsing config file:</p><pre>" + e.message + "</pre>").
+      append("<p>At line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + "</p>");
+    return null;
+  }
+};
+
+window.startGameFromString = function(ypText, sourceURL) {
+  var ast = tryToParseString(ypText);
+  if (ast === null) return;
+  try {
+    var jsText = compile(ast);
+    if (sourceURL) {
+      jsText += "\n//# sourceURL=" + sourceURL + "\n";
     }
+    var script = document.createElement('script');
+    script.setAttribute("type", "text/javascript");
+    script.text = jsText;
+    $('head').append(script);
+    router.emit('start');
+    $('#welcome').hide();
+    requestAnimationFrame(clockTick);
+  } catch (e) {
+    $('#welcome').append("<p>Error compiling config file:</p><pre>" + e + "</pre>");
+  }
+};
+
+window.startGameFromProfile = function(gameIndex) {
+  var url = profile.games[gameIndex].url;
+  $.get(url).
+  done((data, textStatus, jqXHR) => {
+    startGameFromString(jqXHR.responseText, url);
+  }).
+  fail((jqXHR, textStatus, errorThrown) => {
+    $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
   });
-});
+};

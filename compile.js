@@ -53,6 +53,8 @@ function getVars(ast) {
 function compileOp(ast) {
   switch (ast.op) {
     // top-level statements
+    case 'metadata':
+      return '';
     case 'use':
       if (/^standard:/.test(ast.url)) {
 	var name = ast.url.substring(9);

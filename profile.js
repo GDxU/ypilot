@@ -25,6 +25,7 @@ function Profile(opts) {
   this.useLocalStorage = opts.useLocalStorage;
   this.keyPair = opts.keyPair;
   this.knownPlayers = opts.knownPlayers;
+  this.games = opts.games;
   this.onKnownPlayersChange = function() {};
 }
 
@@ -47,7 +48,8 @@ function toObject(callback) {
       handle: this.handle,
       useLocalStorage: this.useLocalStorage,
       keyPair: { publicKey: pub, privateKey: priv },
-      knownPlayers: this.knownPlayers
+      knownPlayers: this.knownPlayers,
+      games: this.games
     });
   }).catch(err => console.error(err));
 },
@@ -92,6 +94,9 @@ function verifyTOFU(signedMsgStr, callback) {
   var { msg: msgStr, sig } = JSON.parse(signedMsgStr);
   var msg = JSON.parse(msgStr);
   var senderID = msg.sender.id;
+  if (!/^[0-9a-z-]{36}$/.test(senderID)) {
+    throw new Error("malformed message sender ID");
+  }
   if (senderID in this.knownPlayers) { // not first use
     var player = this.knownPlayers[senderID];
     if (player.publicKey != msg.sender.publicKey) {
@@ -162,7 +167,8 @@ Profile.generateRandom = function(callback) {
       handle: UserNames.generateRandom(),
       useLocalStorage: true,
       keyPair: keyPair,
-      knownPlayers: {}
+      knownPlayers: {},
+      games: []
     }));
   });
 };

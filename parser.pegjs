@@ -19,12 +19,17 @@ statement
       / adjective_def
       / noun_def
       / rule
+      / metadata
       )
     {
       s.text = text();
       s.src = peg$computeLocation(peg$savedPos, peg$currPos);
       return s;
     }
+
+metadata
+  = key:property_name ilsp ':' sp val:string
+  { return { op: 'metadata', key: key, value: val }; }
 
 use
   = 'use' sp url:string { return { op: 'use', url: url }; }

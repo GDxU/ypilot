@@ -40,9 +40,9 @@
 </div>
 <div id="new-game">
 <!-- TODO display link to share for invites -->
-<table>
+<table id="games">
  <caption>Games you can start</caption>
- <tr><th>Start</th><th>Title</th><th>Author</th><th>Config URL</th></tr>
+ <tr><th>Start</th><th>Title</th><th>Author</th><th>URL</th></tr>
  <tr>
   <td><button>Start</button></td>
   <td>Asteroids</td>
@@ -50,8 +50,9 @@
   <td><a href="https://www.example.com/asteroids.yp">https://www.example.com/asteroids.yp</a></td>
  </tr>
 </table>
-<label>Add game from URL: <input type="url" id="config-url"></label><br>
-<label>Load config from file: <input type="file" id="config-file"></label>
+<button id="add-from-url">Add</button>
+<label>from URL: <input type="url" id="config-url"></label><br>
+<label>Start from file (singleplayer only): <input type="file" id="config-file"></label>
 </div>
 <div id="join-game">
 <button>Look for games my friends are playing</button>

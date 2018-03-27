@@ -53,6 +53,7 @@ function setProfile(p) {
   $('#handle').val(p.handle).change();
   $('#use-local-storage').prop('checked', p.useLocalStorage);
   updatePlayersTable();
+  updateGamesTable();
   changedProfile();
 }
 
@@ -65,7 +66,7 @@ function updatePlayersTable() {
     var row = document.createElement('tr');
     row.innerHTML =
       '<td class="id">' + id + '</td>' +
-      '<td>' + [player.handle, ...player.oldHandles].join(', ') + '</td>' +
+      '<td></td>' +
       '<td><select id="' + id + '-status-response-policy">' +
         '<option value="askMe">ask me</option>' +
 	'<option value="alwaysGive">always give it</option>' +
@@ -84,6 +85,7 @@ function updatePlayersTable() {
 	'</select>' +
       '</td>' +
       '<td><button id="' + id + '-forget">Forget</button></td>';
+    $(row.childNodes[1]).text([player.handle, ...player.oldHandles].join(', '));
     $(row.childNodes[2].childNodes[0]).
       val(player.statusResponsePolicy).
       on('change', onPolicyChange);
@@ -97,6 +99,28 @@ function updatePlayersTable() {
     $(row.childNodes[5].childNodes[0]).on('click', forgetPlayer);
     $('#players > table').append(row);
   }
+}
+
+function addGameRow(game, i) {
+  var row = document.createElement('tr');
+  row.innerHTML =
+    '<td><button id="start-game-' + i + '">Start</button></td>' +
+    '<td></td><td></td>' +
+    '<td><a href="' + game.url + '">' + game.url + '</a></td>';
+    // TODO forget button? need to manage indices. maybe instead make profile.games an object with hashed urls as keys, and use the hash instead of i in the button ids
+  $(row.childNodes[0].childNodes[0]).on('click', function(evt) {
+    startGameFromProfile(evt.target.id.replace(/^start-game-/,'') | 0)
+  });
+  $(row.childNodes[1]).text(game.title);
+  $(row.childNodes[2]).text(game.author);
+  $('#games').append(row);
+}
+
+function updateGamesTable() {
+  // clear the games table
+  $('#games tr').has('td').remove();
+  // re-fill it from the new profile
+  profile.games.forEach(addGameRow);
 }
 
 function newProfile() {
@@ -151,6 +175,52 @@ $('#export-profile').on('click', evt => {
 });
 
 $('#new-profile').on('click', newProfile);
+
+$('#config-file').on('change', function(evt) {
+  try {
+    var file = evt.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function() {
+      startGameFromString(reader.result, encodeURI(file.name));
+    };
+    reader.readAsText(file);
+  } catch (e) {
+    $('#welcome').append("<p>Error loading config file:</p><pre>" + e + "</pre>");
+  }
+});
+
+$('#add-from-url').on('click', function(evt) {
+  var url = $('#config-url').val();
+  $.get(url).
+  done((data, textStatus, jqXHR) => {
+    var ast = tryToParseString(jqXHR.responseText);
+    if (ast === null) return;
+    var title = 'Untitled';
+    var author = 'Anonymous';
+    ast.forEach(statement => {
+      if (statement.op == 'metadata') {
+	switch (statement.key.toLowerCase()) {
+	  case 'title':
+	    title = statement.value;
+	    break;
+	  case 'author':
+	    author = statement.value;
+	    break;
+	  default:
+	    break;
+	}
+      }
+    });
+    // TODO sort? make table sortable by clicking headings?
+    var i = profile.games.length;
+    profile.games.push({ url: url, title: title, author: author });
+    changedProfile();
+    addGameRow(profile.games[i], i);
+  }).
+  fail((jqXHR, textStatus, errorThrown) => {
+    $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
+  })
+});
 
 try {
   window.localStorage.setItem('__TEST_KEY__', '__TEST_VAL__');

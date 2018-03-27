@@ -1,3 +1,6 @@
+title: "Example Map"
+author: "Will112358"
+
 use "standard:bouncy.yp"
 use "standard:motile.yp"
 use "standard:bullet.yp"
