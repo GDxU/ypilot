@@ -16,13 +16,16 @@
  <li class="selected"><a href="#profile">Your profile</a>
  <li><a href="#players">Players you have met</a>
  <li><a href="#new-game">Start a new game</a>
- <li><a href="#join-game">Join a game in progress</a>
+ <li><a href="#join-game">Join a game</a>
+ <li><a href="#network-settings">Network settings</a>
+ <li><a href="#help">Help</a>
 </ul>
 <div id="profile" class="selected">
 <label>Your ID: <input type="text" id="id" size="36" disabled></label><br>
 <label>Your handle: <input type="text" id="handle"></label><button id="generate-handle">Generate random handle</button><br>
 <!-- TODO your shipshape -->
 <!-- TODO key pair? -->
+Your profile also includes the information in the "Players you have met" and "Network settings" tabs.<br>
 <label><input type="checkbox" id="use-local-storage" checked> Save profile in browser (local storage/site data)</label><br>
 <hr>
 <button id="export-profile">Export profile</button>
@@ -66,6 +69,28 @@
   <td><a href="https://www.example.com/asteroids.yp">https://www.example.com/asteroids.yp</a></td>
  </tr>
 </table>
+</div>
+<div id="network-settings">
+ <p>Only change these settings if you have set up your own relay server, or know some better ICE servers. The defaults should work OK for most people.</p>
+ <label>WebRTC signaling relay URL:<br>
+  <input type="url" id="signaling-relay-url" value="https://ssl.uofr.net/~willdb/cgi-bin/relay.pl"><br>
+ </label>
+ <label>ICE (STUN/TURN) server list:<br>
+ <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
+{"urls":"stun:stun.ekiga.net"},
+{"urls":"stun:stun.iptel.org"},
+{"urls":"stun:stun.l.google.com:19302"},
+{"urls":"stun:stun1.l.google.com:19302"},
+{"urls":"stun:stun2.l.google.com:19302"},
+{"urls":"stun:stun3.l.google.com:19302"},
+{"urls":"stun:stun4.l.google.com:19302"}
+]</textarea><br></label>
+ <!-- label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label -->
+ <hr>
+ <button onclick="restoreDefaultSettings()">restore defaults</button>
+</div>
+<div id="help">
+ <em>TODO</em>
 </div>
 </div>
 </div>

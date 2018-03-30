@@ -1,10 +1,10 @@
 const defineMethods = require('./define-methods.js');
-const UserNames = require('./user-names.js');
+const uuidv4 = require('uuid/v4');
 
-function SignalingRelay(url, localUser, remoteUser) {
+function SignalingRelay(url, sendID, recvID) {
   this.url = url;
-  this.localUser = UserNames.ensureValid(localUser);
-  this.remoteUser = UserNames.ensureValid(remoteUser);
+  this.recvID = (recvID || uuidv4());
+  this.sendID = sendID;
   this.writeBuffer = [];
   this.receive();
 }
@@ -12,13 +12,13 @@ function SignalingRelay(url, localUser, remoteUser) {
 defineMethods(SignalingRelay, [
 
   function receive() {
-    console.log('listening to ' + this.remoteUser + ' via signaling relay');
+    console.log('listening to ' + this.recvID + ' via signaling relay');
     var that = this;
     this.receiveXHR = new XMLHttpRequest();
     this.receiveXHR.onload = function() {
       try {
 	var text = that.receiveXHR.responseText;
-	console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
+	console.log('received from ' + that.recvID + ' via signaling relay: ' + text);
 	that.ondata(JSON.parse(text));
       } catch (err) {
 	console.log(err.stack);
@@ -30,7 +30,7 @@ defineMethods(SignalingRelay, [
     };
     this.receiveXHR.open('POST', this.url, true);
     this.receiveXHR.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    this.receiveXHR.send('k=' + this.remoteUser + '-' + this.localUser);
+    this.receiveXHR.send('k=' + this.recvID);
   },
 
   function sendBufferedMessages() {
@@ -45,11 +45,11 @@ defineMethods(SignalingRelay, [
         that.sendBufferedMessages();
       };
       xhr.onerror = function(e) { console.log(e); };
-      console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
+      console.log('sending to ' + this.sendID + ' via signaling relay: ' + text);
       xhr.open('POST', this.url, true);
       xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
       xhr.send(
-	'k=' + this.localUser + '-' + this.remoteUser +
+	'k=' + this.sendID +
 	'&m=' + encodeURIComponent(text)
       );
     }

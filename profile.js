@@ -154,6 +154,44 @@ function verify(msgStr, sig, msg, senderID, key, callback) {
     }
   }).
   catch(err => console.error(err));
+},
+
+// call callback if the identified remote player is allowed to do initial
+// message operation op, possibly after consulting the local player
+// assumes the remote player is already known
+function ifAllowed(playerID, op, callback) {
+  switch (op) {
+    case 'askStatus':
+      switch (this.knownPlayers[playerID].statusResponsePolicy) {
+	case 'askMe':
+	  // TODO ask the local user somehow
+	  break;
+	case 'alwaysGive':
+	  callback();
+	  break;
+	case 'alwaysIgnore':
+	  break;
+	default:
+	  console.log('bogus statusResponsePolicy!?');
+      }
+      break;
+    case 'join':
+      switch (this.knownPlayers[playerID].joinPolicy) {
+	case 'askMe':
+	  // TODO ask the local user somehow
+	  break;
+	case 'alwaysAllowOrVouch':
+	  callback();
+	  break;
+	case 'alwaysIgnoreOrReject':
+	  break;
+	default:
+	  console.log('bogus joinPolicy!?');
+      }
+      break;
+    default:
+      console.log('bogus initial message op ' + op);
+  }
 }
 
 ]);
