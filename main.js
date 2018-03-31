@@ -61,6 +61,7 @@ window.startGameFromString = function(ypText, sourceURL) {
     script.setAttribute("type", "text/javascript");
     script.text = jsText;
     $('head').append(script);
+    router.configURL = sourceURL;
     router.emit('start');
     $('#welcome').hide();
     requestAnimationFrame(clockTick);

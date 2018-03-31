@@ -85,13 +85,13 @@ function sign(msg, callback) {
   catch(err => console.error(err));
 },
 
-// extract the original message from the signed message string, and either
-// verify the signature if we've seen a sender with this ID before, or save the
-// sender's ID and public key for future reference otherwise. TOFU = Trust On
-// First Use. If the sender is successfully trusted, update their handle if it
-// changed, and pass the original message to the callback.
-function verifyTOFU(signedMsgStr, callback) {
-  var { msg: msgStr, sig } = JSON.parse(signedMsgStr);
+// extract the original message from the signed message, and either verify the
+// signature if we've seen a sender with this ID before, or save the sender's
+// ID and public key for future reference otherwise. TOFU = Trust On First Use.
+// If the sender is successfully trusted, update their handle if it changed,
+// and pass the original message to the callback.
+function verifyTOFU(signedMsg, callback) {
+  var { msg: msgStr, sig } = signedMsg;
   var msg = JSON.parse(msgStr);
   var senderID = msg.sender.id;
   if (!/^[0-9a-z-]{36}$/.test(senderID)) {
@@ -124,36 +124,41 @@ function verify(msgStr, sig, msg, senderID, key, callback) {
   crypto.subtle.verify(cryptoOptions, key, sigBytes, msgBytes).
   then(isValid => {
     if (isValid) {
-      if (senderID in this.knownPlayers) { // already known
-	var player = this.knownPlayers[senderID];
-	if (player.handle != msg.sender.handle) {
-	  // update the current handle and put the old handle in oldHandles
-	  player.oldHandles.push(player.handle);
-	  player.handle = msg.sender.handle;
-	  // remove the new handle from oldHandles if it was there
-	  var newOldIndex = player.oldHandles.indexOf(player.handle);
-	  if (newOldIndex != -1) {
-	    player.oldHandles.splice(newOldIndex, 1);
-	  }
-	  this.onKnownPlayersChange();
-	}
-      } else { // just met
-        // save sender and add default policies
-	this.knownPlayers[senderID] = Object.assign(
-	  {
-	    oldHandles: [],
-	    statusResponsePolicy: 'askMe',
-	    joinPolicy: 'askMe',
-	    statusRequestPolicy: 'onlyOnRequest'
-	  }, msg.sender);
-	this.onKnownPlayersChange();
-      }
+      this.know(msg.sender);
       callback(msg);
     } else { // not valid
       console.error("message not verified to be from its claimed sender");
     }
   }).
   catch(err => console.error(err));
+},
+
+// store player's info in this.knownPlayers (updating if already there)
+function know(player) {
+  if (player.id in this.knownPlayers) { // already known
+    var knownPlayer = this.knownPlayers[player.id];
+    if (knownPlayer.handle != player.handle) {
+      // update the current handle and put the old handle in oldHandles
+      knownPlayer.oldHandles.push(knownPlayer.handle);
+      knownPlayer.handle = player.handle;
+      // remove the new handle from oldHandles if it was there
+      var newOldIndex = knownPlayer.oldHandles.indexOf(player.handle);
+      if (newOldIndex != -1) {
+	knownPlayer.oldHandles.splice(newOldIndex, 1);
+      }
+      this.onKnownPlayersChange();
+    }
+  } else { // just met
+    // save sender and add default policies
+    this.knownPlayers[player.id] = Object.assign(
+      {
+	oldHandles: [],
+	statusResponsePolicy: 'askMe',
+	joinPolicy: 'askMe',
+	statusRequestPolicy: 'onlyOnRequest'
+      }, player);
+    this.onKnownPlayersChange();
+  }
 },
 
 // call callback if the identified remote player is allowed to do initial

@@ -1,6 +1,7 @@
 const defineMethods = require('./define-methods.js');
 
 function Router() {
+  this.configURL = null;
   this.nextThing = 0;
   this.adjectives = {};
   this.listeners = {};
@@ -155,6 +156,24 @@ function playerKeyState(player, code, state) {
   } else { // set
     this.playerKeysDown[player][code] = state;
   }
+},
+
+//
+// full game state
+//
+
+function getState() {
+  return {
+    nextThing: this.nextThing,
+    adjectives: this.adjectives, // TODO swap Local/Remote, serialize certain things
+    playerKeysDown: this.playerKeysDown
+  };
+},
+
+function setState(msg) {
+  this.nextThing = msg.nextThing;
+  this.adjectives = msg.adjectives; // TODO swap Local/Remote, deserialize certain things
+  this.playerKeysDown = msg.playerKeysDown;
 }
 
 ]);
