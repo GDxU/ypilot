@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>YPilot Network Protocol</title>
+<style type="text/css">
+body {
+  background-color: white;
+}
+code {
+  background-color: lightgray;
+}
+var {
+  background-color: skyblue;
+}
+</style>
+</head>
+<body>
+<h1>YPilot Network Protocol</h1>
+<p>This document describes the protocol YPilot uses to connect players over the internet. In this document, computer code is displayed <code>like this</code> and variables are displayed <var>like this</var>.</p>
+
+<h2>Player profiles</h2>
+<p>Each player has a permanent <dfn>player ID</dfn> (UUIDv4), a permanent <dfn>public key</dfn> and <dfn>private key</dfn> (RSA-PSS 2048 / SHA-256), and a <dfn>handle</dfn> they can change. The handle is displayed to identify the player during gameplay, but the ID and key pair are used to identify and authenticate the player while setting up a network connection. In this document we will use <var>Alice</var>, <var>Bob</var>, <var>Charlie</var>, and <var>Eve</var> as example players.</p>
+
+<p>In order for <var>Alice</var> to initiate a connection to <var>Bob</var>, <var>Alice</var> must know <var>Bob</var>'s ID. Normally <var>Bob</var> would send <var>Alice</var> a link to join <var>Bob</var>'s current game, and this link would include <var>Bob</var>'s ID.</p>
+
+<p>Player's profiles also include IDs, public keys, and known handles of every other player they've played with. Keys follow a Trust On First Use (TOFU) policy: the first time <var>Alice</var> connects to <var>Bob</var>, <var>Alice</var> stores the public key <var>Bob</var> sends her. For later connections, <var>Alice</var> checks that <var>Bob</var>'s initial message is signed with <var>Bob</var>'s private key by verifying the message against the stored public key.</p>
+
+<h2>Signaling relay</h2>
+<p>In general, players do not know each other's network addresses at first, so a third party is necessary to initiate a connection. This third party is the <dfn>signaling relay</dfn>. The signaling relay allows two players who share a <dfn>relay ID</dfn> to send messages in one direction; the receiver first makes a request to the relay with just the relay ID, which stalls until the sender makes another request to the relay with the relay ID and a message. Then the receiver receives the message, and both requests terminate. To send multiple messages both sides must make multiple requests.</p>
+
+<p>YPilot shares its signaling relay with SVG Whiteboard. The default <dfn>relay URL</dfn> is <code>https://ssl.uofr.net/~willdb/cgi-bin/relay.pl</code>, but other relays may be used instead as long as all players who wish to connect to each other agree.</p>
+
+<p>The relay ID must consist of alphanumeric characters, hyphens, and underscores, and must be at least one character. If the message contains any line feed (<code>\n</code>) or carriage return (<code>\r</code>) characters, they will be converted to spaces.</p>
+
+<p>To receive a message from relay ID <var>foo</var>, <var>Alice</var> makes an HTTPS <code>POST</code> request to the relay URL with the parameter <code>k=<var>foo</var></code>. To send a message <var>bar</var> to <var>Alice</var>, <var>Bob</var> can then make an HTTPS <code>POST</code> request to the relay URL with the parameters <code>k=<var>foo</var>&amp;m=<var>bar</var></code>. The parameters must appear in that order, and <var>bar</var> must be URL-encoded. The relay will respond to <var>Alice</var>'s request with (decoded) <var>bar</var> as the content, and it will respond to <var>Bob</var>'s request with empty content.</p>
+
+<p>A bidirectional signaling relay may be set up with two relay IDs, a <dfn>send ID</dfn> and a <dfn>receive ID</dfn>. Two players share both IDs, and <var>Alice's</var> send ID is <var>Bob</var>'s receive ID, and vice versa.</p>
+
+<h2>WebRTC</h2>
+<p>Once a bidirectional signaling relay exists, it can be used to set up a <dfn>peer connection</dfn> using WebRTC. This type of connection is potentially more direct, and will take the load off of the signaling relay. To set up a peer connection, players negotiate over the signaling relay (involving ICE candidates and offers) until a way to connect is agreed upon.</p>
+
+<h2>Hub</h2>
+<p>At any point during a game, exactly one player is designated the <dfn>hub</dfn>. All non-hub players maintain peer connections with the hub. All players (including the hub) simulate the game world in parallel. All input events must travel through the hub to be sequenced and rebroadcast before any players (including the hub) may incorporate them into the simulation.</p>
+
+<p>Which player is the hub may change during the game, and must change if the hub leaves a game that still has other players. <em>TODO how to do this deterministically and fairly, even when the hub is forcibly disconnected?</em></p>
+
+<h2>Messages</h2>
+<p>All messages exchanged by YPilot players are JSON objects. Most have a common property named <code>op</code> (short for "operation") which is a string identifying the type of message.</p>
+
+<h3>Initial messages</h3>
+<p>An <dfn>initial message</dfn> is a message sent over a signaling relay before a player is connected to the game. Initial messages have a <code>sender</code> property containing another object, with properties for the sender's player ID (<code>id</code>), current handle (<code>handle</code>), and public key (<code>publicKey</code>). The first two are strings, the last is in JWK format.</p>
+
+<p>Initial messages are turned into <dfn>signed messages</dfn> before being sent over the signaling relay. First the message is encoded as a UTF-8 string, then a base-64 encoded signature is generated using the sender's private key. Then the message string and the signature string are put in a new JSON object, and that object is sent over the signaling relay.</p>
+
+<p>So an initial message that starts out looking like this:</p>
+<code><pre>
+{
+  "<var>key1</var>": <var>val1</var>,
+  "<var>key2</var>": <var>val2</var>
+}
+</pre></code>
+
+<p>first has a <code>sender</code> added like this:</p>
+<code><pre>
+{
+  "sender": {
+    "id": "<var>sender-id</var>",
+    "handle": "<var>sender-handle</var>",
+    "publicKey": <var>sender-public-key-JWK</var>
+  },
+  "<var>key1</var>": <var>val1</var>,
+  "<var>key2</var>": <var>val2</var>
+}
+</pre></code>
+
+<p>and ends up being sent as a signed message that looks like this:</p>
+<code><pre>
+{
+  msg: "{\"sender\":{\"id\":\"<var>sender-id</var>\",\"handle\":\"<var>sender-handle</var>\",\"publicKey\":<var>sender-public-key-JWK</var>},\"<var>key1</var>\":<var>val1</var>,\"<var>key2</var>\":<var>val2</var>}",
+  sig: "<var>msg-signature-base64</var>"
+}
+</pre></code>
+
+<p>The receiver of such a signed message then unwraps it again, verifying the signature and trusting the public key on first use (TOFU). If the signature is invalid or the public key doesn't match one the receiver already has associated with this <var>sender-id</var>, the message is dropped.</p>
+
+<em>TODO askStatus, status, join</em>
+
+<h3>WebRTC setup messages</h3>
+<em>TODO handshake, candidate, offer</em>
+
+<h3>Peer messages</h3>
+<em>TODO vouch, setState, addPlayer, removePlayer, press, release</em>
+
+</body>
+</html>
+
