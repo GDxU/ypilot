@@ -37,7 +37,7 @@ dt {
 <p>This document describes the protocol YPilot uses to connect players over the internet. In this document, computer code is displayed <code>like this</code> and variables are displayed <var>like this</var>.</p>
 
 <h2>Player profiles</h2>
-<p>Each player has a permanent <dfn>player ID</dfn> (UUIDv4), a permanent <dfn>public key</dfn> and <dfn>private key</dfn> (RSA-PSS 2048 / SHA-256), and a <dfn>handle</dfn> they can change. The handle is displayed to identify the player during gameplay, but the ID and key pair are used to identify and authenticate the player while setting up a network connection. In this document we will use <var>Alice</var>, <var>Bob</var>, <var>Charlie</var>, and <var>Eve</var> as example players.</p>
+<p>Each player has a permanent <dfn>player ID</dfn> (<a href="https://tools.ietf.org/html/rfc4122">UUID</a><a href="https://tools.ietf.org/html/rfc4122#section-4.1.3">v4</a>), a permanent <dfn>public key</dfn> and <dfn>private key</dfn> (<a href="https://tools.ietf.org/html/rfc3447#section-8.1">RSASSA-PSS</a> 2048 / <a href="https://csrc.nist.gov/csrc/media/publications/fips/180/4/final/documents/fips180-4-draft-aug2014.pdf">SHA</a>-256; see the <a href="https://www.w3.org/TR/WebCryptoAPI/">Web Crypto API</a>), and a <dfn>handle</dfn> they can change. The handle is displayed to identify the player during gameplay, but the ID and key pair are used to identify and authenticate the player while setting up a network connection. In this document we will use <var>Alice</var>, <var>Bob</var>, <var>Charlie</var>, and <var>Eve</var> as example players.</p>
 
 <p>In order for <var>Alice</var> to initiate a connection to <var>Bob</var>, <var>Alice</var> must know <var>Bob</var>'s ID. Normally <var>Bob</var> would send <var>Alice</var> a link to join <var>Bob</var>'s current game, and this link would include <var>Bob</var>'s ID.</p>
 
@@ -46,7 +46,7 @@ dt {
 <h2>Signaling relay</h2>
 <p>In general, players do not know each other's network addresses at first, so a third party is necessary to initiate a connection. This third party is the <dfn>signaling relay</dfn>. The signaling relay allows two players who share a <dfn>relay ID</dfn> to send messages in one direction; the receiver first makes a request to the relay with just the relay ID, which stalls until the sender makes another request to the relay with the relay ID and a message. Then the receiver receives the message, and both requests terminate. To send multiple messages both sides must make multiple requests.</p>
 
-<p>YPilot shares its signaling relay with SVG Whiteboard. The default <dfn>relay URL</dfn> is <code>https://ssl.uofr.net/~willdb/cgi-bin/relay.pl</code>, but other relays may be used instead as long as all players who wish to connect to each other agree.</p>
+<p>YPilot shares its signaling relay with <a href="https://github.com/wdebeaum/svg-whiteboard">SVG Whiteboard</a>. The default <dfn>relay <a href="https://tools.ietf.org/html/rfc1738">URL</a></dfn> is <code>https://ssl.uofr.net/~willdb/cgi-bin/relay.pl</code>, but other <a href="https://github.com/wdebeaum/svg-whiteboard/blob/master/relay.pl">relays</a> may be used instead as long as all players who wish to connect to each other agree.</p>
 
 <p>The relay ID must consist of alphanumeric characters, hyphens, and underscores, and must be at least one character. If the message contains any line feed (<code>\n</code>) or carriage return (<code>\r</code>) characters, they will be converted to spaces.</p>
 
@@ -55,7 +55,7 @@ dt {
 <p>A bidirectional signaling relay may be set up with two relay IDs, a <dfn>send ID</dfn> and a <dfn>receive ID</dfn>. Two players share both IDs, and <var>Alice's</var> send ID is <var>Bob</var>'s receive ID, and vice versa.</p>
 
 <h2>WebRTC</h2>
-<p>Once a bidirectional signaling relay exists, it can be used to set up a <dfn>peer connection</dfn> using WebRTC. This type of connection is potentially more direct, and will take the load off of the signaling relay. To set up a peer connection, players negotiate over the signaling relay (involving ICE candidates and offers) until a way to connect is agreed upon.</p>
+<p>Once a bidirectional signaling relay exists, it can be used to set up a <dfn>peer connection</dfn> using <a href="https://www.w3.org/TR/webrtc/">WebRTC</a>. This type of connection is potentially more direct, and will take the load off of the signaling relay. To set up a peer connection, players negotiate over the signaling relay (involving <a href="https://tools.ietf.org/html/rfc5245">ICE</a> candidates and offers) until a way to connect is agreed upon.</p>
 
 <h2>Hub</h2>
 <p>At any point during a game, exactly one player is designated the <dfn>hub</dfn>. All non-hub players maintain peer connections with the hub. All players (including the hub) simulate the game world in parallel. All input events must travel through the hub to be sequenced and rebroadcast before any players (including the hub) may incorporate them into the simulation.</p>
@@ -63,12 +63,12 @@ dt {
 <p>Which player is the hub may change during the game, and must change if the hub leaves a game that still has other players. <em class="TODO">how to do this deterministically and fairly, even when the hub is forcibly disconnected?</em></p>
 
 <h2>Messages</h2>
-<p>All messages exchanged by YPilot players are JSON objects. Most have a common property named <code>op</code> (short for "operation") which is a string identifying the type of message.</p>
+<p>All messages exchanged by YPilot players are <a href="https://json.org/">JSON</a> objects. Most have a common property named <code>op</code> (short for "operation") which is a string identifying the type of message.</p>
 
 <h3>Initial messages</h3>
-<p>An <dfn>initial message</dfn> is a message sent over a signaling relay before a player is connected to the game. Initial messages have a <code>sender</code> property containing another object, with properties for the sender's player ID (<code>id</code>), current handle (<code>handle</code>), and public key (<code>publicKey</code>). The first two are strings, the last is in JWK format.</p>
+<p>An <dfn>initial message</dfn> is a message sent over a signaling relay before a player is connected to the game. Initial messages have a <code>sender</code> property containing another object, with properties for the sender's player ID (<code>id</code>), current handle (<code>handle</code>), and public key (<code>publicKey</code>). The first two are strings, the last is in <a href="https://tools.ietf.org/html/rfc7517">JSON Web Key (JWK)</a> format.</p>
 
-<p>Initial messages are turned into <dfn>signed messages</dfn> before being sent over the signaling relay. First the message is encoded as a UTF-8 string, then a base-64 encoded signature is generated using the sender's private key. Then the message string and the signature string are put in a new JSON object, and that object is sent over the signaling relay.</p>
+<p>Initial messages are turned into <dfn>signed messages</dfn> before being sent over the signaling relay. First the message is encoded as a <a href="https://unicode.org/">UTF-8</a> string, then a <a href="https://tools.ietf.org/html/rfc4648#section-4">base64</a> encoded signature is generated using the sender's private key. Then the message string and the signature string are put in a new JSON object, and that object is sent over the signaling relay.</p>
 
 <p>So an initial message that starts out looking like this:</p>
 <code><pre>
@@ -125,7 +125,7 @@ If <var>Bob</var> wishes to, he can then send a <code>status</code> initial mess
   }
 }
 </pre></code>
-The <var>configURL</var> is the URL to load the <code>.yp</code> file describing the game from. <em class="TODO">describe player descriptions... like senders?</em>
+The <var>configURL</var> is the URL to load the <code><a href="README-yp.html">.yp</a></code> file describing the game from. <em class="TODO">describe player descriptions... like senders?</em>
 <dt><code>"join"</code>
 <dd>If <var>Alice</var> wants to join the game that <var>Bob</var> is playing (whether or not <var>Bob</var> is the hub), she can send a <code>join</code> initial message to <var>Bob</var>'s player ID via the signaling relay:
 <code><pre>
