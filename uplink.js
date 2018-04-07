@@ -90,7 +90,7 @@ function sendStatus(remoteID, sendID) {
   window.profile.sign({
     op: 'status',
     configURL: this.router.configURL,
-    players: this.players
+    players: this.players // TODO put id/handle/publicKey here instead of playerThing?
   }, (signedMsg) => {
     var relay =
       new SignalingRelay($('#signaling-relay-url').val(), sendID);

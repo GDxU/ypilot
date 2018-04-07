@@ -9,8 +9,26 @@ body {
 code {
   background-color: lightgray;
 }
+code > pre {
+  margin-top: 1ex;
+  margin-bottom: 1ex;
+  margin-left: 1em;
+  margin-right: 1ex;
+  padding: 1ex;
+  background-color: lightgray;
+  overflow: auto;
+}
 var {
   background-color: skyblue;
+}
+dt {
+  margin-top: 1em;
+}
+.TODO {
+  background-color: yellow;
+}
+.TODO:before {
+  content: "TODO: ";
 }
 </style>
 </head>
@@ -42,7 +60,7 @@ var {
 <h2>Hub</h2>
 <p>At any point during a game, exactly one player is designated the <dfn>hub</dfn>. All non-hub players maintain peer connections with the hub. All players (including the hub) simulate the game world in parallel. All input events must travel through the hub to be sequenced and rebroadcast before any players (including the hub) may incorporate them into the simulation.</p>
 
-<p>Which player is the hub may change during the game, and must change if the hub leaves a game that still has other players. <em>TODO how to do this deterministically and fairly, even when the hub is forcibly disconnected?</em></p>
+<p>Which player is the hub may change during the game, and must change if the hub leaves a game that still has other players. <em class="TODO">how to do this deterministically and fairly, even when the hub is forcibly disconnected?</em></p>
 
 <h2>Messages</h2>
 <p>All messages exchanged by YPilot players are JSON objects. Most have a common property named <code>op</code> (short for "operation") which is a string identifying the type of message.</p>
@@ -83,13 +101,48 @@ var {
 
 <p>The receiver of such a signed message then unwraps it again, verifying the signature and trusting the public key on first use (TOFU). If the signature is invalid or the public key doesn't match one the receiver already has associated with this <var>sender-id</var>, the message is dropped.</p>
 
-<em>TODO askStatus, status, join</em>
+<p>Other details of initial messages depend on the value of the <code>op</code> property:</p>
+
+<dl>
+<dt><code>"askStatus"</code>
+<dd>If <var>Alice</var> wants to know what game <var>Bob</var> is playing and with whom, she sends an <code>askStatus</code> initial message to <var>Bob</var>'s player ID via the signaling relay:
+<code><pre>
+{
+  "op": "askStatus",
+  "replyTo": "<var>recvID</var>"
+}
+</pre></code>
+If <var>Bob</var> wishes to, he can then send a <code>status</code> initial message (described below) to <var>recvID</var> via the signaling relay. <var>Alice</var> should start listening for this reply before sending the <code>askStatus</code> message.
+<dt><code>"status"</code>
+<dd>If <var>Bob</var> wishes to reply to an <code>askStatus</code> message, he can send a <code>status</code> initial message to <var>recvID</var> via the signaling relay:
+<code><pre>
+{
+  "op": "status",
+  "configURL": "<var>configURL</var>"
+  "players": {
+    "<var>playerID1</var>": <var>playerDescription1</var>,
+    "<var>playerID2</var>": <var>playerDescription2</var>
+  }
+}
+</pre></code>
+The <var>configURL</var> is the URL to load the <code>.yp</code> file describing the game from. <em class="TODO">describe player descriptions... like senders?</em>
+<dt><code>"join"</code>
+<dd>If <var>Alice</var> wants to join the game that <var>Bob</var> is playing (whether or not <var>Bob</var> is the hub), she can send a <code>join</code> initial message to <var>Bob</var>'s player ID via the signaling relay:
+<code><pre>
+{
+  "op": "join",
+  "replyTo": "<var>recvID</var>"
+}
+</pre></code>
+If <var>Bob</var> wishes to let <var>Alice</var> join the game, and <var>Bob</var> is the hub, he can start setting up a peer connection with <var>Alice</var> by sending a <code>handshake</code> WebRTC setup message to <var>recvID</var> via the signaling relay. If <var>Bob</var> isn't the hub, he can instead send a <code>vouch</code> peer message to the hub.
+</dl>
+<em class="TODO">direct text messages?</em>
 
 <h3>WebRTC setup messages</h3>
-<em>TODO handshake, candidate, offer</em>
+<em class="TODO">handshake, candidate, offer</em>
 
 <h3>Peer messages</h3>
-<em>TODO vouch, setState, addPlayer, removePlayer, press, release</em>
+<em class="TODO">vouch, setState, addPlayer, removePlayer, press, release</em>
 
 </body>
 </html>
