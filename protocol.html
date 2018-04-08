@@ -24,7 +24,7 @@
 
 <p>To receive a message from relay ID <var>foo</var>, <var>Alice</var> makes an HTTPS <code>POST</code> request to the relay URL with the parameter <code>k=<var>foo</var></code>. To send a message <var>bar</var> to <var>Alice</var>, <var>Bob</var> can then make an HTTPS <code>POST</code> request to the relay URL with the parameters <code>k=<var>foo</var>&amp;m=<var>bar</var></code>. The parameters must appear in that order, and <var>bar</var> must be URL-encoded. The relay will respond to <var>Alice</var>'s request with (decoded) <var>bar</var> as the content, and it will respond to <var>Bob</var>'s request with empty content.</p>
 
-<p>A bidirectional signaling relay may be set up with two relay IDs, a <dfn>send ID</dfn> and a <dfn>receive ID</dfn>. Two players share both IDs, and <var>Alice's</var> send ID is <var>Bob</var>'s receive ID, and vice versa.</p>
+<p>A bidirectional signaling relay may be set up with two relay IDs, a <dfn>send ID</dfn> and a <dfn>receive ID</dfn>. Two players share both IDs, and <var>Alice's</var> send ID is <var>Bob</var>'s receive ID, and vice versa. The two relay IDs should be created randomly when the bidirectional signaling relay is set up (i.e. they are UUIDv4s, like player IDs, but specific to the connection).</p>
 
 <h2>WebRTC</h2>
 <p>Once a bidirectional signaling relay exists, it can be used to set up a <dfn>peer connection</dfn> using <a href="https://www.w3.org/TR/webrtc/">WebRTC</a>. This type of connection is potentially more direct, and will take the load off of the signaling relay. To set up a peer connection, players negotiate over the signaling relay (involving <a href="https://tools.ietf.org/html/rfc5245">ICE</a> candidates and offers) until a way to connect is agreed upon.</p>
@@ -38,7 +38,7 @@
 <p>All messages exchanged by YPilot players are <a href="https://json.org/">JSON</a> objects. Most have a common property named <code>op</code> (short for "operation") which is a string identifying the type of message.</p>
 
 <h3>Initial messages</h3>
-<p>An <dfn>initial message</dfn> is a message sent over a signaling relay before a player is connected to the game. Initial messages have a <code>sender</code> property containing another object, with properties for the sender's player ID (<code>id</code>), current handle (<code>handle</code>), and public key (<code>publicKey</code>). The first two are strings, the last is in <a href="https://tools.ietf.org/html/rfc7517">JSON Web Key (JWK)</a> format.</p>
+<p>An <dfn>initial message</dfn> is a message sent over a signaling relay before a player is connected to another player. Initial messages have a <code>sender</code> property containing another object, with properties for the sender's player ID (<code>id</code>), current handle (<code>handle</code>), and public key (<code>publicKey</code>). The first two are strings, the last is in <a href="https://tools.ietf.org/html/rfc7517">JSON Web Key (JWK)</a> format.</p>
 
 <p>Initial messages are turned into <dfn>signed messages</dfn> before being sent over the signaling relay. First the message is encoded as a <a href="https://unicode.org/">UTF-8</a> string, then a <a href="https://tools.ietf.org/html/rfc4648#section-4">base64</a> encoded signature is generated using the sender's private key. Then the message string and the signature string are put in a new JSON object, and that object is sent over the signaling relay.</p>
 
@@ -107,14 +107,59 @@ The <var>configURL</var> is the URL to load the <code><a href="README-yp.html">.
 }
 </pre></code>
 If <var>Bob</var> wishes to let <var>Alice</var> join the game, and <var>Bob</var> is the hub, he can start setting up a peer connection with <var>Alice</var> by sending a <code>handshake</code> WebRTC setup message to <var>recvID</var> via the signaling relay. If <var>Bob</var> isn't the hub, he can instead send a <code>vouch</code> peer message to the hub.
+<dt><code>"handshake"</code>
+<dd>The <code>handshake</code> message moves the signaling relay into a mode where it can be used to facilitate setting up a peer connection with WebRTC. Continuing the above example, <var>Bob</var> already has a <var>recvID</var> for sending messages back to <var>Alice</var> via the signaling relay. By sending a <code>handshake</code> to <var>recvID</var>, he also creates a <var>sendID</var> for <var>Alice</var> to send messages back to <var>Bob</var>:
+<code><pre>
+{
+  "op": "handshake",
+  "replyTo": "<var>sendID</var>"
+}
+</pre></code>
+Now the signaling relay is bidirectional, and specific to the new connection between <var>Alice</var> and <var>Bob</var>. From this point on it will be used for WebRTC setup messages instead of initial messages. To start, the joining player, <var>Alice</var>, uses her end of the peer connection to create a data channel.
 </dl>
 <em class="TODO">direct text messages?</em>
 
 <h3>WebRTC setup messages</h3>
-<em class="TODO">handshake, candidate, offer</em>
+<p>A <dfn>setup message</dfn> is a message sent over a bidirectional signaling relay connecting the hub player of a game to a new player trying to join the game. These messages are used by the WebRTC protocol to set up a peer connection between the two players, so that they can stop using the relay and communicate more directly.</p>
+
+<p>Unlike initial messages, setup messages are not signed and do not include a <code>sender</code>. The connection is already private because it's over HTTPS and uses relay IDs (<var>sendID</var> and <var>recvID</var>) known only to the two connected players (and the relay itself), and the players are already authenticated to each other because they signed the <code>join</code> and <code>handshake</code> initial messages that set up the bidirectional signaling relay.</p>
+
+<p>The <code>op</code> property identifies the type of message:</p>
+
+<dl>
+<dt><code>"offer"</code> / <code>"answer"</code>
+<dd>These messages are used to exchange session descriptions (<a href="https://tools.ietf.org/html/rfc3264">SDP offer/answer</a>).
+<code><pre>
+{
+  "op": "<var>op</var>",
+  "description": <var>sessionDescription</var>
+}
+</pre></code>
+When either message type is received, the receiver should set their remote description to <var>sessionDescription</var>. If it was an <code>offer</code>, the receiver should then create an answer, set their local description, and send that local description in an <code>answer</code> message.
+<dt><code>"addCandidate"</code>
+<dd>The <code>addCandidate</code> message requests the receiver to add an ICE candidate. A player sends it when their peer connection emits an <code>icecandidate</code> event with a non-<code>null</code> <code>candidate</code>.
+<code><pre>
+{
+  "op": "addCandidate",
+  "candidate": <var>iceCandidate</var>
+}
+</pre></code>
+</dl>
 
 <h3>Peer messages</h3>
-<em class="TODO">vouch, setState, addPlayer, removePlayer, press, release</em>
+
+<dl>
+<dt><code>"vouch"</code>
+<dd><em class="TODO">describe</em>
+<dt><code>"setState"</code>
+<dd><em class="TODO">describe</em>
+<dt><code>"addPlayer"</code>
+<dd><em class="TODO">describe</em>
+<dt><code>"removePlayer"</code>
+<dd><em class="TODO">describe</em>
+<dt><code>"press"</code> / <code>"release"</code>
+<dd><em class="TODO">describe</em>
+</dl>
 
 </body>
 </html>
