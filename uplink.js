@@ -5,15 +5,11 @@ const PeerConnection = require('./peer-connection.js');
 function Uplink(hubID) {
   this.id = window.profile.id;
   this.router = window.router;
-  this.hubID = hubID;
+  this.server = null; // SignalingRelay we listen for initial messages on
+  this.client = null; // SignalingRelay we listen for handshakes on, and later reuse for WebRTC setup messages
+  this.hubID = null; // player ID of the hub
   this.players = {}; // map IDs to player descriptions
   this.connections = {}; // map IDs to SignalingRelays or PeerConnections
-  if (id != hubID) {
-    this.connect(hubID);
-  }
-  // NOTE: we listen even if we're not the hub, because we want to let people
-  // join through us (if we vouch for them to the hub)
-  this.listen();
 }
 
 Uplink.startNewGame = function() {
@@ -43,28 +39,22 @@ Uplink.joinGame = function(remoteID) {
 defineMethods(Uplink, [
 
 function join(remoteID) {
-  var relay = new SignalingRelay($('#signaling-relay-url').val(), remoteID);
-  relay.ondata(signedMsg => {
-    window.profile.verifyTOFU(signedMsg, msg => {
-      relay.sendID = msg.replyTo;
-      this.connections[remoteID] = relay;
-      this.connect(remoteID, undefined, undefined);
-      this.listen();
-    });
-  });
+  this.client = new SignalingRelay($('#signaling-relay-url').val(), remoteID);
+  this.connections[remoteID] = this.client;
+  this.client.ondata = this.receiveInitialMessage.bind(this, this.client); // just handshake
   window.profile.sign(
-    { op: 'join', replyTo: relay.recvID },
-    relay.write.bind(relay)
+    { op: 'join', replyTo: this.client.recvID },
+    this.client.write.bind(this.client)
   );
 },
 
 function listen() {
   this.server =
     new SignalingRelay($('#signaling-relay-url').val(), null, this.id);
-  this.server.ondata = this.receiveInitialMessage.bind(this);
+  this.server.ondata = this.receiveInitialMessage.bind(this, this.server);
 },
 
-function receiveInitialMessage(signedMsg) {
+function receiveInitialMessage(relay, signedMsg) {
   window.profile.verifyTOFU(signedMsg, (msg) => {
     window.profile.ifAllowed(msg.sender.id, msg.op, () => {
       switch (msg.op) {
@@ -76,6 +66,19 @@ function receiveInitialMessage(signedMsg) {
 	    this.accept(msg.sender.id, msg.replyTo);
 	  } else {
 	    this.vouch(msg);
+	  }
+	  break;
+	case 'handshake':
+	  if (this.client === relay) {
+	    // TODO load the .yp file
+	    this.client.sendID = msg.replyTo;
+	    // wrap the relay as a PeerConnection in place
+	    this.connect(remoteID);
+	    // initiate creating the data channel since we're the client
+	    this.connections[remoteID].createDataChannel();
+	    // NOTE: we listen even if we're not the hub, because we want to
+	    // let people join through us (if we vouch for them to the hub)
+	    this.listen();
 	  }
 	  break;
 	default:
@@ -115,9 +118,22 @@ function receiveVoucher(msg) {
 
 // set up remote player to join the game we're the hub of
 function accept(remoteID, sendID) {
-  // FIXME need to send a signed acceptance message over signaling relay to sendID, before trying to set up PeerConnection
-  // open a connection to the new player
-  this.connect(remoteID, sendID, undefined);
+  // make sure the relay is set up properly
+  if (!(remoteID in this.connections)) {
+    this.connections[remoteID] =
+      new SignalingRelay($('#signaling-relay-url').val(), sendID);
+  }
+  var relay = this.connections[remoteID];
+  // send the handshake
+  window.profile.sign(
+    { op: 'handshake',
+      replyTo: relay.recvID,
+      configURL: this.router.configURL
+    },
+    relay.write.bind(relay)
+  )
+  // open a PeerConnection to the new player
+  this.connect(remoteID);
   this.connections[remoteID].onopen = () => {
     // when it's open, send them the current game state
     this.connections[remoteID].send(
@@ -136,16 +152,17 @@ function accept(remoteID, sendID) {
   };
 },
 
-function connect(remoteID, sendID, recvID) {
-  if (!(remoteID in this.connections)) {
-    this.connections[remoteID] =
-      new SignalingRelay($('#signaling-relay-url').val(), sendID, recvID);
-  }
+// assumes this.connections[remoteID] is a SignalingRelay with sendID and
+// recvID set to random IDs specifically for this connection
+function connect(remoteID) {
+  var relay = this.connections[remoteID];
   this.connections[remoteID] = new PeerConnection(relay);
-  this.connections[remoteID].ondata = this.receiveMessage.bind(this, remoteID);
+  this.connections[remoteID].onmessage =
+    this.receivePeerMessage.bind(this, remoteID);
 },
 
-function receiveMessage(senderID, msg) {
+// TODO separate this into hub and non-hub versions; e.g. the hub should not be receiving setState
+function receivePeerMessage(senderID, msg) {
   switch (msg.op) {
     case 'vouch':
       if (this.id == this.hubID) {

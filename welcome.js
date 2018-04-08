@@ -222,6 +222,28 @@ $('#add-from-url').on('click', function(evt) {
   })
 });
 
+$('#restore-default-network-settings').on('click', function(evt) {
+  $('#signaling-relay-url').val(
+    "https://ssl.uofr.net/~willdb/cgi-bin/relay.pl"
+  );
+  $('#ice-servers').val(
+    "[\n" +
+    "{\"urls\":\"stun:stun.ekiga.net\"},\n" +
+    "{\"urls\":\"stun:stun.iptel.org\"},\n" +
+    "{\"urls\":\"stun:stun.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun1.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun2.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun3.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun4.l.google.com:19302\"},\n" +
+    "{\n" +
+    "        \"urls\": \"turn:numb.viagenie.ca\",\n" +
+    "        \"credential\": \"muazkh\",\n" +
+    "        \"username\": \"webrtc@live.com\"\n" +
+    "}\n" +
+    "]"
+  );
+}
+
 try {
   window.localStorage.setItem('__TEST_KEY__', '__TEST_VAL__');
   assert(window.localStorage.getItem('__TEST_KEY__') == '__TEST_VAL__');

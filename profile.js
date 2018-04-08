@@ -194,6 +194,10 @@ function ifAllowed(playerID, op, callback) {
 	  console.log('bogus joinPolicy!?');
       }
       break;
+    case 'handshake':
+      // always allow handshakes (we'll ignore unsolicited handshakes anyway)
+      callback();
+      break;
     default:
       console.log('bogus initial message op ' + op);
   }
