@@ -78,7 +78,7 @@ defineMethods(PeerConnection, [
 	    console.log('createAnswer success');
 	    that.rtcpc.setLocalDescription(answer, function() {
 	      console.log('setLocalDescription success');
-	      that.relay.write({ op: 'answer' description: that.rtcpc.localDescription });
+	      that.relay.write({ op: 'answer', description: that.rtcpc.localDescription });
 	    }, that.logError.bind(that));
 	  }, that.logError.bind(that));
 	}, this.logError.bind(this));

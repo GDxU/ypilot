@@ -15,6 +15,7 @@ SRCS = \
 	signaling-relay.js \
 	space.js \
 	stdlib.js \
+	uplink.js \
 	user-names.js \
 	vec2.js \
 	welcome.js

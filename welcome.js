@@ -109,7 +109,8 @@ function addGameRow(game, i) {
     '<td><a href="' + game.url + '">' + game.url + '</a></td>';
     // TODO forget button? need to manage indices. maybe instead make profile.games an object with hashed urls as keys, and use the hash instead of i in the button ids
   $(row.childNodes[0].childNodes[0]).on('click', function(evt) {
-    startGameFromProfile(evt.target.id.replace(/^start-game-/,'') | 0)
+    loadGameFromProfile(evt.target.id.replace(/^start-game-/,'') | 0,
+			startLoadedGame);
   });
   $(row.childNodes[1]).text(game.title);
   $(row.childNodes[2]).text(game.author);
@@ -133,6 +134,39 @@ function newProfile() {
 function selectElement(selectedElement, elementGroup) {
   elementGroup.removeClass('selected');
   selectedElement.addClass('selected');
+}
+
+window.addGameFromURL = function(url, callback) {
+  $.get(url).
+  done((data, textStatus, jqXHR) => {
+    var ast = tryToParseString(jqXHR.responseText);
+    if (ast === null) return;
+    var title = 'Untitled';
+    var author = 'Anonymous';
+    ast.forEach(statement => {
+      if (statement.op == 'metadata') {
+	switch (statement.key.toLowerCase()) {
+	  case 'title':
+	    title = statement.value;
+	    break;
+	  case 'author':
+	    author = statement.value;
+	    break;
+	  default:
+	    break;
+	}
+      }
+    });
+    // TODO sort? make table sortable by clicking headings?
+    var i = profile.games.length;
+    profile.games.push({ url: url, title: title, author: author });
+    changedProfile();
+    addGameRow(profile.games[i], i);
+    callback(i, ast);
+  }).
+  fail((jqXHR, textStatus, errorThrown) => {
+    $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
+  })
 }
 
 $(function() {
@@ -181,7 +215,8 @@ $('#config-file').on('change', function(evt) {
     var file = evt.target.files[0];
     var reader = new FileReader();
     reader.onload = function() {
-      startGameFromString(reader.result, encodeURI(file.name));
+      loadGameFromString(reader.result, encodeURI(file.name));
+      startLoadedGame();
     };
     reader.readAsText(file);
   } catch (e) {
@@ -191,35 +226,7 @@ $('#config-file').on('change', function(evt) {
 
 $('#add-from-url').on('click', function(evt) {
   var url = $('#config-url').val();
-  $.get(url).
-  done((data, textStatus, jqXHR) => {
-    var ast = tryToParseString(jqXHR.responseText);
-    if (ast === null) return;
-    var title = 'Untitled';
-    var author = 'Anonymous';
-    ast.forEach(statement => {
-      if (statement.op == 'metadata') {
-	switch (statement.key.toLowerCase()) {
-	  case 'title':
-	    title = statement.value;
-	    break;
-	  case 'author':
-	    author = statement.value;
-	    break;
-	  default:
-	    break;
-	}
-      }
-    });
-    // TODO sort? make table sortable by clicking headings?
-    var i = profile.games.length;
-    profile.games.push({ url: url, title: title, author: author });
-    changedProfile();
-    addGameRow(profile.games[i], i);
-  }).
-  fail((jqXHR, textStatus, errorThrown) => {
-    $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
-  })
+  addGameFromURL(url, () => {});
 });
 
 $('#restore-default-network-settings').on('click', function(evt) {
@@ -242,7 +249,7 @@ $('#restore-default-network-settings').on('click', function(evt) {
     "}\n" +
     "]"
   );
-}
+});
 
 try {
   window.localStorage.setItem('__TEST_KEY__', '__TEST_VAL__');

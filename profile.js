@@ -201,6 +201,18 @@ function ifAllowed(playerID, op, callback) {
     default:
       console.log('bogus initial message op ' + op);
   }
+},
+
+function loadGameFromURL(url, callback) {
+  var i = this.games.findIndex(g => (g.url == url));
+  if (i == -1) { // first time we're loading this game
+    addGameFromURL(url, (i, ast) => {
+      loadGameFromAST(ast, url);
+      callback();
+    });
+  } else {
+    loadGameFromProfile(gameIndex, callback);
+  }
 }
 
 ]);

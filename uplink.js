@@ -70,15 +70,17 @@ function receiveInitialMessage(relay, signedMsg) {
 	  break;
 	case 'handshake':
 	  if (this.client === relay) {
-	    // TODO load the .yp file
-	    this.client.sendID = msg.replyTo;
-	    // wrap the relay as a PeerConnection in place
-	    this.connect(remoteID);
-	    // initiate creating the data channel since we're the client
-	    this.connections[remoteID].createDataChannel();
-	    // NOTE: we listen even if we're not the hub, because we want to
-	    // let people join through us (if we vouch for them to the hub)
-	    this.listen();
+	    // load the .yp file
+	    window.profile.loadGameFromURL(msg.configURL, () => {
+	      this.client.sendID = msg.replyTo;
+	      // wrap the relay as a PeerConnection in place
+	      this.connect(remoteID);
+	      // initiate creating the data channel since we're the client
+	      this.connections[remoteID].createDataChannel();
+	      // NOTE: we listen even if we're not the hub, because we want to
+	      // let people join through us (if we vouch for them to the hub)
+	      this.listen();
+	    });
 	  }
 	  break;
 	default:
@@ -173,6 +175,7 @@ function receivePeerMessage(senderID, msg) {
       break;
     case 'setState':
       this.router.setState(msg);
+      joinLoadedGame();
       break;
     case 'addPlayer':
       var playerID = msg.player.id;

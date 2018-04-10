@@ -49,9 +49,17 @@ window.tryToParseString = function(ypText) {
   }
 };
 
-window.startGameFromString = function(ypText, sourceURL) {
-  var ast = tryToParseString(ypText);
-  if (ast === null) return;
+window.joinLoadedGame = function() {
+  $('#welcome').hide();
+  requestAnimationFrame(clockTick);
+};
+
+window.startLoadedGame = function() {
+  router.emit('start');
+  joinLoadedGame();
+};
+
+window.loadGameFromAST = function(ast, sourceURL) {
   try {
     var jsText = compile(ast);
     if (sourceURL) {
@@ -62,19 +70,23 @@ window.startGameFromString = function(ypText, sourceURL) {
     script.text = jsText;
     $('head').append(script);
     router.configURL = sourceURL;
-    router.emit('start');
-    $('#welcome').hide();
-    requestAnimationFrame(clockTick);
   } catch (e) {
     $('#welcome').append("<p>Error compiling config file:</p><pre>" + e + "</pre>");
   }
 };
 
-window.startGameFromProfile = function(gameIndex) {
+window.loadGameFromString = function(ypText, sourceURL) {
+  var ast = tryToParseString(ypText);
+  if (ast === null) return;
+  loadGameFromAST(ast, sourceURL);
+};
+
+window.loadGameFromProfile = function(gameIndex, callback) {
   var url = profile.games[gameIndex].url;
   $.get(url).
   done((data, textStatus, jqXHR) => {
-    startGameFromString(jqXHR.responseText, url);
+    loadGameFromString(jqXHR.responseText, url);
+    callback();
   }).
   fail((jqXHR, textStatus, errorThrown) => {
     $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
