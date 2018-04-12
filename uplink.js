@@ -163,16 +163,32 @@ function connect(remoteID) {
     this.receivePeerMessage.bind(this, remoteID);
 },
 
-// TODO separate this into hub and non-hub versions; e.g. the hub should not be receiving setState
 function receivePeerMessage(senderID, msg) {
+  if (this.id == this.hubID) {
+    this.receivePeerMessageAsHub(senderID, msg);
+  } else {
+    this.receivePeerMessageAsNonHub(senderID, msg);
+  }
+},
+
+function receivePeerMessageAsHub(senderID, msg) {
   switch (msg.op) {
     case 'vouch':
-      if (this.id == this.hubID) {
-	this.receiveVoucher(msg);
-      } else {
-	throw new Error("received a voucher, but I'm not the hub");
-      }
+      this.receiveVoucher(msg);
       break;
+    case 'press':
+    case 'release':
+      // TODO add frame number to msg?
+      this.broadcast(msg);
+      break;
+    // TODO? more ops
+    default:
+      throw new Error('WTF');
+  }
+},
+
+function receivePeerMessageAsNonHub(senderID, msg) {
+  switch (msg.op) {
     case 'setState':
       this.router.setState(msg);
       joinLoadedGame();
@@ -204,12 +220,7 @@ function receivePeerMessage(senderID, msg) {
       break;
     case 'press':
     case 'release':
-      if (this.id == this.hubID) {
-	// TODO add frame number to msg?
-	this.broadcast(msg);
-      } else {
-	this.router.emit(msg.op, msg.player, msg.code);
-      }
+      this.router.emit(msg.op, msg.player, msg.code);
       break;
     // TODO? more ops
     default:
