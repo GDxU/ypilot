@@ -21,16 +21,16 @@ Uplink.startNewGame = function() {
   return ul;
 };
 
-Uplink.askStatus = function(remoteID, callback) {
-  var relay = new SignalingRelay($('#signaling-relay-url').val(), remoteID);
-  relay.ondata(signedMsg => {
-    window.profile.verifyTOFU(signedMsg, callback);
-    relay.close(); // TODO somehow save this for later join?
+Uplink.askStatus = function(remoteID) {
+  return new Promise((resolve, reject) => {
+    var relay = new SignalingRelay($('#signaling-relay-url').val(), remoteID);
+    relay.ondata(signedMsg => {
+      resolve(window.profile.verifyTOFU(signedMsg));
+      relay.close(); // TODO somehow save this for later join?
+    });
+    window.profile.sign({ op: 'askStatus', replyTo: relay.recvID }).
+    then(relay.write.bind(relay));
   });
-  window.profile.sign(
-    { op: 'askStatus', replyTo: relay.recvID },
-    relay.write.bind(relay)
-  )
 };
 
 Uplink.joinGame = function(remoteID) {
@@ -45,10 +45,8 @@ function join(remoteID) {
   this.client = new SignalingRelay($('#signaling-relay-url').val(), remoteID);
   this.connections[remoteID] = this.client;
   this.client.ondata = this.receiveInitialMessage.bind(this, this.client); // just handshake
-  window.profile.sign(
-    { op: 'join', replyTo: this.client.recvID },
-    this.client.write.bind(this.client)
-  );
+  window.profile.sign({ op: 'join', replyTo: this.client.recvID }).
+  then(this.client.write.bind(this.client));
 },
 
 function listen() {
@@ -63,38 +61,42 @@ function clockTick() {
 },
 
 function receiveInitialMessage(relay, signedMsg) {
-  window.profile.verifyTOFU(signedMsg, (msg) => {
-    window.profile.ifAllowed(msg.sender.id, msg.op, () => {
-      switch (msg.op) {
-	case 'askStatus':
-	  this.sendStatus(msg.sender.id, msg.replyTo);
-	  break;
-	case 'join':
-	  if (this.id == this.hubID) {
-	    this.accept(msg.sender.id, msg.replyTo);
-	  } else {
-	    this.vouch(msg);
-	  }
-	  break;
-	case 'handshake':
-	  if (this.client === relay) {
-	    // load the .yp file
-	    window.profile.loadGameFromURL(msg.configURL, () => {
-	      this.client.sendID = msg.replyTo;
-	      // wrap the relay as a PeerConnection in place
-	      this.connect(remoteID);
-	      // initiate creating the data channel since we're the client
-	      this.connections[remoteID].createDataChannel();
-	      // NOTE: we listen even if we're not the hub, because we want to
-	      // let people join through us (if we vouch for them to the hub)
-	      this.listen();
-	    });
-	  }
-	  break;
-	default:
-	  throw new Error('WTF');
-      }
-    });
+  window.profile.verifyTOFU(signedMsg).
+  then(msg => {
+    return window.profile.ifAllowed(msg.sender.id, msg.op);
+  }).
+  then(() => {
+    switch (msg.op) {
+      case 'askStatus':
+	this.sendStatus(msg.sender.id, msg.replyTo);
+	break;
+      case 'join':
+	if (this.id == this.hubID) {
+	  this.accept(msg.sender.id, msg.replyTo);
+	} else {
+	  this.vouch(msg);
+	}
+	break;
+      case 'handshake':
+	if (this.client === relay) {
+	  // load the .yp file
+	  window.profile.loadGameFromURL(msg.configURL).
+	  then(() => {
+	    this.client.sendID = msg.replyTo;
+	    // wrap the relay as a PeerConnection in place
+	    this.connect(remoteID);
+	    // initiate creating the data channel since we're the client
+	    this.connections[remoteID].createDataChannel();
+	    // NOTE: we listen even if we're not the hub, because we want to
+	    // let people join through us (if we vouch for them to the hub)
+	    this.listen();
+	  });
+	  // TODO catch
+	}
+	break;
+      default:
+	throw new Error('WTF');
+    }
   });
 },
 
@@ -104,7 +106,8 @@ function sendStatus(remoteID, sendID) {
     op: 'status',
     configURL: this.router.configURL,
     players: this.players // TODO put id/handle/publicKey here instead of playerThing?
-  }, (signedMsg) => {
+  }).
+  then(signedMsg => {
     var relay =
       new SignalingRelay($('#signaling-relay-url').val(), sendID);
     this.connections[remoteID] = relay;
@@ -121,7 +124,8 @@ function vouch(msg) {
 function receiveVoucher(msg) {
   // as hub, check ifAllowed join, then accept
   window.profile.know(msg.vouchee); // FIXME should we really just blindly accept the vouchee's credentials from the 3rd-party vouch-er?
-  window.profile.ifAllowed(msg.vouchee.id, 'join', () => {
+  window.profile.ifAllowed(msg.vouchee.id, 'join').
+  then(() => {
     this.accept(msg.vouchee.id, msg.replyTo);
   });
 },
@@ -135,13 +139,12 @@ function accept(remoteID, sendID) {
   }
   var relay = this.connections[remoteID];
   // send the handshake
-  window.profile.sign(
-    { op: 'handshake',
-      replyTo: relay.recvID,
-      configURL: this.router.configURL
-    },
-    relay.write.bind(relay)
-  )
+  window.profile.sign({
+    op: 'handshake',
+    replyTo: relay.recvID,
+    configURL: this.router.configURL
+  }).
+  then(relay.write.bind(relay));
   // open a PeerConnection to the new player
   this.connect(remoteID);
   this.connections[remoteID].onopen = () => {

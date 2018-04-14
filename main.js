@@ -81,14 +81,28 @@ window.loadGameFromString = function(ypText, sourceURL) {
   loadGameFromAST(ast, sourceURL);
 };
 
-window.loadGameFromProfile = function(gameIndex, callback) {
-  var url = profile.games[gameIndex].url;
-  $.get(url).
-  done((data, textStatus, jqXHR) => {
-    loadGameFromString(jqXHR.responseText, url);
-    callback();
-  }).
-  fail((jqXHR, textStatus, errorThrown) => {
-    $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
+window.convertAjaxFailToPromiseReject =
+function(textStatus, errorThrown, reject) {
+  if (errorThrown instanceof Error) {
+    reject(errorThrown);
+  } else if ('string' == typeof errorThrown) {
+    reject(new Error(textStatus + ' ' + errorThrown));
+  } else {
+    reject(new Error(textStatus));
+  }
+};
+
+window.loadGameFromProfile = function(gameIndex) {
+  return new Promise((resolve, reject) => {
+    var url = profile.games[gameIndex].url;
+    $.get(url).
+    done((data, textStatus, jqXHR) => {
+      loadGameFromString(jqXHR.responseText, url);
+      resolve(null);
+    }).
+    fail((jqXHR, textStatus, errorThrown) => {
+      $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
+      convertAjaxFailToPromiseReject(textStatus, errorThrown, reject);
+    });
   });
 };

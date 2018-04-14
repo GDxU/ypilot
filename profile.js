@@ -11,12 +11,12 @@ const cryptoOptions = {
   saltLength: 128
 };
 
-function generateKeyPair(callback) {
-  crypto.subtle.generateKey(
-    cryptoOptions,
-    true, // can be exported
-    ['sign', 'verify']
-  ).then(callback).catch(err => console.error(err));
+function generateKeyPair() {
+  return crypto.subtle.generateKey(
+	   cryptoOptions,
+	   true, // can be exported
+	   ['sign', 'verify']
+	 );
 }
 
 function Profile(opts) {
@@ -31,33 +31,33 @@ function Profile(opts) {
 
 defineMethods(Profile, [
 
-// call callback with a representation of this profile as a JSON.stringifiable
-// Object, with the key pair exported in JWK format
-function toObject(callback) {
+// Promise a representation of this profile as a JSON.stringifiable Object,
+// with the key pair exported in JWK format
+function toObject() {
   // export keys from crypto API
   var pub;
-  crypto.subtle.exportKey('jwk', this.keyPair.publicKey).
+  return crypto.subtle.exportKey('jwk', this.keyPair.publicKey).
   then(x => {
     pub = x;
     return crypto.subtle.exportKey('jwk', this.keyPair.privateKey);
   }).
   then(priv => {
     // make a plain object
-    callback({
+    return {
       id: this.id,
       handle: this.handle,
       useLocalStorage: this.useLocalStorage,
       keyPair: { publicKey: pub, privateKey: priv },
       knownPlayers: this.knownPlayers,
       games: this.games
-    });
-  }).catch(err => console.error(err));
+    };
+  });
 },
 
-// create a version of msg (which must be a JSON.stringifiable Object) signed
-// with the private key and pass it to the callback
-function sign(msg, callback) {
-  crypto.subtle.exportKey('jwk', this.keyPair.publicKey).
+// Promise to create a version of msg (which must be a JSON.stringifiable
+// Object) signed with the private key
+function sign(msg) {
+  return crypto.subtle.exportKey('jwk', this.keyPair.publicKey).
   then(publicKey => {
     // add sender info to msg
     var msgWithSender = Object.assign(
@@ -70,27 +70,26 @@ function sign(msg, callback) {
     var msgBytes = encoder.encode(msgStr);
     return (
       // get the signature of those bytes
-      crypto.subtle.sign(cryptoOptions, this.keyPair.privateKey, msgBytes).
-      then(signature => {
-	console.log(signature);
-	console.log(base64js.fromByteArray(new Uint8Array(signature)));
-	// put the string and base64 signature together, and pass to callback
-	callback({
-	  msg: msgStr,
-	  sig: base64js.fromByteArray(new Uint8Array(signature))
-	});
-      })
+      crypto.subtle.sign(cryptoOptions, this.keyPair.privateKey, msgBytes)
     );
   }).
-  catch(err => console.error(err));
+  then(signature => {
+    console.log(signature);
+    console.log(base64js.fromByteArray(new Uint8Array(signature)));
+    // put the string and base64 signature together
+    return {
+      msg: msgStr,
+      sig: base64js.fromByteArray(new Uint8Array(signature))
+    };
+  });
 },
 
 // extract the original message from the signed message, and either verify the
 // signature if we've seen a sender with this ID before, or save the sender's
 // ID and public key for future reference otherwise. TOFU = Trust On First Use.
 // If the sender is successfully trusted, update their handle if it changed,
-// and pass the original message to the callback.
-function verifyTOFU(signedMsg, callback) {
+// and resolve the returned Promise with the original message.
+function verifyTOFU(signedMsg) {
   var { msg: msgStr, sig } = signedMsg;
   var msg = JSON.parse(msgStr);
   var senderID = msg.sender.id;
@@ -102,35 +101,34 @@ function verifyTOFU(signedMsg, callback) {
     if (player.publicKey != msg.sender.publicKey) {
       throw new Error("public key in message doesn't match those in previous messages from the same sender");
     }
-    this.verify(msgStr, sig, msg, senderID, player.publicKey, callback);
+    return this.verify(msgStr, sig, msg, senderID, player.publicKey);
   } else { // first use, trust that the key is correct
     // import the key from the message (this is why this.verify is a separate
     // function)
-    crypto.subtle.importKey('jwk', msg.sender.publicKey, cryptoOptions,
-			    true, ['verify']).
-    then(key => {
-      this.verify(msgStr, sig, msg, senderID, key, callback);
-    }).
-    catch(err => console.error(err));
+    return (
+      crypto.subtle.importKey('jwk', msg.sender.publicKey, cryptoOptions,
+			      true, ['verify']).
+      then(key => {
+	return this.verify(msgStr, sig, msg, senderID, key);
+      })
+    );
   }
 },
 
 // internal part of verifyTOFU that happens after we get the imported key
-function verify(msgStr, sig, msg, senderID, key, callback) {
+function verify(msgStr, sig, msg, senderID, key) {
   var encoder = new TextEncoder('utf-8');
   var msgBytes = encoder.encode(msgStr);
   var sigBytes = base64js.toByteArray(sig);
-  console.log(key);
-  crypto.subtle.verify(cryptoOptions, key, sigBytes, msgBytes).
+  return crypto.subtle.verify(cryptoOptions, key, sigBytes, msgBytes).
   then(isValid => {
     if (isValid) {
       this.know(msg.sender);
-      callback(msg);
+      return msg;
     } else { // not valid
-      console.error("message not verified to be from its claimed sender");
+      throw new Error("message not verified to be from its claimed sender");
     }
-  }).
-  catch(err => console.error(err));
+  });
 },
 
 // store player's info in this.knownPlayers (updating if already there)
@@ -161,110 +159,116 @@ function know(player) {
   }
 },
 
-// call callback if the identified remote player is allowed to do initial
-// message operation op, possibly after consulting the local player
+// return a Promise resolved if the identified remote player is allowed to do
+// initial message operation op, possibly after consulting the local player
 // assumes the remote player is already known
-function ifAllowed(playerID, op, callback) {
-  switch (op) {
-    case 'askStatus':
-      switch (this.knownPlayers[playerID].statusResponsePolicy) {
-	case 'askMe':
-	  // TODO ask the local user somehow
-	  break;
-	case 'alwaysGive':
-	  callback();
-	  break;
-	case 'alwaysIgnore':
-	  break;
-	default:
-	  console.log('bogus statusResponsePolicy!?');
-      }
-      break;
-    case 'join':
-      switch (this.knownPlayers[playerID].joinPolicy) {
-	case 'askMe':
-	  // TODO ask the local user somehow
-	  break;
-	case 'alwaysAllowOrVouch':
-	  callback();
-	  break;
-	case 'alwaysIgnoreOrReject':
-	  break;
-	default:
-	  console.log('bogus joinPolicy!?');
-      }
-      break;
-    case 'handshake':
-      // always allow handshakes (we'll ignore unsolicited handshakes anyway)
-      callback();
-      break;
-    default:
-      console.log('bogus initial message op ' + op);
-  }
+function ifAllowed(playerID, op) {
+  return new Promise((resolve, reject) => {
+    switch (op) {
+      case 'askStatus':
+	switch (this.knownPlayers[playerID].statusResponsePolicy) {
+	  case 'askMe':
+	    // TODO ask the local user somehow
+	    reject();
+	    break;
+	  case 'alwaysGive':
+	    resolve();
+	    break;
+	  case 'alwaysIgnore':
+	    reject();
+	    break;
+	  default:
+	    throw new Error('bogus statusResponsePolicy!?');
+	}
+	break;
+      case 'join':
+	switch (this.knownPlayers[playerID].joinPolicy) {
+	  case 'askMe':
+	    // TODO ask the local user somehow
+	    reject();
+	    break;
+	  case 'alwaysAllowOrVouch':
+	    resolve();
+	    break;
+	  case 'alwaysIgnoreOrReject':
+	    reject();
+	    break;
+	  default:
+	    throw new Error('bogus joinPolicy!?');
+	}
+	break;
+      case 'handshake':
+	// always allow handshakes (we'll ignore unsolicited handshakes anyway)
+	resolve();
+	break;
+      default:
+	throw new Error('bogus initial message op ' + op);
+    }
+  });
 },
 
-function loadGameFromURL(url, callback) {
+function loadGameFromURL(url) {
   var i = this.games.findIndex(g => (g.url == url));
   if (i == -1) { // first time we're loading this game
-    addGameFromURL(url, (i, ast) => {
-      loadGameFromAST(ast, url);
-      callback();
-    });
+    return addGameFromURL(url).
+	   then(({ i, ast }) => {
+	     loadGameFromAST(ast, url);
+	   });
   } else {
-    loadGameFromProfile(gameIndex, callback);
+    return loadGameFromProfile(gameIndex);
   }
 }
 
 ]);
 
-// make a new Profile with random id, handle, and keyPair, and pass it to the
-// callback
-Profile.generateRandom = function(callback) {
-  generateKeyPair(keyPair => {
-    callback(new Profile({
-      id: uuidv4(),
-      handle: UserNames.generateRandom(),
-      useLocalStorage: true,
-      keyPair: keyPair,
-      knownPlayers: {},
-      games: []
-    }));
-  });
+// Promise to make a new Profile with random id, handle, and keyPair
+Profile.generateRandom = function() {
+  return generateKeyPair().
+	 then(keyPair => {
+	   return new Profile({
+	     id: uuidv4(),
+	     handle: UserNames.generateRandom(),
+	     useLocalStorage: true,
+	     keyPair: keyPair,
+	     knownPlayers: {},
+	     games: []
+	   });
+	 });
 };
 
-// turn a JSON string of an object obtained from toObject above, back into a
-// Profile object, and pass it to the callback
-Profile.fromString = function(str, callback) {
-  try {
-    var o = JSON.parse(str);
+// Promise to turn a JSON string of an object obtained from toObject above,
+// back into a Profile object
+Profile.fromString = function(str) {
+  return new Promise((resolve, reject) => resolve(JSON.parse(str))).
+  then(o => {
     // import keys into the crypto API
-    crypto.subtle.importKey('jwk', o.keyPair.publicKey, cryptoOptions,
-			    true, ['verify']).
+    return crypto.subtle.importKey('jwk', o.keyPair.publicKey, cryptoOptions,
+				   true, ['verify']).
     then(importedPublicKey => {
       o.keyPair.publicKey = importedPublicKey;
       return (
 	crypto.subtle.importKey('jwk', o.keyPair.privateKey, cryptoOptions,
-				true, ['sign']));
+				true, ['sign'])
+      );
     }).
     then(importedPrivateKey => {
       o.keyPair.privateKey = importedPrivateKey;
       // make a new profile with the loaded options
-      callback(new Profile(o));
-    }).
-    catch(err => console.error(err));
-  } catch (err) {
-    console.error(err);
-  }
+      return new Profile(o);
+    })
+  });
 }
 
 // call fromString on the contents of a File (obtained from a file input
 // element)
-Profile.fromFile = function(file, callback) {
-  var reader = new FileReader();
-  reader.onload = function() {
-    Profile.fromString(reader.result, callback);
-  };
-  reader.readAsText(file);
+Profile.fromFile = function(file) {
+  return new Promise((resolve, reject) => {
+    var reader = new FileReader();
+    reader.onload = function() {
+      resolve(Profile.fromString(reader.result));
+    };
+    reader.readAsText(file);
+  });
 };
 
 module.exports = Profile;

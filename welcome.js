@@ -10,9 +10,10 @@ if (!('function' == typeof assert)) {
 
 function changedProfile() {
   if (window.profile.useLocalStorage) {
-    window.profile.toObject(o => {
+    window.profile.toObject().then(o => {
       window.localStorage.setItem('profile', JSON.stringify(o));
     });
+    // TODO catch
   }
 }
 
@@ -109,8 +110,9 @@ function addGameRow(game, i) {
     '<td><a href="' + game.url + '">' + game.url + '</a></td>';
     // TODO forget button? need to manage indices. maybe instead make profile.games an object with hashed urls as keys, and use the hash instead of i in the button ids
   $(row.childNodes[0].childNodes[0]).on('click', function(evt) {
-    loadGameFromProfile(evt.target.id.replace(/^start-game-/,'') | 0,
-			startLoadedGame);
+    loadGameFromProfile(evt.target.id.replace(/^start-game-/,'') | 0).
+    then(startLoadedGame);
+    // TODO catch
   });
   $(row.childNodes[1]).text(game.title);
   $(row.childNodes[2]).text(game.author);
@@ -125,10 +127,12 @@ function updateGamesTable() {
 }
 
 function newProfile() {
-  Profile.generateRandom(p => {
+  Profile.generateRandom().
+  then(p => {
     p.useLocalStorage = $('#use-local-storage').prop('checked');
     setProfile(p);
   });
+  // TODO catch
 }
 
 function selectElement(selectedElement, elementGroup) {
@@ -136,37 +140,40 @@ function selectElement(selectedElement, elementGroup) {
   selectedElement.addClass('selected');
 }
 
-window.addGameFromURL = function(url, callback) {
-  $.get(url).
-  done((data, textStatus, jqXHR) => {
-    var ast = tryToParseString(jqXHR.responseText);
-    if (ast === null) return;
-    var title = 'Untitled';
-    var author = 'Anonymous';
-    ast.forEach(statement => {
-      if (statement.op == 'metadata') {
-	switch (statement.key.toLowerCase()) {
-	  case 'title':
-	    title = statement.value;
-	    break;
-	  case 'author':
-	    author = statement.value;
-	    break;
-	  default:
-	    break;
+window.addGameFromURL = function(url) {
+  return new Promise((resolve, reject) => {
+    $.get(url).
+    done((data, textStatus, jqXHR) => {
+      var ast = tryToParseString(jqXHR.responseText);
+      if (ast === null) return;
+      var title = 'Untitled';
+      var author = 'Anonymous';
+      ast.forEach(statement => {
+	if (statement.op == 'metadata') {
+	  switch (statement.key.toLowerCase()) {
+	    case 'title':
+	      title = statement.value;
+	      break;
+	    case 'author':
+	      author = statement.value;
+	      break;
+	    default:
+	      break;
+	  }
 	}
-      }
+      });
+      // TODO sort? make table sortable by clicking headings?
+      var i = profile.games.length;
+      profile.games.push({ url: url, title: title, author: author });
+      changedProfile();
+      addGameRow(profile.games[i], i);
+      resolve({ i: i, ast: ast });
+    }).
+    fail((jqXHR, textStatus, errorThrown) => {
+      $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
+      convertAjaxFailToPromiseReject(textStatus, errorThrown, reject);
     });
-    // TODO sort? make table sortable by clicking headings?
-    var i = profile.games.length;
-    profile.games.push({ url: url, title: title, author: author });
-    changedProfile();
-    addGameRow(profile.games[i], i);
-    callback(i, ast);
-  }).
-  fail((jqXHR, textStatus, errorThrown) => {
-    $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
-  })
+  });
 }
 
 $(function() {
@@ -193,19 +200,20 @@ $('#handle').on('change', evt => {
 
 $('#import-profile').on('change', evt => {
   var file = evt.target.files[0]
-  Profile.fromFile(file, setProfile);
+  Profile.fromFile(file).then(setProfile);
   // keep the filename we opened as the one to save back to
   $('#export-profile-link').prop('download', file.name);
   $('#export-profile-link').text(file.name); // why not
 });
 
 $('#export-profile').on('click', evt => {
-  window.profile.toObject(o => {
+  window.profile.toObject().then(o => {
     $('#export-profile-link').attr('href',
       'data:application/json;charset=utf-8,' +
       encodeURIComponent(JSON.stringify(o))
     ).click();
   });
+  // TODO catch
 });
 
 $('#new-profile').on('click', newProfile);
@@ -226,7 +234,7 @@ $('#config-file').on('change', function(evt) {
 
 $('#add-from-url').on('click', function(evt) {
   var url = $('#config-url').val();
-  addGameFromURL(url, () => {});
+  addGameFromURL(url);
 });
 
 $('#restore-default-network-settings').on('click', function(evt) {
@@ -264,7 +272,7 @@ try {
   assert($('#use-local-storage').prop('checked'));
   var profileStr = window.localStorage.getItem('profile');
   assert(profileStr !== null);
-  Profile.fromString(profileStr, setProfile);
+  Profile.fromString(profileStr).then(setProfile);
   // FIXME some errors just get printed to console
 } catch (e) {
   newProfile();

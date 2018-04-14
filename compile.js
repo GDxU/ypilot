@@ -68,7 +68,7 @@ function compileOp(ast) {
 	console.log(JSON.stringify(ast));
 	throw new Error("for now, use url must begin with \"standard:\"");
 	// TODO fetch http(s) URLs
-	// need to use callbacks instead of returns
+	// need to return Promises instead of values
       }
     case 'defineAdjective':
       adjectiveDependencies[ast.name] = ast.dependencies;
