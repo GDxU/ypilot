@@ -210,7 +210,7 @@ This includes the thing numbers of the <var>next-thing</var> and all the things 
 }
 </pre></code>
 <dt><code>"press"</code> / <code>"release"</code>
-<dd>When a player presses or releases a key on their keyboard, they send this message to the hub, who broadcasts it to all the players (including the original sender). The message takes effect when the players receive it from the hub, even for the original sender.
+<dd>When a player presses or releases a key on their keyboard, they send this message to the hub, who broadcasts it to all the players (including the original sender). The message takes effect only after the players receive it from the hub (at the next <code>clockTick</code>), even for the original sender.
 <code><pre>
 {
   "op": "<var>op</var>",
@@ -219,6 +219,8 @@ This includes the thing numbers of the <var>next-thing</var> and all the things 
 }
 </pre></code>
 Note that the player is identified here by their thing number, not their player ID or a full description.
+<dt><code>"clockTick"</code>
+<dd>When the hub starts simulating a frame (including processing all the input events since the previous frame), it broadcasts a <code>clockTick</code> message. This message has no properties besides <code>op</code>. When a non-hub player receives a <code>clockTick</code> message, it processes all the input event messages it has received from the hub since the last <code>clockTick</code> message, and then runs one tick of the simulation (by emitting a <code>clockTick</code> event from the <code>Router</code>). The hub also does this after it sends the <code>clockTick</code> message.
 </dl>
 <em class="TODO">new messages/extensions to existing messages for managing hub switches/succession order (maybe remaining player with lowest thing ID gets to be the hub?)</em>
 </body>

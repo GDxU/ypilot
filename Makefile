@@ -5,6 +5,7 @@ INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \
 	$(MAIN) \
+	clock.js \
 	compile.js \
 	define-methods.js \
 	interface.js \

@@ -1,6 +1,7 @@
 const defineMethods = require('./define-methods.js');
 const SignalingRelay = require('./signaling-relay.js');
 const PeerConnection = require('./peer-connection.js');
+const Clock = require('./clock.js');
 
 function Uplink(hubID) {
   this.id = window.profile.id;
@@ -10,11 +11,13 @@ function Uplink(hubID) {
   this.hubID = null; // player ID of the hub
   this.players = {}; // map IDs to player descriptions
   this.connections = {}; // map IDs to SignalingRelays or PeerConnections
+  this.inputBuffer = []; // input event messages since the last clockTick
 }
 
 Uplink.startNewGame = function() {
   var ul = new Uplink();
   ul.listen();
+  Clock.start(ul.clockTick.bind(ul));
   return ul;
 };
 
@@ -52,6 +55,11 @@ function listen() {
   this.server =
     new SignalingRelay($('#signaling-relay-url').val(), null, this.id);
   this.server.ondata = this.receiveInitialMessage.bind(this, this.server);
+},
+
+function clockTick() {
+  this.broadcast({ op: 'clockTick' });
+  this.flushInputBuffer();
 },
 
 function receiveInitialMessage(relay, signedMsg) {
@@ -178,8 +186,8 @@ function receivePeerMessageAsHub(senderID, msg) {
       break;
     case 'press':
     case 'release':
-      // TODO add frame number to msg?
       this.broadcast(msg);
+      this.inputBuffer.push(msg);
       break;
     // TODO? more ops
     default:
@@ -220,11 +228,29 @@ function receivePeerMessageAsNonHub(senderID, msg) {
       break;
     case 'press':
     case 'release':
-      this.router.emit(msg.op, msg.player, msg.code);
+      this.inputBuffer.push(msg);
+      break;
+    case 'clockTick':
+      this.flushInputBuffer();
       break;
     // TODO? more ops
     default:
       throw new Error('WTF');
+  }
+},
+
+function flushInputBuffer() {
+  this.inputBuffer.forEach(m => this.router.emit(m.op, m.player, m.code));
+  this.inputBuffer.length = 0;
+  this.router.emit('clockTick');
+},
+
+function localInput(op, player, code) {
+  var msg = { op: op, player: player, code: code };
+  if (this.id == this.hubID) {
+    this.receivePeerMessageAsHub();
+  } else {
+    this.connections[this.hubID].send(msg);
   }
 },
 

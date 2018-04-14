@@ -141,6 +141,7 @@ function unbecomeOriented(thing, {orientation}) {
   }
 },
 
+// TODO make these use uplink.localInput instead of router.emit (how to get uplink?)
 function keydown(evt) {
   router.emit('press', this.player, evt.code);
 },
