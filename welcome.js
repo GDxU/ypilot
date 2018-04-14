@@ -1,6 +1,8 @@
 const $ = require('jquery');
 const UserNames = require('./user-names.js');
 const Profile = require('./profile.js');
+const Game = require('./game.js');
+const convertFailToReject = require('./errors.js').convertFailToReject;
 
 if (!('function' == typeof assert)) {
   function assert(condition) {
@@ -110,8 +112,8 @@ function addGameRow(game, i) {
     '<td><a href="' + game.url + '">' + game.url + '</a></td>';
     // TODO forget button? need to manage indices. maybe instead make profile.games an object with hashed urls as keys, and use the hash instead of i in the button ids
   $(row.childNodes[0].childNodes[0]).on('click', function(evt) {
-    loadGameFromProfile(evt.target.id.replace(/^start-game-/,'') | 0).
-    then(startLoadedGame);
+    Game.loadFromProfile(evt.target.id.replace(/^start-game-/,'') | 0).
+    then(Game.startLoaded);
     // TODO catch
   });
   $(row.childNodes[1]).text(game.title);
@@ -144,7 +146,7 @@ window.addGameFromURL = function(url) {
   return new Promise((resolve, reject) => {
     $.get(url).
     done((data, textStatus, jqXHR) => {
-      var ast = tryToParseString(jqXHR.responseText);
+      var ast = Game.tryToParseString(jqXHR.responseText);
       if (ast === null) return;
       var title = 'Untitled';
       var author = 'Anonymous';
@@ -171,7 +173,7 @@ window.addGameFromURL = function(url) {
     }).
     fail((jqXHR, textStatus, errorThrown) => {
       $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
-      convertAjaxFailToPromiseReject(textStatus, errorThrown, reject);
+      convertFailToReject(textStatus, errorThrown, reject);
     });
   });
 }
@@ -223,8 +225,8 @@ $('#config-file').on('change', function(evt) {
     var file = evt.target.files[0];
     var reader = new FileReader();
     reader.onload = function() {
-      loadGameFromString(reader.result, encodeURI(file.name));
-      startLoadedGame();
+      Game.loadFromString(reader.result, encodeURI(file.name));
+      Game.startLoaded();
     };
     reader.readAsText(file);
   } catch (e) {

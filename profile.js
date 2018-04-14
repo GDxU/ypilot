@@ -1,6 +1,7 @@
 const uuidv4 = require('uuid/v4');
 const base64js = require('base64-js');
 const UserNames = require('./user-names.js');
+const Game = require('./game.js');
 const defineMethods = require('./define-methods.js');
 
 const cryptoOptions = {
@@ -212,10 +213,10 @@ function loadGameFromURL(url) {
   if (i == -1) { // first time we're loading this game
     return addGameFromURL(url).
 	   then(({ i, ast }) => {
-	     loadGameFromAST(ast, url);
+	     Game.loadFromAST(ast, url);
 	   });
   } else {
-    return loadGameFromProfile(gameIndex);
+    return Game.loadFromProfile(gameIndex);
   }
 }
 

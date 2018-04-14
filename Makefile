@@ -8,6 +8,8 @@ SRCS = \
 	clock.js \
 	compile.js \
 	define-methods.js \
+	errors.js \
+	game.js \
 	interface.js \
 	parser.js \
 	peer-connection.js \

@@ -2,6 +2,7 @@ const defineMethods = require('./define-methods.js');
 const SignalingRelay = require('./signaling-relay.js');
 const PeerConnection = require('./peer-connection.js');
 const Clock = require('./clock.js');
+const Game = require('./game.js');
 
 function Uplink(hubID) {
   this.id = window.profile.id;
@@ -202,7 +203,7 @@ function receivePeerMessageAsNonHub(senderID, msg) {
   switch (msg.op) {
     case 'setState':
       this.router.setState(msg);
-      joinLoadedGame();
+      Game.joinLoaded();
       break;
     case 'addPlayer':
       var playerID = msg.player.id;
