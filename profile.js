@@ -55,6 +55,19 @@ function toObject() {
   });
 },
 
+// Promise a description of this player as a JSON.stringifiable Object, with
+// the public key (not the private key) exported in JWK format.
+function getPlayerDescription() {
+  return crypto.subtle.exportKey('jwk', this.keyPair.publicKey).
+  then(pub => {
+    return {
+      id: this.id,
+      handle: this.handle,
+      publicKey: pub
+    };
+  });
+},
+
 // Promise to create a version of msg (which must be a JSON.stringifiable
 // Object) signed with the private key
 function sign(msg) {

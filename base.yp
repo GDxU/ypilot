@@ -62,12 +62,7 @@ a BasicShip is Located
 a Piloting thing has
   a ship which is a BasicShip
 
-# local on the network (see Located for located in space)
-a Local thing has
+an Interfaced thing has
   an interface which is an Interface object
-# TODO what about NPCs? they don't need an interface
 
-# remote on the network
-# TODO connect up the JS implementation
-a Remote thing has
-  a connection which is a PeerConnection object
+a Player is Named and Interfaced

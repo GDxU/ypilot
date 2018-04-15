@@ -21,6 +21,13 @@ Uplink.startNewGame = function() {
   ul.hubID = ul.id; // we're the hub since we're the only player so far
   ul.listen();
   Clock.start(ul.clockTick.bind(ul));
+  window.profile.getPlayerDescription().
+  then(playerDesc => {
+    ul.receivePeerMessageAsNonHub(ul.id, {
+      op: 'addPlayer',
+      player: playerDesc
+    });
+  });
   hideWelcome();
   return ul;
 };
@@ -211,24 +218,21 @@ function receivePeerMessageAsNonHub(senderID, msg) {
     case 'addPlayer':
       var playerID = msg.player.id;
       var playerThing = this.router.newThing();
+      var playerName = 'Anonymous';
       if (playerID == this.id) { // we just got added
-	this.router.add(playerThing, {
-	  Named: { name: window.profile.handle },
-	  Local: { interface: new Interface(playerThing) }
-	});
+	playerName = window.profile.handle;
       } else { // someone else just got added
         window.profile.know(msg.player);
-	this.router.add(playerThing, {
-	  // TODO Type: Player? except we don't have Player in base.yp
-	  Named: { name: window.profile.knownPlayers[playerID].handle },
-	  // FIXME don't really need to expose the connection; also it might
-	  // not exist since we might not be the hub
-	  Remote: { connection: this.connections[playerID] }
-	});
+	playerName = window.profile.knownPlayers[playerID].handle;
       }
       this.players[playerID] = {
 	thing: playerThing
       };
+      this.router.add(playerThing, {
+	Typed: { type: Player },
+	Named: { name: window.profile.handle },
+	Interfaced: { interface: new Interface(playerThing) }
+      });
       break;
     case 'removePlayer':
       // TODO
@@ -262,6 +266,7 @@ function localInput(op, player, code) {
 },
 
 // send msg to all players (not necessarily all connections)
+// FIXME should this send to the local player (as non-hub)? currently it doesn't
 function broadcast(msg) {
   for (var playerID in this.players) {
     if (playerID in this.connections && // should always be true, but whatever

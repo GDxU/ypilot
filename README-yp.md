@@ -225,9 +225,9 @@ These adjectives are defined in the YPilot language, but since the core JavaScri
 
 Describes things that can be heard. Used by `Interface` objects (or will be, when I implement it).
 
-    Local
+    Interfaced
 
-Describes players that play on the local machine, and thus have an `Interface` object.
+Describes players who are playing through a user interface (not NPCs), and thus have an `Interface` object. This includes both local and remote players.
 
     Located
 
@@ -241,6 +241,10 @@ Describes things that can be `read` as a map.
 
 Describes things that move and/or spin through space. Used by the `Space` object for collision detection.
 
+    Named
+
+Describes things that have a name (or handle).
+
     Oriented
 
 Describes things that have a non-trivial orientation. Used by the `Space` object for collision detection, and by `Interface` objects for drawing.
@@ -248,10 +252,6 @@ Describes things that have a non-trivial orientation. Used by the `Space` object
     Piloting
 
 Describes players that are currently controlling a `BasicShip`. Used by the players' `Interface` objects.
-
-    Remote
-
-Describes players that are not `Local`, i.e. they're connected over the network.
 
     Solid
 
@@ -268,6 +268,8 @@ Describes things that serve as types for other things, and may have supertypes. 
     Visible
 
 Describes things that can be seen (drawn on screen). Used by `Interface` objects.
+
+Note that when a player joins the game, a `Player` is added to the game which is `Named` with the player's handle, and `Interfaced` with a new `Interface` object. The player's ship is not automatically added; that must be specified in the `.yp` file. You can detect when a player joins the game with a rule that starts with `when ?player is added and ?player is a Player ...`.
 
 ## Standard libraries
 

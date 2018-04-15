@@ -167,14 +167,14 @@ function playerKeyState(player, code, state) {
 function getState() {
   return {
     nextThing: this.nextThing,
-    adjectives: this.adjectives, // TODO swap Local/Remote, serialize certain things
+    adjectives: this.adjectives, // TODO serialize certain things
     playerKeysDown: this.playerKeysDown
   };
 },
 
 function setState(msg) {
   this.nextThing = msg.nextThing;
-  this.adjectives = msg.adjectives; // TODO swap Local/Remote, deserialize certain things
+  this.adjectives = msg.adjectives; // TODO deserialize certain things
   this.playerKeysDown = msg.playerKeysDown;
 },
 

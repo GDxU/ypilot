@@ -3,25 +3,28 @@ const defineMethods = require('./define-methods.js');
 
 function Interface(player) {
   this.player = player;
-  this.playerShipLocated = undefined;
-  this.piloting = router.getAdjectivePropertiesMap('Piloting');
-  router.on('becomePiloting', this.becomePiloting.bind(this));
-  this.visible = router.getAdjectivePropertiesMap('Visible');
-  router.on('becomeVisible', this.becomeVisible.bind(this));
-  router.on('unbecomeVisible', this.unbecomeVisible.bind(this));
-  this.located = router.getAdjectivePropertiesMap('Located');
-  router.on('becomeLocated', this.becomeLocated.bind(this));
-  router.on('unbecomeLocated', this.unbecomeLocated.bind(this));
-  this.oriented = router.getAdjectivePropertiesMap('Oriented');
-  router.on('becomeOriented', this.becomeOriented.bind(this));
-  router.on('unbecomeOriented', this.unbecomeOriented.bind(this));
-  this.svg = $('#svg-container svg')[0];
-  document.body.onkeydown = this.keydown.bind(this);
-  document.body.onkeyup = this.keyup.bind(this);
-  if (this.player in this.piloting) {
-//    console.log('interface found player ' + this.player + ' piloting on creation');
-    this.playerShipLocated = this.located[this.piloting[this.player].ship];
-    this.setViewBox();
+  this.isLocal = (router.uplink.players[router.uplink.id].thing == player);
+  if (this.isLocal) {
+    this.playerShipLocated = undefined;
+    this.piloting = router.getAdjectivePropertiesMap('Piloting');
+    router.on('becomePiloting', this.becomePiloting.bind(this));
+    this.visible = router.getAdjectivePropertiesMap('Visible');
+    router.on('becomeVisible', this.becomeVisible.bind(this));
+    router.on('unbecomeVisible', this.unbecomeVisible.bind(this));
+    this.located = router.getAdjectivePropertiesMap('Located');
+    router.on('becomeLocated', this.becomeLocated.bind(this));
+    router.on('unbecomeLocated', this.unbecomeLocated.bind(this));
+    this.oriented = router.getAdjectivePropertiesMap('Oriented');
+    router.on('becomeOriented', this.becomeOriented.bind(this));
+    router.on('unbecomeOriented', this.unbecomeOriented.bind(this));
+    this.svg = $('#svg-container svg')[0];
+    document.body.onkeydown = this.keydown.bind(this);
+    document.body.onkeyup = this.keyup.bind(this);
+    if (this.player in this.piloting) {
+  //    console.log('interface found player ' + this.player + ' piloting on creation');
+      this.playerShipLocated = this.located[this.piloting[this.player].ship];
+      this.setViewBox();
+    }
   }
 }
 

@@ -10,11 +10,6 @@ a Map is Mapped
 a Wall is Bouncy and Visible
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
 an Item is Fleeting and Mobile and Solid and Visible
-an Agent is Named
-a Player is an Agent
-a LocalPlayer is a Player and Local
-a RemotePlayer is a Player and Remote
-a Team is an Agent
 
 when the game starts
 then
@@ -74,14 +69,6 @@ then
     Solid with shape [Vec2[0,0], Vec2[32,0], Vec2[32,32]]
     Visible with graphics [<polygon points="0,0 32,0 32,32" stroke="#4e7cfe" />]
 
-when ?map is added and
-  ?map is a Map
-  ?map is Located with space ?space
-then
-  a new LocalPlayer ?player is added which is
-    Named with name "Player1" # TODO
-    Local with interface Interface[?player]
-
 when ?player is added and
   ?player is a Player
   there is a thing ?map which is
@@ -101,38 +88,32 @@ then
   ?player becomes Piloting with ship ?ship
 
 when ?player presses "ArrowUp" and
-  ?player is a Player
   ?player is Piloting with ship ?ship
 then
   ?ship becomes Motile with isThrusting true
 
 when ?player releases "ArrowUp" and
-  ?player is a Player
   ?player is Piloting with ship ?ship
 then
   ?ship becomes Motile with isThrusting false
 
 when ?player presses "ArrowRight" and
-  ?player is a Player
   ?player is Piloting with ship ?ship
 then
   ?ship becomes Motile with turnDirection 1
 
 when ?player releases "ArrowRight" and
-  ?player is a Player
   ?player is Piloting with ship ?ship
   ?ship is Motile with turnDirection 1
 then
   ?ship becomes Motile with turnDirection 0
 
 when ?player presses "ArrowLeft" and
-  ?player is a Player
   ?player is Piloting with ship ?ship
 then
   ?ship becomes Motile with turnDirection (-1)
 
 when ?player releases "ArrowLeft" and
-  ?player is a Player
   ?player is Piloting with ship ?ship
   ?ship is Motile with turnDirection (-1)
 then
