@@ -1,3 +1,4 @@
+const $ = require('jquery');
 const defineMethods = require('./define-methods.js');
 const SignalingRelay = require('./signaling-relay.js');
 const PeerConnection = require('./peer-connection.js');
@@ -17,8 +18,10 @@ function Uplink(hubID) {
 
 Uplink.startNewGame = function() {
   var ul = new Uplink();
+  ul.hubID = ul.id; // we're the hub since we're the only player so far
   ul.listen();
   Clock.start(ul.clockTick.bind(ul));
+  hideWelcome();
   return ul;
 };
 
@@ -203,7 +206,7 @@ function receivePeerMessageAsNonHub(senderID, msg) {
   switch (msg.op) {
     case 'setState':
       this.router.setState(msg);
-      Game.joinLoaded();
+      hideWelcome();
       break;
     case 'addPlayer':
       var playerID = msg.player.id;
@@ -252,7 +255,7 @@ function flushInputBuffer() {
 function localInput(op, player, code) {
   var msg = { op: op, player: player, code: code };
   if (this.id == this.hubID) {
-    this.receivePeerMessageAsHub();
+    this.receivePeerMessageAsHub(this.id, msg);
   } else {
     this.connections[this.hubID].send(msg);
   }

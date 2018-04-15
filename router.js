@@ -1,7 +1,9 @@
+const Uplink = require('./uplink.js');
 const defineMethods = require('./define-methods.js');
 
 function Router() {
   this.configURL = null;
+  this.uplink = null;
   this.nextThing = 0;
   this.adjectives = {};
   this.listeners = {};
@@ -174,6 +176,21 @@ function setState(msg) {
   this.nextThing = msg.nextThing;
   this.adjectives = msg.adjectives; // TODO swap Local/Remote, deserialize certain things
   this.playerKeysDown = msg.playerKeysDown;
+},
+
+//
+// two ways to start playing (both assume config is already loaded)
+//
+
+// start a new game
+function startNewGame() {
+  this.emit('start');
+  this.uplink = Uplink.startNewGame();
+},
+
+// join an existing game being played by the ID'd player
+function joinGame(remoteID) {
+  this.uplink = Uplink.joinGame(remoteID);
 }
 
 ]);

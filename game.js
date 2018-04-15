@@ -15,16 +15,6 @@ function tryToParseString(ypText) {
   }
 }
 
-function joinLoaded() {
-  $('#welcome').hide();
-  Clock.start(router.emit.bind(router, 'clockTick'));
-}
-
-function startLoaded() {
-  router.emit('start');
-  joinLoaded();
-}
-
 function loadFromAST(ast, sourceURL) {
   try {
     var jsText = compile(ast);
@@ -64,8 +54,6 @@ function loadFromProfile(gameIndex) {
 
 module.exports = {
   tryToParseString: tryToParseString,
-  joinLoaded: joinLoaded,
-  startLoaded: startLoaded,
   loadFromAST: loadFromAST,
   loadFromString: loadFromString,
   loadFromProfile: loadFromProfile

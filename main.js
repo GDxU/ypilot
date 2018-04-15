@@ -23,4 +23,3 @@ window.stringToSVGGraphicsElement = function(str) {
 }
 
 require('./welcome.js');
-

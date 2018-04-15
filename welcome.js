@@ -113,7 +113,7 @@ function addGameRow(game, i) {
     // TODO forget button? need to manage indices. maybe instead make profile.games an object with hashed urls as keys, and use the hash instead of i in the button ids
   $(row.childNodes[0].childNodes[0]).on('click', function(evt) {
     Game.loadFromProfile(evt.target.id.replace(/^start-game-/,'') | 0).
-    then(Game.startLoaded);
+    then(router.startNewGame.bind(router));
     // TODO catch
   });
   $(row.childNodes[1]).text(game.title);
@@ -142,6 +142,10 @@ function selectElement(selectedElement, elementGroup) {
   selectedElement.addClass('selected');
 }
 
+// FIXME this seems like it might belong in Game, but it uses a bunch of stuff
+// from welcome, so here it is. Really there are three things going on here:
+// loading the yp file to get its metadata, adding that metadata to the Profile
+// object, and adding the metadata to the displayed table of games.
 window.addGameFromURL = function(url) {
   return new Promise((resolve, reject) => {
     $.get(url).
@@ -177,6 +181,11 @@ window.addGameFromURL = function(url) {
     });
   });
 }
+
+window.hideWelcome = function() {
+  console.log('hiding welcome screen');
+  $('#welcome').hide();
+};
 
 $(function() {
 
@@ -226,7 +235,7 @@ $('#config-file').on('change', function(evt) {
     var reader = new FileReader();
     reader.onload = function() {
       Game.loadFromString(reader.result, encodeURI(file.name));
-      Game.startLoaded();
+      router.startNewGame();
     };
     reader.readAsText(file);
   } catch (e) {
