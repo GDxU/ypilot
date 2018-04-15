@@ -35,10 +35,10 @@ Uplink.startNewGame = function() {
 Uplink.askStatus = function(remoteID) {
   return new Promise((resolve, reject) => {
     var relay = new SignalingRelay($('#signaling-relay-url').val(), remoteID);
-    relay.ondata(signedMsg => {
+    relay.ondata = (signedMsg) => {
       resolve(window.profile.verifyTOFU(signedMsg));
       relay.close(); // TODO somehow save this for later join?
-    });
+    };
     window.profile.sign({ op: 'askStatus', replyTo: relay.recvID }).
     then(relay.write.bind(relay));
   });

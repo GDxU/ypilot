@@ -2,6 +2,7 @@ const $ = require('jquery');
 const UserNames = require('./user-names.js');
 const Profile = require('./profile.js');
 const Game = require('./game.js');
+const Uplink = require('./uplink.js');
 const convertFailToReject = require('./errors.js').convertFailToReject;
 
 if (!('function' == typeof assert)) {
@@ -33,8 +34,7 @@ function requestPlayerStatus(evt) {
   var targ = $(evt.target);
   var targID = targ.prop('id');
   var playerID = targID.substring(0,36);
-  // TODO
-  console.log('would request status of player ' + playerID);
+  askStatus(playerID);
 }
 
 function forgetPlayer(evt) {
@@ -56,7 +56,7 @@ function setProfile(p) {
   $('#handle').val(p.handle).change();
   $('#use-local-storage').prop('checked', p.useLocalStorage);
   updatePlayersTable();
-  updateGamesTable();
+  updateNewGamesTable();
   changedProfile();
 }
 
@@ -104,37 +104,104 @@ function updatePlayersTable() {
   }
 }
 
-function addGameRow(game, i) {
+function onClickStart(evt) {
+  Game.loadFromProfile(evt.target.id.replace(/^start-game-/,'') | 0).
+  then(router.startNewGame.bind(router));
+  // TODO catch
+}
+
+function addNewGameRow(game, i) {
   var row = document.createElement('tr');
   row.innerHTML =
     '<td><button id="start-game-' + i + '">Start</button></td>' +
     '<td></td><td></td>' +
     '<td><a href="' + game.url + '">' + game.url + '</a></td>';
     // TODO forget button? need to manage indices. maybe instead make profile.games an object with hashed urls as keys, and use the hash instead of i in the button ids
-  $(row.childNodes[0].childNodes[0]).on('click', function(evt) {
-    Game.loadFromProfile(evt.target.id.replace(/^start-game-/,'') | 0).
-    then(router.startNewGame.bind(router));
-    // TODO catch
-  });
+  $(row.childNodes[0].childNodes[0]).on('click', onClickStart);
   $(row.childNodes[1]).text(game.title);
   $(row.childNodes[2]).text(game.author);
   $('#games').append(row);
 }
 
-function updateGamesTable() {
-  // clear the games table
+function updateNewGamesTable() {
+  // clear the new games table
   $('#games tr').has('td').remove();
   // re-fill it from the new profile
-  profile.games.forEach(addGameRow);
+  profile.games.forEach(addNewGameRow);
+}
+
+function onClickJoin(evt) {
+  var m = /^join-game-(\d+)-via-([0-9a-f-]{36})$/.exec(evt.target.id);
+  if (!m) {
+    console.log('bogus join game button ID: ' + evt.target.id);
+    return;
+  }
+  var gameIndex = m[1] | 0;
+  var remoteID = m[2];
+  Game.loadFromProfile(gameIndex).
+  then(router.joinGame.bind(router, remoteID));
+}
+
+function addJoinGameRow(gameIndex, players) {
+  var game = window.profile.games[gameIndex];
+  var row = document.createElement('tr');
+  row.innerHTML =
+    '<td><button id="join-game-' + gameIndex + '-via-' + players[0].id + '">Join</button></td>' +
+    '<td></td><td></td>'
+  $(row.childNodes[0].childNodes[0]).on('click', onClickJoin);
+  $(row.childNodes[1]).text(game.title);
+  $(row.childNodes[1]).attr('title', game.title + ' by ' + game.author + ' at ' + game.url);
+  var playersTD = $(row.childNodes[2]);
+  players.forEach((p, i) => {
+    if (i != 0) {
+      playersTD.append(document.createTextNode(', '));
+    }
+    var span = $(document.createElement('span'));
+    span.text(p.handle);
+    span.attr('title', p.id + ' ' + p.handle + ', AKA ' + p.handles.join(', '));
+    playersTD.append(span);
+  });
+}
+
+function askStatus(remoteID) {
+  console.log('asking status...');
+  Uplink.askStatus(remoteID).
+  then(s => {
+    console.log('got status');
+    console.log(s);
+    var i = window.profile.games.findIndex(g => (g.url == s.configURL));
+    if (i == -1) { // never seen this game before, add it to profile
+      console.log('game is new to me');
+      return addNewGameFromURL(s.configURL).
+	     then(({ i, ast }) => { return { i: i, s: s }; });
+    } else {
+      console.log('game is known to me');
+      return { i: i, s: s };
+    }
+  }).
+  then(({i, s}) => {
+    console.log('adding join game row');
+    addJoinGameRow(i, s.players)
+  });
+}
+
+function updateJoinGamesTable() {
+  // clear the join games table
+  $('#games-to-join tr').has('td').remove();
+  // search for games to join among players we know and policy says we should
+  window.profile.knownPlayers.forEach(p => {
+    if (p.statusRequestPolicy == 'onSearch') {
+      askStatus(remoteID);
+    }
+  });
 }
 
 function newProfile() {
-  Profile.generateRandom().
+  return Profile.generateRandom().
   then(p => {
     p.useLocalStorage = $('#use-local-storage').prop('checked');
     setProfile(p);
   });
-  // TODO catch
 }
 
 function selectElement(selectedElement, elementGroup) {
@@ -146,7 +213,7 @@ function selectElement(selectedElement, elementGroup) {
 // from welcome, so here it is. Really there are three things going on here:
 // loading the yp file to get its metadata, adding that metadata to the Profile
 // object, and adding the metadata to the displayed table of games.
-window.addGameFromURL = function(url) {
+window.addNewGameFromURL = function(url) {
   return new Promise((resolve, reject) => {
     $.get(url).
     done((data, textStatus, jqXHR) => {
@@ -172,7 +239,7 @@ window.addGameFromURL = function(url) {
       var i = profile.games.length;
       profile.games.push({ url: url, title: title, author: author });
       changedProfile();
-      addGameRow(profile.games[i], i);
+      addNewGameRow(profile.games[i], i);
       resolve({ i: i, ast: ast });
     }).
     fail((jqXHR, textStatus, errorThrown) => {
@@ -191,12 +258,16 @@ $(function() {
 
 var tabItems = $('.tabs ul li');
 var tabPanes = $('.tabs div');
+
+function switchToTab(tabItem) {
+  var href = tabItem.children('a').attr('href');
+  selectElement(tabItem, tabItems);
+  selectElement($(href), tabPanes);
+}
+
 tabItems.on('click', evt => {
   evt.preventDefault();
-  var targ = $(evt.currentTarget);
-  var href = targ.children('a').attr('href');
-  selectElement(targ, tabItems);
-  selectElement($(href), tabPanes);
+  switchToTab($(evt.currentTarget));
 });
 
 $('#generate-handle').on('click', evt => {
@@ -245,8 +316,10 @@ $('#config-file').on('change', function(evt) {
 
 $('#add-from-url').on('click', function(evt) {
   var url = $('#config-url').val();
-  addGameFromURL(url);
+  addNewGameFromURL(url);
 });
+
+$('#search-for-games').on('click', updateJoinGamesTable);
 
 $('#restore-default-network-settings').on('click', function(evt) {
   $('#signaling-relay-url').val(
@@ -279,14 +352,24 @@ try {
   $('#use-local-storage').prop('disabled', true);
 }
 
-try {
+new Promise((resolve, reject) => {
   assert($('#use-local-storage').prop('checked'));
   var profileStr = window.localStorage.getItem('profile');
   assert(profileStr !== null);
-  Profile.fromString(profileStr).then(setProfile);
-  // FIXME some errors just get printed to console
-} catch (e) {
-  newProfile();
-}
+  resolve(Profile.fromString(profileStr));
+}).
+then(setProfile).
+catch(newProfile).
+then(() => {
+  console.log('testing for remote ID in fragment');
+  if (/^#[0-9a-f-]{36}$/.test(location.hash)) {
+    // someone gave us their ID in the fragment part of the URL
+    // ask their status and switch to join tab
+    var remoteID = location.hash.slice(1); // remove # from beginning
+    console.log('remote ID is ' + remoteID);
+    askStatus(remoteID);
+    switchToTab($(".tabs ul li:contains('Join a game')"));
+  }
+});
 
 });

@@ -82,12 +82,12 @@ function sign(msg) {
     var msgStr = JSON.stringify(msgWithSender);
     var encoder = new TextEncoder('utf-8'); // note this is always utf-8
     var msgBytes = encoder.encode(msgStr);
-    return (
+    return { msgStr: msgStr, signature:
       // get the signature of those bytes
       crypto.subtle.sign(cryptoOptions, this.keyPair.privateKey, msgBytes)
-    );
+    };
   }).
-  then(signature => {
+  then(({ msgStr, signature }) => {
     console.log(signature);
     console.log(base64js.fromByteArray(new Uint8Array(signature)));
     // put the string and base64 signature together
@@ -224,7 +224,7 @@ function ifAllowed(playerID, op) {
 function loadGameFromURL(url) {
   var i = this.games.findIndex(g => (g.url == url));
   if (i == -1) { // first time we're loading this game
-    return addGameFromURL(url).
+    return addNewGameFromURL(url).
 	   then(({ i, ast }) => {
 	     Game.loadFromAST(ast, url);
 	   });
