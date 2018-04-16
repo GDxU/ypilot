@@ -133,6 +133,8 @@ Now the signaling relay is bidirectional, and specific to the new connection bet
 
 <p>Unlike initial messages, setup messages are not signed and do not include a <code>sender</code>. The connection is already private because it's over HTTPS and uses relay IDs (<var>sendID</var> and <var>recvID</var>) known only to the two connected players (and the relay itself), and the players are already authenticated to each other because they signed the <code>join</code> and <code>handshake</code> initial messages that set up the bidirectional signaling relay.</p>
 
+<em class="TODO">perhaps these messages should still be signed. it would prevent a MITM attack by the relay server if the attacker didn't control the server when trust was first established (public keys exchanged) between the two connecting players.</em>
+
 <p>The <code>op</code> property identifies the type of message:</p>
 
 <dl>
