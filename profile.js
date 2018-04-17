@@ -82,10 +82,11 @@ function sign(msg) {
     var msgStr = JSON.stringify(msgWithSender);
     var encoder = new TextEncoder('utf-8'); // note this is always utf-8
     var msgBytes = encoder.encode(msgStr);
-    return { msgStr: msgStr, signature:
-      // get the signature of those bytes
-      crypto.subtle.sign(cryptoOptions, this.keyPair.privateKey, msgBytes)
-    };
+     // get the signature of those bytes
+    return crypto.subtle.sign(cryptoOptions, this.keyPair.privateKey, msgBytes).
+    then(signature => {
+      return { msgStr: msgStr, signature: signature };
+    });
   }).
   then(({ msgStr, signature }) => {
     console.log(signature);
