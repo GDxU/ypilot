@@ -166,8 +166,11 @@ function know(player) {
     this.knownPlayers[player.id] = Object.assign(
       {
 	oldHandles: [],
-	statusResponsePolicy: 'askMe',
-	joinPolicy: 'askMe',
+	/*statusResponsePolicy: 'askMe',
+	joinPolicy: 'askMe',*/
+	// DEBUG
+	statusResponsePolicy: 'alwaysGive',
+	joinPolicy: 'alwaysAllowOrVouch',
 	statusRequestPolicy: 'onlyOnRequest'
       }, player);
     this.onKnownPlayersChange();
@@ -184,14 +187,12 @@ function ifAllowed(playerID, op) {
 	switch (this.knownPlayers[playerID].statusResponsePolicy) {
 	  case 'askMe':
 	    // TODO ask the local user somehow
-	    reject();
-	    break;
+	    throw new Error('player ' + playerID + ' is not allowed to askStatus');
 	  case 'alwaysGive':
 	    resolve();
 	    break;
 	  case 'alwaysIgnore':
-	    reject();
-	    break;
+	    throw new Error('player ' + playerID + ' is not allowed to askStatus');
 	  default:
 	    throw new Error('bogus statusResponsePolicy!?');
 	}
@@ -200,14 +201,12 @@ function ifAllowed(playerID, op) {
 	switch (this.knownPlayers[playerID].joinPolicy) {
 	  case 'askMe':
 	    // TODO ask the local user somehow
-	    reject();
-	    break;
+	    throw new Error('player ' + playerID + ' is not allowed to join');
 	  case 'alwaysAllowOrVouch':
 	    resolve();
 	    break;
 	  case 'alwaysIgnoreOrReject':
-	    reject();
-	    break;
+	    throw new Error('player ' + playerID + ' is not allowed to join');
 	  default:
 	    throw new Error('bogus joinPolicy!?');
 	}

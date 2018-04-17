@@ -27,7 +27,8 @@ Uplink.startNewGame = function() {
       op: 'addPlayer',
       player: playerDesc
     });
-  });
+  }).
+  catch(err => console.error(err));
   hideWelcome();
   return ul;
 };
@@ -40,7 +41,8 @@ Uplink.askStatus = function(remoteID) {
       relay.close(); // TODO somehow save this for later join?
     };
     window.profile.sign({ op: 'askStatus', replyTo: relay.recvID }).
-    then(relay.write.bind(relay));
+    then(relay.write.bind(relay)).
+    catch(reject);
   });
 };
 
@@ -57,7 +59,8 @@ function join(remoteID) {
   this.connections[remoteID] = this.client;
   this.client.ondata = this.receiveInitialMessage.bind(this, this.client); // just handshake
   window.profile.sign({ op: 'join', replyTo: this.client.recvID }).
-  then(this.client.write.bind(this.client));
+  then(this.client.write.bind(this.client)).
+  catch(err => console.error(err));
 },
 
 function listen() {
@@ -74,13 +77,12 @@ function clockTick() {
 function receiveInitialMessage(relay, signedMsg) {
   window.profile.verifyTOFU(signedMsg).
   then(msg => {
-    return window.profile.ifAllowed(msg.sender.id, msg.op);
+    return window.profile.ifAllowed(msg.sender.id, msg.op).then(() => msg);
   }).
-  then(() => {
+  then(msg => {
     switch (msg.op) {
       case 'askStatus':
-	this.sendStatus(msg.sender.id, msg.replyTo);
-	break;
+	return this.sendStatus(msg.sender.id, msg.replyTo);
       case 'join':
 	if (this.id == this.hubID) {
 	  this.accept(msg.sender.id, msg.replyTo);
@@ -91,7 +93,7 @@ function receiveInitialMessage(relay, signedMsg) {
       case 'handshake':
 	if (this.client === relay) {
 	  // load the .yp file
-	  window.profile.loadGameFromURL(msg.configURL).
+	  return window.profile.loadGameFromURL(msg.configURL).
 	  then(() => {
 	    this.client.sendID = msg.replyTo;
 	    // wrap the relay as a PeerConnection in place
@@ -102,21 +104,21 @@ function receiveInitialMessage(relay, signedMsg) {
 	    // let people join through us (if we vouch for them to the hub)
 	    this.listen();
 	  });
-	  // TODO catch
 	}
 	break;
       default:
 	throw new Error('WTF');
     }
-  });
+  }).
+  catch(err => console.error(err));
 },
 
 function sendStatus(remoteID, sendID) {
   // send what game we're playing and with whom
-  window.profile.sign({
+  return window.profile.sign({
     op: 'status',
     configURL: this.router.configURL,
-    players: this.players // TODO put id/handle/publicKey here instead of playerThing?
+    players: this.players // TODO!!! put id/handle/publicKey here instead of playerThing?
   }).
   then(signedMsg => {
     var relay =
@@ -138,7 +140,8 @@ function receiveVoucher(msg) {
   window.profile.ifAllowed(msg.vouchee.id, 'join').
   then(() => {
     this.accept(msg.vouchee.id, msg.replyTo);
-  });
+  }).
+  catch(err => console.error(err)); // FIXME maybe push this up? but would spread the Promise plague
 },
 
 // set up remote player to join the game we're the hub of
@@ -155,7 +158,8 @@ function accept(remoteID, sendID) {
     replyTo: relay.recvID,
     configURL: this.router.configURL
   }).
-  then(relay.write.bind(relay));
+  then(relay.write.bind(relay)).
+  catch(err => console.error(err));
   // open a PeerConnection to the new player
   this.connect(remoteID);
   this.connections[remoteID].onopen = () => {

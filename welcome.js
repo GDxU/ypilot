@@ -34,7 +34,8 @@ function requestPlayerStatus(evt) {
   var targ = $(evt.target);
   var targID = targ.prop('id');
   var playerID = targID.substring(0,36);
-  askStatus(playerID);
+  askStatus(playerID).
+  catch(err => console.error(err));
 }
 
 function forgetPlayer(evt) {
@@ -146,6 +147,7 @@ function addJoinGameRow(gameIndex, players) {
   var game = window.profile.games[gameIndex];
   var row = document.createElement('tr');
   row.innerHTML =
+    // FIXME!!! players is an Object not an Array; keys are IDs
     '<td><button id="join-game-' + gameIndex + '-via-' + players[0].id + '">Join</button></td>' +
     '<td></td><td></td>'
   $(row.childNodes[0].childNodes[0]).on('click', onClickJoin);
@@ -165,7 +167,7 @@ function addJoinGameRow(gameIndex, players) {
 
 function askStatus(remoteID) {
   console.log('asking status...');
-  Uplink.askStatus(remoteID).
+  return Uplink.askStatus(remoteID).
   then(s => {
     console.log('got status');
     console.log(s);
@@ -191,7 +193,8 @@ function updateJoinGamesTable() {
   // search for games to join among players we know and policy says we should
   window.profile.knownPlayers.forEach(p => {
     if (p.statusRequestPolicy == 'onSearch') {
-      askStatus(remoteID);
+      askStatus(remoteID).
+      catch(err => console.error(err));
     }
   });
 }
@@ -367,9 +370,10 @@ then(() => {
     // ask their status and switch to join tab
     var remoteID = location.hash.slice(1); // remove # from beginning
     console.log('remote ID is ' + remoteID);
-    askStatus(remoteID);
     switchToTab($(".tabs ul li:contains('Join a game')"));
+    return askStatus(remoteID);
   }
-});
+}).
+catch(err => console.error(err));
 
 });
