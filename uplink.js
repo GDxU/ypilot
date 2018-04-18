@@ -114,11 +114,31 @@ function receiveInitialMessage(relay, signedMsg) {
 },
 
 function sendStatus(remoteID, sendID) {
+  // compile list of players we're playing with, with information from profile
+  var players = [];
+  for (var id in this.players) {
+    if (id == this.id) {
+      players.push({
+	id: id,
+	handle: window.profile.handle,
+	/* publicKey: TODO? */
+	thing: this.players[id].thing
+      });
+    } else {
+      var p = window.profile.knownPlayers[id];
+      players.push({
+	id: id,
+	handle: p.handle,
+	publicKey: p.publicKey,
+	thing: this.players[id].thing
+      });
+    }
+  }
   // send what game we're playing and with whom
   return window.profile.sign({
     op: 'status',
     configURL: this.router.configURL,
-    players: this.players // TODO!!! put id/handle/publicKey here instead of playerThing?
+    players: players
   }).
   then(signedMsg => {
     var relay =
@@ -164,6 +184,7 @@ function accept(remoteID, sendID) {
   this.connect(remoteID);
   this.connections[remoteID].onopen = () => {
     // when it's open, send them the current game state
+    // TODO also send current player info as in sendStatus
     this.connections[remoteID].send(
       Object.assign({ op: 'setState' }, this.router.getState())
     );
@@ -216,6 +237,7 @@ function receivePeerMessageAsHub(senderID, msg) {
 function receivePeerMessageAsNonHub(senderID, msg) {
   switch (msg.op) {
     case 'setState':
+      // TODO get player info from msg, and profile.know() each player
       this.router.setState(msg);
       hideWelcome();
       break;

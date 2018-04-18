@@ -1,3 +1,4 @@
+const deepEqual = require('deep-equal');
 const uuidv4 = require('uuid/v4');
 const base64js = require('base64-js');
 const UserNames = require('./user-names.js');
@@ -108,34 +109,37 @@ function verifyTOFU(signedMsg) {
   var { msg: msgStr, sig } = signedMsg;
   var msg = JSON.parse(msgStr);
   var senderID = msg.sender.id;
-  if (!/^[0-9a-z-]{36}$/.test(senderID)) {
-    throw new Error("malformed message sender ID");
-  }
-  if (senderID in this.knownPlayers) { // not first use
-    var player = this.knownPlayers[senderID];
-    if (player.publicKey != msg.sender.publicKey) {
-      throw new Error("public key in message doesn't match those in previous messages from the same sender");
+  // first, get the imported version of their public key (after checking the
+  // exported version against our copy if we have one already)
+  return new Promise((resolve, reject) => {
+    if (!/^[0-9a-z-]{36}$/.test(senderID)) {
+      throw new Error("malformed message sender ID");
     }
-    return this.verify(msgStr, sig, msg, senderID, player.publicKey);
-  } else { // first use, trust that the key is correct
-    // import the key from the message (this is why this.verify is a separate
-    // function)
-    return (
-      crypto.subtle.importKey('jwk', msg.sender.publicKey, cryptoOptions,
-			      true, ['verify']).
-      then(key => {
-	return this.verify(msgStr, sig, msg, senderID, key);
-      })
-    );
-  }
-},
-
-// internal part of verifyTOFU that happens after we get the imported key
-function verify(msgStr, sig, msg, senderID, key) {
-  var encoder = new TextEncoder('utf-8');
-  var msgBytes = encoder.encode(msgStr);
-  var sigBytes = base64js.toByteArray(sig);
-  return crypto.subtle.verify(cryptoOptions, key, sigBytes, msgBytes).
+    if (senderID in this.knownPlayers) { // not first use
+      var player = this.knownPlayers[senderID];
+      if (deepEqual(player.publicKey, msg.sender.publicKey)) {
+	// they match, resolve to the exported version
+	resolve(player.publicKey);
+      } else { // they don't match, throw an error
+	throw new Error("public key in message doesn't match those in previous messages from the same sender");
+      }
+    } else { // first use, trust that the key is correct
+      resolve(msg.sender.publicKey);
+    }
+  }).
+  // import the key
+  then(key => {
+    return crypto.subtle.importKey(
+        'jwk', key, cryptoOptions, true, ['verify']);
+  }).
+  // verify the message with the imported key
+  then(key => {
+    var encoder = new TextEncoder('utf-8');
+    var msgBytes = encoder.encode(msgStr);
+    var sigBytes = base64js.toByteArray(sig);
+    return crypto.subtle.verify(cryptoOptions, key, sigBytes, msgBytes);
+  }).
+  // act accordingly
   then(isValid => {
     if (isValid) {
       this.know(msg.sender);
@@ -147,6 +151,8 @@ function verify(msgStr, sig, msg, senderID, key) {
 },
 
 // store player's info in this.knownPlayers (updating if already there)
+// TODO? if id matches a known player, but publicKey doesn't, throw an Error
+// that's redundant for the above usage, but maybe not others?
 function know(player) {
   if (player.id in this.knownPlayers) { // already known
     var knownPlayer = this.knownPlayers[player.id];

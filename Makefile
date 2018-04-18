@@ -1,6 +1,15 @@
 NODE=node
 NPM=npm
-REQUIRES=base64-js brfs browserify jquery mocha pegjs setimmediate uuid
+REQUIRES = \
+	base64-js \
+	brfs \
+	browserify \
+	deep-equal \
+	jquery \
+	mocha \
+	pegjs \
+	setimmediate \
+	uuid
 INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \

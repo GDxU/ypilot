@@ -21,7 +21,7 @@ defineMethods(SignalingRelay, [
 	console.log('received from ' + that.recvID + ' via signaling relay: ' + text);
 	that.ondata(JSON.parse(text));
       } catch (err) {
-	console.log(err.stack);
+	console.error(err);
       }
       that.receive();
     };

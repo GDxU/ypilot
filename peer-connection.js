@@ -51,7 +51,7 @@ defineMethods(PeerConnection, [
   },
 
   function logError(e) {
-    console.log(e);
+    console.error(e);
   },
 
   function onRelayData(data) {

@@ -147,7 +147,6 @@ function addJoinGameRow(gameIndex, players) {
   var game = window.profile.games[gameIndex];
   var row = document.createElement('tr');
   row.innerHTML =
-    // FIXME!!! players is an Object not an Array; keys are IDs
     '<td><button id="join-game-' + gameIndex + '-via-' + players[0].id + '">Join</button></td>' +
     '<td></td><td></td>'
   $(row.childNodes[0].childNodes[0]).on('click', onClickJoin);
@@ -160,9 +159,10 @@ function addJoinGameRow(gameIndex, players) {
     }
     var span = $(document.createElement('span'));
     span.text(p.handle);
-    span.attr('title', p.id + ' ' + p.handle + ', AKA ' + p.handles.join(', '));
+    span.attr('title', p.id + ' ' + p.handle /* + ', AKA ' + p.handles.join(', ') */);
     playersTD.append(span);
   });
+  $('#games-to-join').append(row);
 }
 
 function askStatus(remoteID) {
