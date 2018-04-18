@@ -19,6 +19,7 @@ SRCS = \
 	define-methods.js \
 	errors.js \
 	game.js \
+	id2svg.js \
 	interface.js \
 	parser.js \
 	peer-connection.js \
