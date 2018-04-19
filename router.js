@@ -164,10 +164,14 @@ function playerKeyState(player, code, state) {
 // full game state
 //
 
+// NOTE: would be nice to use JSON.stringify replacer and JSON.parse reviver
+// for these, but the calls to the JSON methods are in PeerConnection, too deep
+// in the network code for it to be worth the plumbing.
+
 function getState() {
   return {
     nextThing: this.nextThing,
-    adjectives: this.adjectives, // TODO serialize certain things (Interface, DOM nodes, ...)
+    adjectives: this.adjectives, // TODO serialize certain things (Vec2, Space, Interface, SVGGraphicsElement)
     playerKeysDown: this.playerKeysDown
   };
 },

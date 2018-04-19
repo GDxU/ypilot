@@ -314,6 +314,7 @@ function compileOp(ast) {
       return ast.name;
     case 'new':
       // TODO? allow more constructors
+      // TODO? disallow Interface (JS code makes that now)
       if (!/^(Vec2|Array|Space|Interface)$/.test(ast.constructor)) {
 	throw new Error("constructing a new " + ast.constructor + " not allowed");
       }
