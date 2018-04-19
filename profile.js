@@ -115,31 +115,25 @@ function verifyTOFU(signedMsg) {
     if (!/^[0-9a-z-]{36}$/.test(senderID)) {
       throw new Error("malformed message sender ID");
     }
-    console.log('sender ID well formed');
     if (senderID in this.knownPlayers) { // not first use
-      console.log('not first use');
       var player = this.knownPlayers[senderID];
       if (deepEqual(player.publicKey, msg.sender.publicKey)) {
-	console.log('keys match');
 	// they match, resolve to the exported version
 	resolve(player.publicKey);
       } else { // they don't match, throw an error
 	throw new Error("public key in message doesn't match those in previous messages from the same sender");
       }
     } else { // first use, trust that the key is correct
-      console.log('first use');
       resolve(msg.sender.publicKey);
     }
   }).
   // import the key
   then(key => {
-    console.log('importing key');
     return crypto.subtle.importKey(
         'jwk', key, cryptoOptions, true, ['verify']);
   }).
   // verify the message with the imported key
   then(key => {
-    console.log('verifying message with imported key');
     var encoder = new TextEncoder('utf-8');
     var msgBytes = encoder.encode(msgStr);
     var sigBytes = base64js.toByteArray(sig);
@@ -148,9 +142,7 @@ function verifyTOFU(signedMsg) {
   // act accordingly
   then(isValid => {
     if (isValid) {
-      console.log('message is valid');
       this.know(msg.sender);
-      console.log('resolving to msg');
       return msg;
     } else { // not valid
       throw new Error("message not verified to be from its claimed sender");
@@ -163,10 +155,8 @@ function verifyTOFU(signedMsg) {
 // that's redundant for the above usage, but maybe not others?
 function know(player) {
   if (player.id in this.knownPlayers) { // already known
-    console.log('already know them');
     var knownPlayer = this.knownPlayers[player.id];
     if (knownPlayer.handle != player.handle) {
-      console.log('handle changed');
       // update the current handle and put the old handle in oldHandles
       knownPlayer.oldHandles.push(knownPlayer.handle);
       knownPlayer.handle = player.handle;
@@ -175,11 +165,9 @@ function know(player) {
       if (newOldIndex != -1) {
 	knownPlayer.oldHandles.splice(newOldIndex, 1);
       }
-      console.log('onKnownPlayersChange');
       this.onKnownPlayersChange();
     }
   } else { // just met
-    console.log('just met them');
     // save sender and add default policies
     this.knownPlayers[player.id] = Object.assign(
       {
@@ -191,10 +179,8 @@ function know(player) {
 	joinPolicy: 'alwaysAllowOrVouch',
 	statusRequestPolicy: 'onlyOnRequest'
       }, player);
-    console.log('onKnownPlayersChange');
     this.onKnownPlayersChange();
   }
-  console.log('now I know them');
 },
 
 // return a Promise resolved if the identified remote player is allowed to do

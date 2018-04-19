@@ -145,14 +145,13 @@ defineMethods(PeerConnection, [
   },
 
   function ondatachannel(e) {
-    // FIXME get rid of remoteUser
-    console.log('got data channel from ' + this.remoteUser);
+    console.log('got data channel');
     this.dataChannel = e.channel;
     this.dataChannel.onopen = this.onDataChannelOpen.bind(this);
   },
 
   function onDataChannelOpen(e) {
-    console.log('connected to ' + this.remoteUser);
+    console.log('data channel open');
     this.relay.close();
     delete this.relay;
     this.dataChannel.onmessage = this.onDataChannelMessage.bind(this);
@@ -167,7 +166,7 @@ defineMethods(PeerConnection, [
 
   function onDataChannelMessage(e) {
     var data = e.data.toString();
-    console.log('received from ' + this.remoteUser + ' via data channel: ' + data);
+    console.log('received via data channel: ' + data);
     try {
       console.log('attempting to parse...');
       data = JSON.parse(data);
