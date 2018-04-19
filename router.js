@@ -167,7 +167,7 @@ function playerKeyState(player, code, state) {
 function getState() {
   return {
     nextThing: this.nextThing,
-    adjectives: this.adjectives, // TODO serialize certain things
+    adjectives: this.adjectives, // TODO serialize certain things (Interface, DOM nodes, ...)
     playerKeysDown: this.playerKeysDown
   };
 },

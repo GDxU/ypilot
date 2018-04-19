@@ -37,8 +37,11 @@ Uplink.askStatus = function(remoteID) {
   return new Promise((resolve, reject) => {
     var relay = new SignalingRelay($('#signaling-relay-url').val(), remoteID);
     relay.ondata = (signedMsg) => {
+      console.log('received response to askStatus via relay:');
+      console.log(relay);
       resolve(window.profile.verifyTOFU(signedMsg));
       relay.close(); // TODO somehow save this for later join?
+      console.log('closed relay');
     };
     window.profile.sign({ op: 'askStatus', replyTo: relay.recvID }).
     then(relay.write.bind(relay)).
@@ -75,11 +78,16 @@ function clockTick() {
 },
 
 function receiveInitialMessage(relay, signedMsg) {
+  console.log('received initial message via relay:');
+  console.log(relay);
   window.profile.verifyTOFU(signedMsg).
   then(msg => {
+    console.log('checking if this sender is allowed to send us this msg:');
+    console.log(msg);
     return window.profile.ifAllowed(msg.sender.id, msg.op).then(() => msg);
   }).
   then(msg => {
+    console.log('they are');
     switch (msg.op) {
       case 'askStatus':
 	return this.sendStatus(msg.sender.id, msg.replyTo);
@@ -91,18 +99,29 @@ function receiveInitialMessage(relay, signedMsg) {
 	}
 	break;
       case 'handshake':
+	console.log('received verified handshake');
+	console.log(this.client);
+	console.log(relay);
 	if (this.client === relay) {
+	  console.log('loading game');
 	  // load the .yp file
 	  return window.profile.loadGameFromURL(msg.configURL).
 	  then(() => {
+	    console.log('loaded game');
 	    this.client.sendID = msg.replyTo;
+	    console.log('connecting');
 	    // wrap the relay as a PeerConnection in place
+	    var remoteID = msg.sender.id;
 	    this.connect(remoteID);
+	    console.log('creating data channel');
 	    // initiate creating the data channel since we're the client
 	    this.connections[remoteID].createDataChannel();
+	    this.connections[remoteID].onopen = () => console.log('channel open');
+	    console.log('listening');
 	    // NOTE: we listen even if we're not the hub, because we want to
 	    // let people join through us (if we vouch for them to the hub)
 	    this.listen();
+	    console.log('done processing handshake');
 	  });
 	}
 	break;
@@ -170,6 +189,8 @@ function accept(remoteID, sendID) {
   if (!(remoteID in this.connections)) {
     this.connections[remoteID] =
       new SignalingRelay($('#signaling-relay-url').val(), sendID);
+  } else {
+    this.connections[remoteID].sendID = sendID;
   }
   var relay = this.connections[remoteID];
   // send the handshake

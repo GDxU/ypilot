@@ -145,6 +145,7 @@ defineMethods(PeerConnection, [
   },
 
   function ondatachannel(e) {
+    // FIXME get rid of remoteUser
     console.log('got data channel from ' + this.remoteUser);
     this.dataChannel = e.channel;
     this.dataChannel.onopen = this.onDataChannelOpen.bind(this);

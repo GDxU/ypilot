@@ -6,6 +6,7 @@ function SignalingRelay(url, sendID, recvID) {
   this.recvID = (recvID || uuidv4());
   this.sendID = sendID;
   this.writeBuffer = [];
+  this.isOpen = true;
   this.receive();
 }
 
@@ -23,7 +24,9 @@ defineMethods(SignalingRelay, [
       } catch (err) {
 	console.error(err);
       }
-      that.receive();
+      if (that.isOpen) {
+	that.receive();
+      }
     };
     this.receiveXHR.onerror = function(e) {
       console.log(e);
@@ -66,6 +69,7 @@ defineMethods(SignalingRelay, [
   },
 
   function close() {
+    this.isOpen = false;
     this.receiveXHR.abort();
   }
 
