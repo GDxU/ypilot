@@ -27,6 +27,7 @@ SRCS = \
 	router.js \
 	signaling-relay.js \
 	space.js \
+	svg.js \
 	stdlib.js \
 	uplink.js \
 	user-names.js \

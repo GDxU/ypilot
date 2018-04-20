@@ -11,6 +11,10 @@ function toString() {
   return 'Vec2[' + this.x + ',' + this.y + ']';
 },
 
+function toJSON() {
+  return { op: 'Vec2', args: [this.x, this.y] };
+},
+
 function add(other) {
   return new Vec2(this.x + other.x, this.y + other.y);
 },

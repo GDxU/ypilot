@@ -34,7 +34,8 @@ function pointIsInPolygon(point, polygon) {
   return (windingNumber != 0);
 }
 
-function Space() {
+function Space(thingID) {
+  this.id = ((thingID === undefined) ? router.newThing() : thingID);
   this.bin2things = {};
   this.located = router.getAdjectivePropertiesMap('Located');
   router.on('becomeLocated', this.becomeLocated.bind(this));
@@ -55,6 +56,10 @@ const emptyArray = [];
 Object.freeze(emptyArray);
 
 defineMethods(Space, [
+  function toJSON() {
+    return { op: 'Space', args: [this.id] };
+  },
+
   function getThings(bin) {
     return ((bin in this.bin2things) ? this.bin2things[bin] : emptyArray);
   },

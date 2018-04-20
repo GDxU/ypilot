@@ -1,4 +1,5 @@
 const Uplink = require('./uplink.js');
+const stringToSVGGraphicsElementSafely = require('./svg.js').stringToSVGGraphicsElementSafely;
 const defineMethods = require('./define-methods.js');
 
 function Router() {
@@ -164,22 +165,78 @@ function playerKeyState(player, code, state) {
 // full game state
 //
 
-// NOTE: would be nice to use JSON.stringify replacer and JSON.parse reviver
-// for these, but the calls to the JSON methods are in PeerConnection, too deep
-// in the network code for it to be worth the plumbing.
-
 function getState() {
+  // NOTE: a few things that can be in adjective properties have toJSON
+  // methods, which turn them into plain objects (notably, without cycles).
+  // This includes Vec2, Space, Interface, and SVGGraphicsElement. The process
+  // is reversed in setState below.
   return {
     nextThing: this.nextThing,
-    adjectives: this.adjectives, // TODO serialize certain things (Vec2, Space, Interface, SVGGraphicsElement)
+    adjectives: this.adjectives,
     playerKeysDown: this.playerKeysDown
   };
 },
 
 function setState(msg) {
   this.nextThing = msg.nextThing;
-  this.adjectives = msg.adjectives; // TODO deserialize certain things
+  this.adjectives = msg.adjectives;
   this.playerKeysDown = msg.playerKeysDown;
+  // reverse toJSON->{op:...} conversions
+  // map stringified JSON to final objects for Space and Interface, so object
+  // identity is restored (Vec2 and SVGGraphicsElement should remain separate
+  // objects regardless)
+  var alreadyConverted = {};
+  for (var adj in this.adjectives) {
+    var thing2props = this.adjectives[adj];
+    for (var thing in thing2props) {
+      var prop2val = thing2props[thing];
+      for (var prop in prop2val) {
+	var val = prop2val[prop];
+	if (('object' == typeof val) && (val !== null) && ('op' in val)) {
+	  switch (val.op) {
+	    case 'Space': // fall through
+	    case 'Interface':
+	      if (!(('args' in val) &&
+		    (val.args instanceof Array) &&
+		    val.args.length == 1))
+		throw new Error('expected exactly one args for ' + val.op + ', but got ' + JSON.stringify(val.args));
+	      if ('number' != typeof val.args[0])
+		throw new Error('expected ' + val.op + ' first arg to be a number, but got ' + JSON.stringify(val.args[0]));
+	      var valStr = JSON.stringify(val);
+	      if (valStr in alreadyConverted) {
+		prop2val[prop] = alreadyConverted[valStr];
+	      } else {
+		if (val.op == 'Space') {
+		  prop2val[prop] = new Space(val.args[0]);
+		} else {
+		  prop2val[prop] = new Interface(val.args[0]);
+		}
+		alreadyConverted[valStr] = prop2val[prop];
+	      }
+	      break;
+	    case 'Vec2':
+	      if (!(('args' in val) &&
+		    (val.args instanceof Array) &&
+		    val.args.length == 2))
+		throw new Error('expected exactly two args for Vec2, but got ' + JSON.stringify(val.args));
+	      if ('number' != typeof val.args[0])
+		throw new Error('expected Vec2 first arg to be a number, but got ' + JSON.stringify(val.args[0]));
+	      if ('number' != typeof val.args[1])
+		throw new Error('expected Vec2 second arg to be a number, but got ' + JSON.stringify(val.args[1]));
+	      prop2val[prop] = new Vec2(val.args[0], val.args[1]);
+	      break;
+	    case 'graphics':
+	      if (!(('string' in val) && ('string' == typeof val.string)))
+		throw new Error('missing string property of graphics');
+	      prop2val[prop] = stringToSVGGraphicsElementSafely(val.string);
+	      break;
+	    default:
+	      // leave it as is
+	  }
+	}
+      }
+    }
+  }
 },
 
 //

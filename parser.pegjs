@@ -1,4 +1,7 @@
 {
+  const ensureSafeSVGGraphicsElementString =
+    require('./svg.js').ensureSafeSVGGraphicsElementString;
+
   // rearrange the AST for a chain of infix operations of the same precedence
   // so that they are performed left to right, i.e. the rightmost operation is
   // the root of the tree
@@ -185,19 +188,7 @@ graphics
       (!('</' graphics_element_name '>') . )*
       '</' graphics_element_name '>'
   ) sp {
-    if (/<script\b/i.test(str)) throw new Error("script tags not allowed");
-    if (/\bon[\w-]+=/i.test(str)) throw new Error("event handlers not allowed");
-    if ('object' == typeof document) {
-      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.innerHTML = str;
-      if (svg.childNodes.length != 1)
-	throw new Error("expected graphics to parse to exactly 1 element, but got " + svg.childNodes.length + " elements");
-      var node = svg.childNodes[0];
-      if (!(node instanceof SVGGraphicsElement))
-	throw new Error("expected graphics to parse to an SVGGraphicsElement, but got an " + node.constructor.name);
-    } else {
-      console.warn("not in browser; skipping trying to parse graphics markup");
-    }
+    ensureSafeSVGGraphicsElementString(str);
     return { op: 'graphics', string: str };
   }
 

@@ -3,7 +3,10 @@ const defineMethods = require('./define-methods.js');
 
 function Interface(player) {
   this.player = player;
-  this.isLocal = (router.uplink.players[router.uplink.id].thing == player);
+  this.isLocal = (
+    (router.uplink.id in router.uplink.players) &&
+    (router.uplink.players[router.uplink.id].thing == player)
+  );
   if (this.isLocal) {
     this.playerShipLocated = undefined;
     this.piloting = router.getAdjectivePropertiesMap('Piloting');
@@ -29,6 +32,10 @@ function Interface(player) {
 }
 
 defineMethods(Interface, [
+
+function toJSON() {
+  return { op: 'Interface', args: [this.player] };
+},
 
 function thingIsInPlayersSpace(thing) {
   return (this.playerShipLocated && (thing in this.located) &&
