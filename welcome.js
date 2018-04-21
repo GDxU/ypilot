@@ -139,8 +139,18 @@ function onClickJoin(evt) {
   }
   var gameIndex = m[1] | 0;
   var remoteID = m[2];
-  Game.loadFromProfile(gameIndex).
-  then(router.joinGame.bind(router, remoteID));
+  /* FIXME?
+   * Right now we only load the game after receiving the handshake from the hub
+   * that tells us which game is being played, so there could be a big lagspike
+   * on joining as the game is loaded and compiled, behind which clock ticks
+   * and input events would pile up. It might be better to proactively load the
+   * game here, before attempting to join, like this:
+     Game.loadFromProfile(gameIndex).
+     then(router.joinGame.bind(router, remoteID));
+   * and then just check that the correct game was loaded when we get the
+   * handshake.
+   */
+  router.joinGame(remoteID);
 }
 
 function addJoinGameRow(gameIndex, players) {

@@ -92,6 +92,8 @@ function receiveInitialMessage(relay, signedMsg) {
 	break;
       case 'handshake':
 	if (this.client === relay) {
+	  // only the hub could send us a handshake
+	  this.hubID = msg.sender.id;
 	  // load the .yp file
 	  return window.profile.loadGameFromURL(msg.configURL).
 	  then(() => {
