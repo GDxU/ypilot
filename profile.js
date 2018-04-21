@@ -151,8 +151,6 @@ function verifyTOFU(signedMsg) {
 },
 
 // store player's info in this.knownPlayers (updating if already there)
-// TODO? if id matches a known player, but publicKey doesn't, throw an Error
-// that's redundant for the above usage, but maybe not others?
 function know(player) {
   if (player.id in this.knownPlayers) { // already known
     var knownPlayer = this.knownPlayers[player.id];

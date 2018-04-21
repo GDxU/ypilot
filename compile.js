@@ -385,6 +385,7 @@ function compile(ast) {
 	adjectiveDependencies = {};
 	nounDefaultAdjectives = {};
 	nounSupertypes = {};
+	usedUrls = {};
 	return compile({ op: 'use', url: 'standard:base.yp' }) + "\n" +
 	       compileStatements(ast);
       } else if ('op' in ast) {

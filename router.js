@@ -192,6 +192,7 @@ function setState(msg) {
       var prop2val = thing2props[thing];
       for (var prop in prop2val) {
 	var val = prop2val[prop];
+	// FIXME some vals are arrays of JSONified objects; need to separate this out into another function so we can call it in both the array and single object cases (need to pass in alreadyConverted!)
 	if (('object' == typeof val) && (val !== null) && ('op' in val)) {
 	  switch (val.op) {
 	    case 'Space': // fall through

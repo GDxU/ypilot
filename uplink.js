@@ -1,4 +1,5 @@
 const $ = require('jquery');
+const deepEqual = require('deep-equal');
 const defineMethods = require('./define-methods.js');
 const SignalingRelay = require('./signaling-relay.js');
 const PeerConnection = require('./peer-connection.js');
@@ -23,7 +24,7 @@ Uplink.startNewGame = function() {
   Clock.start(ul.clockTick.bind(ul));
   window.profile.getPlayerDescription().
   then(playerDesc => {
-    ul.receivePeerMessageAsNonHub(ul.id, {
+    ul.receivePeerMessageAsNonHub({
       op: 'addPlayer',
       player: playerDesc
     });
@@ -71,7 +72,6 @@ function listen() {
 
 function clockTick() {
   this.broadcast({ op: 'clockTick' });
-  this.flushInputBuffer();
 },
 
 function receiveInitialMessage(relay, signedMsg) {
@@ -115,7 +115,7 @@ function receiveInitialMessage(relay, signedMsg) {
   catch(err => console.error(err));
 },
 
-function sendStatus(remoteID, sendID) {
+function getPlayerList() {
   // compile list of players we're playing with, with information from profile
   var players = [];
   for (var id in this.players) {
@@ -123,7 +123,7 @@ function sendStatus(remoteID, sendID) {
       players.push({
 	id: id,
 	handle: window.profile.handle,
-	/* publicKey: TODO? */
+	/* publicKey: TODO? client doesn't actually need this, and it's an async call */
 	thing: this.players[id].thing
       });
     } else {
@@ -136,11 +136,15 @@ function sendStatus(remoteID, sendID) {
       });
     }
   }
+  return players;
+},
+
+function sendStatus(remoteID, sendID) {
   // send what game we're playing and with whom
   return window.profile.sign({
     op: 'status',
     configURL: this.router.configURL,
-    players: players
+    players: this.getPlayerList()
   }).
   then(signedMsg => {
     var relay =
@@ -187,10 +191,12 @@ function accept(remoteID, sendID) {
   // open a PeerConnection to the new player
   this.connect(remoteID);
   this.connections[remoteID].onopen = () => {
+    // TODO? sync with next clock tick like input events
     // when it's open, send them the current game state
     // TODO also send current player info as in sendStatus
     this.connections[remoteID].send(
-      Object.assign({ op: 'setState' }, this.router.getState())
+      Object.assign({ op: 'setState', players: this.getPlayerList() },
+		    this.router.getState())
     );
     // and tell everyone (including the remote player and ourselves) to add the
     // new player to the game
@@ -216,13 +222,13 @@ function connect(remoteID) {
 
 function receivePeerMessage(senderID, msg) {
   if (this.id == this.hubID) {
-    this.receivePeerMessageAsHub(senderID, msg);
+    this.receivePeerMessageAsHub(msg);
   } else {
-    this.receivePeerMessageAsNonHub(senderID, msg);
+    this.receivePeerMessageAsNonHub(msg);
   }
 },
 
-function receivePeerMessageAsHub(senderID, msg) {
+function receivePeerMessageAsHub(msg) {
   switch (msg.op) {
     case 'vouch':
       this.receiveVoucher(msg);
@@ -230,7 +236,6 @@ function receivePeerMessageAsHub(senderID, msg) {
     case 'press':
     case 'release':
       this.broadcast(msg);
-      this.inputBuffer.push(msg);
       break;
     // TODO? more ops
     default:
@@ -238,10 +243,25 @@ function receivePeerMessageAsHub(senderID, msg) {
   }
 },
 
-function receivePeerMessageAsNonHub(senderID, msg) {
+function receivePeerMessageAsNonHub(msg) {
   switch (msg.op) {
     case 'setState':
-      // TODO get player info from msg, and profile.know() each player
+      // get player info from msg, and profile.know() each player after
+      // checking for public key mismatches
+      msg.players.forEach(player => {
+	if ((player.id != this.hubID) && // no need to check hub's public key again, since we've already verified their messages (also they don't send their public key in their player description because it would be another async call)
+	    (player.id in window.profile.knownPlayers) &&
+	    !deepEqual(player.publicKey, window.profile.knownPlayers.publicKey)
+	   ) {
+	  throw new Error("public key of player in setState doesn't match those in previous messages from the same sender");
+	  // FIXME if the mismatched player is already a part of the game, this
+	  // exception will cause this client to de-sync, and cause further
+	  // errors down the line. maybe report the problem to the hub and
+	  // disconnect?
+	}
+	window.profile.know(player);
+	this.players[player.id] = { thing: player.thing };
+      });
       this.router.setState(msg);
       hideWelcome();
       break;
@@ -289,21 +309,23 @@ function flushInputBuffer() {
 function localInput(op, player, code) {
   var msg = { op: op, player: player, code: code };
   if (this.id == this.hubID) {
-    this.receivePeerMessageAsHub(this.id, msg);
+    this.receivePeerMessageAsHub(msg);
   } else {
     this.connections[this.hubID].send(msg);
   }
 },
 
 // send msg to all players (not necessarily all connections)
-// FIXME should this send to the local player (as non-hub)? currently it doesn't
 function broadcast(msg) {
+  // send to everyone else
   for (var playerID in this.players) {
     if (playerID in this.connections && // should always be true, but whatever
         this.connections[playerID].isOpen) {
       this.connections[playerID].send(msg);
     }
   }
+  // send to the non-hub part of self
+  this.receivePeerMessageAsNonHub(msg);
 }
 
 ]);
