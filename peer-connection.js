@@ -166,11 +166,11 @@ defineMethods(PeerConnection, [
 
   function onDataChannelMessage(e) {
     var data = e.data.toString();
-    console.log('received via data channel: ' + data);
+//    console.log('received via data channel: ' + data);
     try {
-      console.log('attempting to parse...');
+//      console.log('attempting to parse...');
       data = JSON.parse(data);
-      console.log('parsed as: ' + JSON.stringify(data));
+//      console.log('parsed as: ' + JSON.stringify(data));
       this.onmessage(data);
     } catch (err) {
       this.logError(err);

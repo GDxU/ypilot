@@ -191,23 +191,30 @@ function accept(remoteID, sendID) {
   // open a PeerConnection to the new player
   this.connect(remoteID);
   this.connections[remoteID].onopen = () => {
-    // TODO? sync with next clock tick like input events
-    // when it's open, send them the current game state
-    // TODO also send current player info as in sendStatus
-    this.connections[remoteID].send(
-      Object.assign({ op: 'setState', players: this.getPlayerList() },
-		    this.router.getState())
-    );
-    // and tell everyone (including the remote player and ourselves) to add the
-    // new player to the game
-    this.broadcast({
-      op: 'addPlayer',
-      player: {
-	id: remoteID,
-	handle: window.profile.knownPlayers[remoteID].handle,
-	publicKey: window.profile.knownPlayers[remoteID].publicKey
+    try {
+      // TODO? sync with next clock tick like input events
+      // when it's open, send them the current game state and player list
+      this.connections[remoteID].send(
+	Object.assign({ op: 'setState', players: this.getPlayerList() },
+		      this.router.getState())
+      );
+      // and tell everyone (including the remote player and ourselves) to add
+      // the new player to the game
+      var msg = {
+	op: 'addPlayer',
+	player: {
+	  id: remoteID,
+	  handle: window.profile.knownPlayers[remoteID].handle,
+	  publicKey: window.profile.knownPlayers[remoteID].publicKey
+	}
       }
-    });
+      // NOTE: must send to new player separately, because receiving addPlayer
+      // is what adds them to the list of players to be broadcast to
+      this.connections[remoteID].send(msg);
+      this.broadcast(msg);
+    } catch (err) {
+      console.error(err);
+    }
   };
 },
 
@@ -278,10 +285,12 @@ function receivePeerMessageAsNonHub(msg) {
       this.players[playerID] = {
 	thing: playerThing
       };
+      // NOTE: can't use addPlayer because we need playerThing first in order
+      // to make the Interface
       this.router.add(playerThing, {
-	Typed: { type: Player },
-	Named: { name: window.profile.handle },
-	Interfaced: { interface: new Interface(playerThing) }
+	Typed: new Typed({ type: Player }),
+	Named: new Named({ name: window.profile.handle }),
+	Interfaced: new Interfaced({ interface: new Interface(playerThing) })
       });
       break;
     case 'removePlayer':

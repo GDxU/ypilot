@@ -13,13 +13,13 @@ function SignalingRelay(url, sendID, recvID) {
 defineMethods(SignalingRelay, [
 
   function receive() {
-    console.log('listening to ' + this.recvID + ' via signaling relay');
+//    console.log('listening to ' + this.recvID + ' via signaling relay');
     var that = this;
     this.receiveXHR = new XMLHttpRequest();
     this.receiveXHR.onload = function() {
       try {
 	var text = that.receiveXHR.responseText;
-	console.log('received from ' + that.recvID + ' via signaling relay: ' + text);
+//	console.log('received from ' + that.recvID + ' via signaling relay: ' + text);
 	that.ondata(JSON.parse(text));
       } catch (err) {
 	console.error(err);
@@ -48,7 +48,7 @@ defineMethods(SignalingRelay, [
         that.sendBufferedMessages();
       };
       xhr.onerror = function(e) { console.log(e); };
-      console.log('sending to ' + this.sendID + ' via signaling relay: ' + text);
+//      console.log('sending to ' + this.sendID + ' via signaling relay: ' + text);
       xhr.open('POST', this.url, true);
       xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
       xhr.send(

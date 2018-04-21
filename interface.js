@@ -25,8 +25,7 @@ function Interface(player) {
     document.body.onkeyup = this.keyup.bind(this);
     if (this.player in this.piloting) {
   //    console.log('interface found player ' + this.player + ' piloting on creation');
-      this.playerShipLocated = this.located[this.piloting[this.player].ship];
-      this.setViewBox();
+      this.becomePiloting(this.player, this.piloting[this.player], null);
     }
   }
 }

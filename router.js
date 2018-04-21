@@ -177,6 +177,57 @@ function getState() {
   };
 },
 
+function convertAdjPropValFromJSON(prop2val, prop, alreadyConverted) {
+  var val = prop2val[prop];
+  if (!(('object' == typeof val) && (val !== null))) return;
+  if (val instanceof Array) {
+    for (var i = 0; i < val.length; i++) {
+      this.convertAdjPropValFromJSON(val, i, alreadyConverted);
+    }
+  } else if ('op' in val) {
+    switch (val.op) {
+      case 'Space': // fall through
+      case 'Interface':
+	if (!(('args' in val) &&
+	      (val.args instanceof Array) &&
+	      val.args.length == 1))
+	  throw new Error('expected exactly one args for ' + val.op + ', but got ' + JSON.stringify(val.args));
+	if ('number' != typeof val.args[0])
+	  throw new Error('expected ' + val.op + ' first arg to be a number, but got ' + JSON.stringify(val.args[0]));
+	var valStr = JSON.stringify(val);
+	if (valStr in alreadyConverted) {
+	  prop2val[prop] = alreadyConverted[valStr];
+	} else {
+	  if (val.op == 'Space') {
+	    prop2val[prop] = new Space(val.args[0]);
+	  } else {
+	    prop2val[prop] = new Interface(val.args[0]);
+	  }
+	  alreadyConverted[valStr] = prop2val[prop];
+	}
+	break;
+      case 'Vec2':
+	if (!(('args' in val) &&
+	      (val.args instanceof Array) &&
+	      val.args.length == 2))
+	  throw new Error('expected exactly two args for Vec2, but got ' + JSON.stringify(val.args));
+	if ('number' != typeof val.args[0])
+	  throw new Error('expected Vec2 first arg to be a number, but got ' + JSON.stringify(val.args[0]));
+	if ('number' != typeof val.args[1])
+	  throw new Error('expected Vec2 second arg to be a number, but got ' + JSON.stringify(val.args[1]));
+	prop2val[prop] = new Vec2(val.args[0], val.args[1]);
+	break;
+      case 'graphics':
+	if (!(('string' in val) && ('string' == typeof val.string)))
+	  throw new Error('missing string property of graphics');
+	prop2val[prop] = stringToSVGGraphicsElementSafely(val.string);
+	break;
+      default:
+	// leave it as is
+    }
+  }
+},
+
 function setState(msg) {
   this.nextThing = msg.nextThing;
   this.adjectives = msg.adjectives;
@@ -191,50 +242,7 @@ function setState(msg) {
     for (var thing in thing2props) {
       var prop2val = thing2props[thing];
       for (var prop in prop2val) {
-	var val = prop2val[prop];
-	// FIXME some vals are arrays of JSONified objects; need to separate this out into another function so we can call it in both the array and single object cases (need to pass in alreadyConverted!)
-	if (('object' == typeof val) && (val !== null) && ('op' in val)) {
-	  switch (val.op) {
-	    case 'Space': // fall through
-	    case 'Interface':
-	      if (!(('args' in val) &&
-		    (val.args instanceof Array) &&
-		    val.args.length == 1))
-		throw new Error('expected exactly one args for ' + val.op + ', but got ' + JSON.stringify(val.args));
-	      if ('number' != typeof val.args[0])
-		throw new Error('expected ' + val.op + ' first arg to be a number, but got ' + JSON.stringify(val.args[0]));
-	      var valStr = JSON.stringify(val);
-	      if (valStr in alreadyConverted) {
-		prop2val[prop] = alreadyConverted[valStr];
-	      } else {
-		if (val.op == 'Space') {
-		  prop2val[prop] = new Space(val.args[0]);
-		} else {
-		  prop2val[prop] = new Interface(val.args[0]);
-		}
-		alreadyConverted[valStr] = prop2val[prop];
-	      }
-	      break;
-	    case 'Vec2':
-	      if (!(('args' in val) &&
-		    (val.args instanceof Array) &&
-		    val.args.length == 2))
-		throw new Error('expected exactly two args for Vec2, but got ' + JSON.stringify(val.args));
-	      if ('number' != typeof val.args[0])
-		throw new Error('expected Vec2 first arg to be a number, but got ' + JSON.stringify(val.args[0]));
-	      if ('number' != typeof val.args[1])
-		throw new Error('expected Vec2 second arg to be a number, but got ' + JSON.stringify(val.args[1]));
-	      prop2val[prop] = new Vec2(val.args[0], val.args[1]);
-	      break;
-	    case 'graphics':
-	      if (!(('string' in val) && ('string' == typeof val.string)))
-		throw new Error('missing string property of graphics');
-	      prop2val[prop] = stringToSVGGraphicsElementSafely(val.string);
-	      break;
-	    default:
-	      // leave it as is
-	  }
-	}
+	this.convertAdjPropValFromJSON(prop2val, prop, alreadyConverted);
       }
     }
   }
