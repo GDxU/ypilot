@@ -60,6 +60,13 @@ defineMethods(Space, [
     return { op: 'Space', args: [this.id] };
   },
 
+  // called after constructing a new Space from a JSON description
+  function reconstitute() {
+    for (var thing in this.located) {
+      this.becomeLocated(thing | 0, this.located[thing], null);
+    }
+  },
+
   function getThings(bin) {
     return ((bin in this.bin2things) ? this.bin2things[bin] : emptyArray);
   },

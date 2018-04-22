@@ -246,6 +246,14 @@ function setState(msg) {
       }
     }
   }
+  // Space requires additional initialization after everything points to it
+  // instead of the JSON version
+  for (var key in alreadyConverted) {
+    var val = alreadyConverted[key];
+    if (val instanceof Space) {
+      val.reconstitute();
+    }
+  }
 },
 
 //
