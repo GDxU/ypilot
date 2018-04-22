@@ -12,6 +12,8 @@ function Router() {
   this.playerKeysDown = {};
   this.on('press',   (player,code) => this.playerKeyState(player, code, true));
   this.on('release', (player,code) => this.playerKeyState(player, code, false));
+  this.eventLog = [];
+  this.eventLogEnabled = false;
 }
 
 defineMethods(Router, [
@@ -38,6 +40,9 @@ function removeListener(eventName, listener) {
 },
 
 function emit(eventName, ...args) {
+  if (this.eventLogEnabled) {
+    this.eventLog.push(JSON.stringify([eventName, ...args]));
+  }
   if (eventName in this.listeners) {
     // call each listener via setImmediate so that no listener gets called in
     // the middle of another listener and sees its effect only partly applied.
@@ -62,6 +67,10 @@ function emit(eventName, ...args) {
       });
     }
   }
+},
+
+function getEventLogURL() {
+  return URL.createObjectURL(new Blob(this.eventLog.join("\n")));
 },
 
 //
