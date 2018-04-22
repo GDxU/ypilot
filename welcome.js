@@ -306,9 +306,11 @@ $('#export-profile').on('click', evt => {
     $('#export-profile-link').attr('href',
       'data:application/json;charset=utf-8,' +
       encodeURIComponent(JSON.stringify(o))
-    ).click();
-  });
-  // TODO catch
+    );
+    // for some reason jq's .click() doesn't work, while DOM's does
+    $('#export-profile-link')[0].click();
+  }).
+  catch(err => console.error(err));
 });
 
 $('#new-profile').on('click', newProfile);
