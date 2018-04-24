@@ -4,6 +4,7 @@ const Profile = require('./profile.js');
 const Game = require('./game.js');
 const Uplink = require('./uplink.js');
 const convertFailToReject = require('./errors.js').convertFailToReject;
+const id2svg = require('./id2svg.js');
 
 if (!('function' == typeof assert)) {
   function assert(condition) {
@@ -56,6 +57,7 @@ function setProfile(p) {
   $('#id').val(p.id);
   $('#handle').val(p.handle).change();
   $('#use-local-storage').prop('checked', p.useLocalStorage);
+  $('#id-svg').html(id2svg(p.id));
   updatePlayersTable();
   updateNewGamesTable();
   changedProfile();

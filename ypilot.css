@@ -33,6 +33,13 @@ html, body, svg {
   color: white;
 }
 
+#id-svg {
+  width: 64px;
+  height: 64px;
+  float: left;
+  margin: 1em;
+}
+
 #id {
   font-family: monospace;
 }
