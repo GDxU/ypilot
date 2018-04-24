@@ -1,9 +1,11 @@
 const defineMethods = require('./define-methods.js');
 const $ = require('jquery');
 
-RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
-RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
-RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
+if ('object' == typeof window) {
+  RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+  RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
+  RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
+}
 
 function PeerConnection(relay) {
   this.relay = relay;
