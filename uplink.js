@@ -291,7 +291,7 @@ function receivePeerMessageAsNonHub(msg) {
       // to make the Interface
       this.router.add(playerThing, {
 	Typed: new Typed({ type: Player }),
-	Named: new Named({ name: window.profile.handle }),
+	Named: new Named({ name: playerName }),
 	Interfaced: new Interfaced({ interface: new Interface(playerThing) })
       });
       break;
@@ -303,7 +303,12 @@ function receivePeerMessageAsNonHub(msg) {
       this.inputBuffer.push(msg);
       break;
     case 'clockTick':
-      this.flushInputBuffer();
+      // call flushInputBuffer when the router is next truly idle
+      if (this.router.isIdle()) {
+	this.flushInputBuffer();
+      } else {
+	this.router.once('noMoreHits', this.flushInputBuffer.bind(this));
+      }
       break;
     // TODO? more ops
     default:

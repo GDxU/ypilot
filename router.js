@@ -8,6 +8,7 @@ function Router() {
   this.nextThing = 0;
   this.adjectives = {};
   this.listeners = {};
+  this.onceListeners = {};
   this.numPendingListeners = 0;
   this.playerKeysDown = {};
   this.on('press',   (player,code) => this.playerKeyState(player, code, true));
@@ -39,6 +40,15 @@ function removeListener(eventName, listener) {
   }
 },
 
+function once(eventName, listener) {
+  if (eventName in this.onceListeners) {
+    this.onceListeners[eventName].push(listener);
+  } else {
+    this.onceListeners[eventName] = [listener];
+  }
+  this.on(eventName, listener);
+},
+
 function emit(eventName, ...args) {
   if (this.eventLogEnabled) {
     this.eventLog.push(JSON.stringify([eventName, ...args]));
@@ -66,11 +76,25 @@ function emit(eventName, ...args) {
 	});
       });
     }
+    // remove any listeners that were added with once
+    if (eventName in this.onceListeners) {
+      this.onceListeners[eventName].forEach(l => {
+        var i = this.listeners[eventName].indexOf(l);
+	if (i != -1) {
+	  this.listeners[eventName].splice(i,1);
+	}
+      });
+      this.onceListeners[eventName] = [];
+    }
   }
 },
 
+function isIdle() {
+  return (this.numPendingListeners == 0);
+},
+
 function getEventLogURL() {
-  return URL.createObjectURL(new Blob(this.eventLog.join("\n")));
+  return URL.createObjectURL(new Blob([this.eventLog.join("\n")]));
 },
 
 //

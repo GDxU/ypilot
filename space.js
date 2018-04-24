@@ -44,6 +44,7 @@ function Space(thingID) {
   this.oriented = router.getAdjectivePropertiesMap('Oriented');
   this.mobile = router.getAdjectivePropertiesMap('Mobile');
   router.on('idle', this.idle.bind(this));
+  this.somethingMoved = true;
 }
 
 Space.position2bin = function(position) {
@@ -98,6 +99,7 @@ defineMethods(Space, [
     }
     if (space === this) {
       newBin = Space.position2bin(position);
+      this.somethingMoved = true;
     }
     if (newBin != oldBin) {
       if (newBin) {
@@ -239,6 +241,13 @@ defineMethods(Space, [
   },
 
   function idle() {
+    // don't do an infinite(?) sequence of idles while there is unhandled
+    // penetration
+    if (!this.somethingMoved) {
+      router.emit('noMoreHits'); // FIXME what if there's more than one Space?
+      return;
+    }
+    this.somethingMoved = false;
     // get all bins in the Moore neighborhood of any mobile thing in this space
     var bins = {};
     for (var thing in this.mobile) {
@@ -337,26 +346,33 @@ defineMethods(Space, [
     // map penetrators and penetrateds to the first penetration they
     // participate in (greatest ticksAgo)
     var hits = {};
+    var haveHits = false;
     for (var key in penetrations) {
       var p = penetrations[key];
       if ((!(p.penetrator in hits)) ||
 	  hits[p.penetrator].ticksAgo < p.ticksAgo) {
 	hits[p.penetrator] = p;
+	haveHits = true;
       }
       if ((!(p.penetrated in hits)) ||
 	  hits[p.penetrated].ticksAgo < p.ticksAgo) {
 	hits[p.penetrated] = p;
+	haveHits = true;
       }
     }
-    // emit one penetrate and two hit events for each (first, least-cost)
-    // penetration
-    for (var thing in hits) {
-      var p = hits[thing];
-      if (thing == p.penetrator) {
-        router.emit('penetrate', p.penetrator, p.point, p.penetrated, p.edgeFrom, p.edgeTo, p.ticksAgo, p.relativeVelocity);
-	router.emit('hit', p.penetrator, p.penetrated);
-	router.emit('hit', p.penetrated, p.penetrator);
+    if (haveHits) {
+      // emit one penetrate and two hit events for each (first, least-cost)
+      // penetration
+      for (var thing in hits) {
+	var p = hits[thing];
+	if (thing == p.penetrator) {
+	  router.emit('penetrate', p.penetrator, p.point, p.penetrated, p.edgeFrom, p.edgeTo, p.ticksAgo, p.relativeVelocity);
+	  router.emit('hit', p.penetrator, p.penetrated);
+	  router.emit('hit', p.penetrated, p.penetrator);
+	}
       }
+    } else { // have no hits
+      router.emit('noMoreHits');
     }
   }
 ]);
