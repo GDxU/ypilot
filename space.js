@@ -108,9 +108,9 @@ defineMethods(Space, [
       if (oldBin) {
 	this.removeFromBin(thing, oldBin);
       }
-      if (newBin && oldBin) {
+      /*if (newBin && oldBin) {
 	console.log('' + thing + ' move from bin ' + oldBin + ' to ' + newBin);
-      }
+      }*/
     }
   },
 

@@ -29,6 +29,13 @@ SRCS = \
 	space.js \
 	svg.js \
 	stdlib.js \
+		base.yp \
+		bouncy.yp \
+		bullet.yp \
+		holding.yp \
+		inertial.yp \
+		mortal.yp \
+		motile.yp \
 	uplink.js \
 	user-names.js \
 	vec2.js \
