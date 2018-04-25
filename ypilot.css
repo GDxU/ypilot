@@ -21,13 +21,44 @@ html, body, svg {
   fill: none;
 }
 
+#controls {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+#controls button {
+  background-color: #fe3a27;
+  border: 1px solid white;
+  color: white;
+  font-family: serif;
+  font-size: x-large;
+  font-style: italic;
+  font-weight: bold;
+  padding-left: 1ex;
+  padding-right: 1ex;
+  margin: 1ex;
+}
+
+#controls button > * {
+  filter: drop-shadow(2px 2px black);
+}
+
+#controls button:active {
+  background-color: black;
+}
+
 #welcome {
   position: absolute;
-  width: 80%;
-  top: 10%;
-  bottom: 10%;
-  left: 10%;
-  right: 10%;
+  width: 84%;
+  top: 8%;
+  bottom: 8%;
+  left: 8%;
+  right: 8%;
   padding-top: 1em;
   background-color: #4e7cfe;
   color: white;
@@ -66,7 +97,7 @@ h1 {
 
 .tabs {
   width: 100%;
-  height: 80%;
+  height: 84%;
 }
 
 .tabs > ul {
@@ -136,6 +167,47 @@ td.id {
 
 button {
   padding: 0;
+}
+
+/* cardinal direction layout table:
+ *	.N.W	.N.C	.N.E
+ *	.M.W	.M.C	.M.E
+ *	.S.W	.S.C	.S.E
+ * (M=middle, C=center)
+ */
+
+table.layout {
+  width: 100%;
+  height: 100%;
+}
+
+table.layout td, table.layout th {
+  border: none;
+  padding: 0;
+}
+
+tr.N {
+  vertical-align: top;
+}
+
+tr.M {
+  vertical-align: middle;
+}
+
+tr.S {
+  vertical-align: bottom;
+}
+
+td.W {
+  text-align: left;
+}
+
+td.C {
+  text-align: center;
+}
+
+td.E {
+  text-align: right;
 }
 
 .dangerous {

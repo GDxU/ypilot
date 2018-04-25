@@ -23,6 +23,9 @@ function Interface(player) {
     this.svg = $('#svg-container svg')[0];
     document.body.onkeydown = this.keydown.bind(this);
     document.body.onkeyup = this.keyup.bind(this);
+    $('.key').on('mousedown', this.mousedown.bind(this));
+    $('.key').on('mouseup', this.mouseup.bind(this));
+    // TODO mouse enter/leave etc.?
     if (this.player in this.piloting) {
   //    console.log('interface found player ' + this.player + ' piloting on creation');
       this.becomePiloting(this.player, this.piloting[this.player], null);
@@ -156,6 +159,14 @@ function keydown(evt) {
 
 function keyup(evt) {
   router.uplink.localInput('release', this.player, evt.code);
+},
+
+function mousedown(evt) {
+  router.uplink.localInput('press', this.player, evt.currentTarget.id);
+},
+
+function mouseup(evt) {
+  router.uplink.localInput('release', this.player, evt.currentTarget.id);
 }
 
 ]);
