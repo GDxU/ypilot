@@ -23,8 +23,11 @@ function Interface(player) {
     this.svg = $('#svg-container svg')[0];
     document.body.onkeydown = this.keydown.bind(this);
     document.body.onkeyup = this.keyup.bind(this);
-    $('.key').on('mousedown', this.mousedown.bind(this));
-    $('.key').on('mouseup', this.mouseup.bind(this));
+    $('.key').
+      on('mousedown', this.mousedown.bind(this)).
+      on('mouseup', this.mouseup.bind(this)).
+      on('touchstart', this.touchstart.bind(this)).
+      on('touchend', this.touchend.bind(this));
     // TODO mouse enter/leave etc.?
     if (this.player in this.piloting) {
   //    console.log('interface found player ' + this.player + ' piloting on creation');
@@ -167,6 +170,22 @@ function mousedown(evt) {
 
 function mouseup(evt) {
   router.uplink.localInput('release', this.player, evt.currentTarget.id);
+},
+
+function touchstart(evt) {
+  $.each(evt.changedTouches, (i, touch) => {
+    $(touch.target).closest('button').each((j, btn) => {
+      router.uplink.localInput('press', this.player, btn.id);
+    });
+  });
+},
+
+function touchend(evt) {
+  $.each(evt.changedTouches, (i, touch) => {
+    $(touch.target).closest('button').each((j, btn) => {
+      router.uplink.localInput('release', this.player, btn.id);
+    });
+  });
 }
 
 ]);

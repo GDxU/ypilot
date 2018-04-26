@@ -36,12 +36,14 @@ html, body, svg {
   border: 1px solid white;
   color: white;
   font-family: serif;
-  font-size: x-large;
+  font-size: xx-large;
   font-style: italic;
   font-weight: bold;
   padding-left: 1ex;
   padding-right: 1ex;
   margin: 1ex;
+  min-width: 0.6in;
+  min-height: 0.6in;
 }
 
 #controls button > * {
