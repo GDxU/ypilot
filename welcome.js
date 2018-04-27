@@ -351,17 +351,7 @@ $('#restore-default-network-settings').on('click', function(evt) {
   $('#ice-servers').val(
     "[\n" +
     "{\"urls\":\"stun:stun.ekiga.net\"},\n" +
-    "{\"urls\":\"stun:stun.iptel.org\"},\n" +
-    "{\"urls\":\"stun:stun.l.google.com:19302\"},\n" +
-    "{\"urls\":\"stun:stun1.l.google.com:19302\"},\n" +
-    "{\"urls\":\"stun:stun2.l.google.com:19302\"},\n" +
-    "{\"urls\":\"stun:stun3.l.google.com:19302\"},\n" +
-    "{\"urls\":\"stun:stun4.l.google.com:19302\"},\n" +
-    "{\n" +
-    "        \"urls\": \"turn:numb.viagenie.ca\",\n" +
-    "        \"credential\": \"muazkh\",\n" +
-    "        \"username\": \"webrtc@live.com\"\n" +
-    "}\n" +
+    "{\"urls\":\"stun:stun.l.google.com:19302\"}\n" +
     "]"
   );
 });
