@@ -1,4 +1,5 @@
 const $ = require('jquery');
+const qr = require('qr-image');
 const UserNames = require('./user-names.js');
 const Profile = require('./profile.js');
 const Game = require('./game.js');
@@ -55,6 +56,11 @@ function setProfile(p) {
     changedProfile();
   };
   $('#id').val(p.id);
+  var hrefNoHash = location.href.slice(0, location.href.length - location.hash.length);
+  var href = hrefNoHash + '#' + p.id;
+  var inviteSvgStr = qr.imageSync(href, { type: 'svg' });
+  $('#invite-svg').html(inviteSvgStr);
+  $('#invite-url').text(href);
   $('#handle').val(p.handle).change();
   $('#use-local-storage').prop('checked', p.useLocalStorage);
   $('#id-svg').html(id2svg(p.id));

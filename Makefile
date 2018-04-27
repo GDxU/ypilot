@@ -8,6 +8,7 @@ REQUIRES = \
 	jquery \
 	mocha \
 	pegjs \
+	qr-image \
 	setimmediate \
 	uuid
 INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
@@ -21,6 +22,7 @@ SRCS = \
 	game.js \
 	id2svg.js \
 	interface.js \
+	menu.js \
 	parser.js \
 	peer-connection.js \
 	profile.js \

@@ -66,6 +66,72 @@ html, body, svg {
   color: white;
 }
 
+#menu {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #ddd;
+  color: black;
+  font-size: xx-large;
+  font-family: serif;
+  font-style: italic;
+  font-weight: bold;
+}
+
+#menu ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+#menu li {
+  padding-left: 1ex;
+  padding-right: 1ex;
+  min-width: 0.6in;
+  min-height: 0.6in;
+  background: linear-gradient(#ddd, #777);
+}
+
+#menu li:hover {
+  background: linear-gradient(#4e7cfe, #273c7f);
+  color: white;
+}
+
+#menu li:hover > * {
+  filter: drop-shadow(2px 2px black);
+}
+
+#invite {
+  display: none;
+  position: absolute;
+  width: 84%;
+  top: 8%;
+  left: 8%;
+  right: 8%;
+  background-color: white;
+  color: black;
+  text-align: center;
+}
+
+#invite-inner {
+  margin: 1em;
+}
+
+#invite-svg {
+  display: inline-block;
+  max-width: 1in;
+  max-height: 1in;
+  margin: 0.2in;
+}
+
+#invite-url {
+  text-align: center;
+  font-family: monospace;
+  font-size: small;
+  margin: 1em;
+}
+
 #id-svg {
   width: 64px;
   height: 64px;

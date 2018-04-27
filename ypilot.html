@@ -7,12 +7,12 @@
 </head>
 <body>
 <div id="svg-container">
-<svg></svg>
+ <svg></svg>
 </div>
 <div id="controls">
  <table class="layout">
   <tr class="N">
-   <td class="W"><button id="hamburger" title="open menu"><span>≡</span></button></td>
+   <td class="W"><button id="Backquote" class="key" title="open menu (`)"><span>≡</span></button></td>
    <td class="C"><button id="Digit1" class="key" title="select slot 1"><span>1</span></button></td>
    <td class="C"><button id="Digit2" class="key" title="select slot 2"><span>2</span></button></td>
    <td class="C"><button id="Digit3" class="key" title="select slot 3"><span>3</span></button></td>
@@ -41,62 +41,61 @@
  </table>
 </div>
 <div id="welcome">
-<h1>Welcome to YPilot</h1>
-<div class="tabs">
-<ul>
- <li class="selected"><a href="#profile">Your profile</a>
- <li><a href="#players">Players you have met</a>
- <li><a href="#new-game">Start a new game</a>
- <li><a href="#join-game">Join a game</a>
- <li><a href="#network-settings">Network settings</a>
- <li><a href="#help">Help</a>
-</ul>
-<div id="profile" class="selected">
-<div id="id-svg" title="visual representation of your ID"></div>
-<label>Your ID: <input type="text" id="id" size="36" disabled></label><br>
-<label>Your handle: <input type="text" id="handle"></label><button id="generate-handle">Generate random handle</button><br>
-<!-- TODO your shipshape -->
-<!-- TODO key pair? -->
-Your profile also includes the information in the "Players you have met" and "Network settings" tabs.<br>
-<label><input type="checkbox" id="use-local-storage" checked> Save profile in browser (local storage/site data)</label><br>
-<hr>
-<button id="export-profile">Export profile</button>
-<a id="export-profile-link" download="ypilot-profile.json">ypilot-profile.json</a>
-<div class="dangerous">
-<p>These buttons will erase the profile currently loaded in your browser. If you want to keep the currently loaded profile, export it to a file first.</p>
-<label>Import profile: <input type="file" id="import-profile"></label><br>
-<button id="new-profile">New profile</button>
-</div>
-</div>
-<div id="players">
-<table>
- <tr><th>ID</th><th>Handle(s)</th><th>If they ask your status</th><th>If they ask to join</th><th>Ask their status</th><th>Forget</th></tr>
-</table>
-</div>
-<div id="new-game">
-<!-- TODO display link to share for invites -->
-<table id="games">
- <caption>Games you can start</caption>
- <tr><th>Start</th><th>Title</th><th>Author</th><th>URL</th></tr>
-</table>
-<button id="add-from-url">Add</button>
-<label>from URL: <input type="url" id="config-url"></label><br>
-<label>Start from file (singleplayer only): <input type="file" id="config-file"></label>
-</div>
-<div id="join-game">
-<button id="search-for-games">Look for games my friends are playing</button>
-<table id="games-to-join">
-<caption>Games you can join</caption>
- <tr><th>Join</th><th>Title</th><th>Current players</th></tr>
-</table>
-</div>
-<div id="network-settings">
- <p>Only change these settings if you have set up your own relay server, or know some better ICE servers. The defaults should work OK for most people.</p>
- <label>WebRTC signaling relay URL:<br>
-  <input type="url" id="signaling-relay-url" value="https://ssl.uofr.net/~willdb/cgi-bin/relay.pl"><br>
- </label>
- <label>ICE (STUN/TURN) server list:<br>
- <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
+ <h1>Welcome to YPilot</h1>
+ <div class="tabs">
+  <ul>
+   <li class="selected"><a href="#profile">Your profile</a>
+   <li><a href="#players">Players you have met</a>
+   <li><a href="#new-game">Start a new game</a>
+   <li><a href="#join-game">Join a game</a>
+   <li><a href="#network-settings">Network settings</a>
+   <li><a href="#help">Help</a>
+  </ul>
+  <div id="profile" class="selected">
+   <div id="id-svg" title="visual representation of your ID"></div>
+   <label>Your ID: <input type="text" id="id" size="36" disabled></label><br>
+   <label>Your handle: <input type="text" id="handle"></label><button id="generate-handle">Generate random handle</button><br>
+   <!-- TODO your shipshape -->
+   <!-- TODO key pair? -->
+   Your profile also includes the information in the "Players you have met" and "Network settings" tabs.<br>
+   <label><input type="checkbox" id="use-local-storage" checked> Save profile in browser (local storage/site data)</label><br>
+   <hr>
+   <button id="export-profile">Export profile</button>
+   <a id="export-profile-link" download="ypilot-profile.json">ypilot-profile.json</a>
+   <div class="dangerous">
+    <p>These buttons will erase the profile currently loaded in your browser. If you want to keep the currently loaded profile, export it to a file first.</p>
+    <label>Import profile: <input type="file" id="import-profile"></label><br>
+    <button id="new-profile">New profile</button>
+   </div>
+  </div>
+  <div id="players">
+   <table>
+    <tr><th>ID</th><th>Handle(s)</th><th>If they ask your status</th><th>If they ask to join</th><th>Ask their status</th><th>Forget</th></tr>
+   </table>
+  </div>
+  <div id="new-game">
+   <table id="games">
+    <caption>Games you can start</caption>
+    <tr><th>Start</th><th>Title</th><th>Author</th><th>URL</th></tr>
+   </table>
+   <button id="add-from-url">Add</button>
+   <label>from URL: <input type="url" id="config-url"></label><br>
+   <label>Start from file (singleplayer only): <input type="file" id="config-file"></label>
+  </div>
+  <div id="join-game">
+   <button id="search-for-games">Look for games my friends are playing</button>
+   <table id="games-to-join">
+   <caption>Games you can join</caption>
+    <tr><th>Join</th><th>Title</th><th>Current players</th></tr>
+   </table>
+  </div>
+  <div id="network-settings">
+   <p>Only change these settings if you have set up your own relay server, or know some better ICE servers. The defaults should work OK for most people.</p>
+   <label>WebRTC signaling relay URL:<br>
+    <input type="url" id="signaling-relay-url" value="https://ssl.uofr.net/~willdb/cgi-bin/relay.pl"><br>
+   </label>
+   <label>ICE (STUN/TURN) server list:<br>
+   <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
 {"urls":"stun:stun.ekiga.net"},
 {"urls":"stun:stun.iptel.org"},
 {"urls":"stun:stun.l.google.com:19302"},
@@ -105,13 +104,28 @@ Your profile also includes the information in the "Players you have met" and "Ne
 {"urls":"stun:stun3.l.google.com:19302"},
 {"urls":"stun:stun4.l.google.com:19302"}
 ]</textarea><br></label>
- <hr>
- <button id="restore-default-network-settings">restore defaults</button>
+   <hr>
+   <button id="restore-default-network-settings">restore defaults</button>
+  </div>
+  <div id="help">
+   <em>TODO</em>
+  </div>
+ </div> <!-- end .tabs -->
+</div> <!-- end #welcome -->
+<div id="menu">
+ <ul>
+  <li id="close-menu"><span>close menu</span>
+  <li id="display-invite"><span>display invite</span>
+  <li id="toggle-controls"><span>toggle on-screen controls</span>
+  <li id="leave-game"><span>leave game</span>
+ </ul>
 </div>
-<div id="help">
- <em>TODO</em>
-</div>
-</div>
+<div id="invite">
+ <div id="invite-inner">
+  <div id="invite-svg"></div>
+  <div id="invite-url"></div>
+  <button id="hide-invite">hide</button>
+ </div>
 </div>
 </body>
 </html>

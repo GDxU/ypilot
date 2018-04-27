@@ -323,11 +323,17 @@ function flushInputBuffer() {
 },
 
 function localInput(op, player, code) {
-  var msg = { op: op, player: player, code: code };
-  if (this.id == this.hubID) {
-    this.receivePeerMessageAsHub(msg);
+  if (code == 'Backquote') { // special case for menu key
+    if (op == 'press') {
+      $('#menu').toggle();
+    }
   } else {
-    this.connections[this.hubID].send(msg);
+    var msg = { op: op, player: player, code: code };
+    if (this.id == this.hubID) {
+      this.receivePeerMessageAsHub(msg);
+    } else {
+      this.connections[this.hubID].send(msg);
+    }
   }
 },
 

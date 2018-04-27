@@ -17,3 +17,4 @@ window.subsumes = function(ancestor, descendant) {
 }
 
 require('./welcome.js');
+require('./menu.js');
