@@ -15,6 +15,7 @@ function Uplink(hubID) {
   this.players = {}; // map IDs to player descriptions
   this.connections = {}; // map IDs to SignalingRelays or PeerConnections
   this.inputBuffer = []; // input event messages since the last clockTick
+  this.numTicks = 0;
 }
 
 Uplink.startNewGame = function() {
@@ -71,7 +72,8 @@ function listen() {
 },
 
 function clockTick() {
-  this.broadcast({ op: 'clockTick' });
+  this.broadcast({ op: 'clockTick', numTicks: this.numTicks });
+  this.numTicks++;
 },
 
 function receiveInitialMessage(relay, signedMsg) {
@@ -303,12 +305,8 @@ function receivePeerMessageAsNonHub(msg) {
       this.inputBuffer.push(msg);
       break;
     case 'clockTick':
-      // call flushInputBuffer when the router is next truly idle
-      if (this.router.isIdle()) {
-	this.flushInputBuffer();
-      } else {
-	this.router.once('noMoreHits', this.flushInputBuffer.bind(this));
-      }
+      // FIXME!!! if a lagspike causes us to receive multiple clockTicks together in a bunch, onIdle will still execute them all together, instead of waiting for the computation after each one to complete
+      this.router.onIdle(this.flushInputBuffer.bind(this, msg.numTicks));
       break;
     // TODO? more ops
     default:
@@ -316,10 +314,10 @@ function receivePeerMessageAsNonHub(msg) {
   }
 },
 
-function flushInputBuffer() {
-  this.inputBuffer.forEach(m => this.router.emit(m.op, m.player, m.code));
+function flushInputBuffer(numTicks) {
+  this.inputBuffer.forEach(m => this.router.emit(m.op, m.player, m.code, numTicks));
   this.inputBuffer.length = 0;
-  this.router.emit('clockTick');
+  this.router.emit('clockTick', numTicks);
 },
 
 function localInput(op, player, code) {
@@ -347,7 +345,7 @@ function broadcast(msg) {
     }
   }
   // send to the non-hub part of self
-  this.receivePeerMessageAsNonHub(msg);
+  this.router.onIdle(this.receivePeerMessageAsNonHub.bind(this, msg));
 }
 
 ]);

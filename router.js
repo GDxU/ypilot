@@ -93,6 +93,19 @@ function isIdle() {
   return (this.numPendingListeners == 0);
 },
 
+// call function when we're next truly idle (including now)
+// note that this is not at the next 'idle' event, but between the 'noMoreHits'
+// event (from Space) and the following 'clockTick' (from Uplink), and the
+// 'noMoreHits' event might have already happened.
+// also note that while we're in fn, we may or may not be considered "idle".
+function onIdle(fn) {
+  if (this.isIdle()) {
+    fn();
+  } else {
+    this.once('noMoreHits', fn);
+  }
+},
+
 function getEventLogURL() {
   return URL.createObjectURL(new Blob([this.eventLog.join("\n")]));
 },
