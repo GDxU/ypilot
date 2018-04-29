@@ -75,6 +75,10 @@ function listen() {
 function clockTick() {
   this.broadcast({ op: 'clockTick', numTicks: this.numTicks });
   this.numTicks++;
+},
+
+// if there are new players waiting to be added, add the first one
+function maybeAddNewPlayer() {
   // send setState to the next new player, and addPlayer to all players for
   // the new player (this should take effect at the beginning of next tick)
   // NOTE: we don't do multiple setState/addPlayers per tick, since each one
@@ -289,6 +293,15 @@ function maybeFlushOneTick() {
       this.router.once('noMoreHits', this.maybeFlushOneTick.bind(this));
     } else { // no more clockTicks in inputBuffer
       this.allTicksFlushed = true;
+      // We can only add a new player between ticks; the router must be truly
+      // idle, the input buffer must be empty, and a clockTick must be the last
+      // message sent hub->nonhub. This way, the state we send to the new
+      // player is consistent, and everyone sees the addPlayer message as the
+      // first one in the next tick (except the added player, who sees setState
+      // first).
+      if (this.inputBuffer.length == 0) {
+        this.maybeAddNewPlayer();
+      }
     }
   } catch (err) {
     console.error(err);
