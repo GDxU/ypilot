@@ -15,6 +15,7 @@ function Uplink(hubID) {
   this.players = {}; // map IDs to player descriptions
   this.connections = {}; // map IDs to SignalingRelays or PeerConnections
   this.inputBuffer = []; // hub->nonhub messages since the last clockTick
+  this.newPlayerQueue = []; // (hub only) new players to be added next tick
   this.numTicks = 0;
   // all clock ticks we've received so far have actually been flushed to the
   // router
@@ -28,10 +29,7 @@ Uplink.startNewGame = function() {
   Clock.start(ul.clockTick.bind(ul));
   window.profile.getPlayerDescription().
   then(playerDesc => {
-    ul.receivePeerMessageAsNonHub({
-      op: 'addPlayer',
-      player: playerDesc
-    });
+    ul.newPlayerQueue.push(playerDesc);
   }).
   catch(err => console.error(err));
   hideWelcome();
@@ -77,6 +75,30 @@ function listen() {
 function clockTick() {
   this.broadcast({ op: 'clockTick', numTicks: this.numTicks });
   this.numTicks++;
+  // send setState to the next new player, and addPlayer to all players for
+  // the new player (this should take effect at the beginning of next tick)
+  // NOTE: we don't do multiple setState/addPlayers per tick, since each one
+  // affects the game state we're sending to the subsequent ones, and causes
+  // events to be emitted, so we need to wait for the game state to settle
+  // before sending another setState/addPlayer
+  if (this.newPlayerQueue.length > 0) {
+    var player = this.newPlayerQueue.shift();
+    if (this.id != player.id) { // this is some other player, not us
+      console.log('sending setState to ' + player.id);
+      var setState =
+	Object.assign({ op: 'setState', players: this.getPlayerList() },
+		      this.router.getState());
+      this.connections[player.id].send(setState);
+    }
+    console.log('sending addPlayer for ' + player.id);
+    var addPlayer = { op: 'addPlayer', player: player };
+    // NOTE: player is only fully added when 'addPlayer' is *dispatched* at
+    // the next clock tick, but we must add something to this.players here so
+    // that broadcast will send 'addPlayer' and all subsequent messages to
+    // the new player
+    this.players[player.id] = {};
+    this.broadcast(addPlayer);
+  }
 },
 
 function receiveInitialMessage(relay, signedMsg) {
@@ -199,27 +221,13 @@ function accept(remoteID, sendID) {
   this.connect(remoteID);
   this.connections[remoteID].onopen = () => {
     try {
-      // TODO? sync with next clock tick like input events
-      // when it's open, send them the current game state and player list
-      this.connections[remoteID].send(
-	Object.assign({ op: 'setState', players: this.getPlayerList() },
-		      this.router.getState())
-      );
-      // and tell everyone (including the remote player and ourselves) to add
-      // the new player to the game
-      var msg = {
-	op: 'addPlayer',
-	player: {
-	  id: remoteID,
-	  handle: window.profile.knownPlayers[remoteID].handle,
-	  publicKey: window.profile.knownPlayers[remoteID].publicKey
-	}
-      }
-      // FIXME!!! I think somehow we're missing sending the clockTick that addPlayer is supposed to happen on (the one immediately after the state seen by setState), so the non-hub sees everything delayed by one tick, resulting in desync because input events (and tick numbers) *aren't* so delayed
-      // NOTE: must send to new player separately, because receiving addPlayer
-      // is what adds them to the list of players to be broadcast to
-      this.connections[remoteID].send(msg);
-      this.broadcast(msg);
+      // add the new player to the queue of players to be added on subsequent
+      // clock ticks
+      this.newPlayerQueue.push({
+	id: remoteID,
+	handle: window.profile.knownPlayers[remoteID].handle,
+	publicKey: window.profile.knownPlayers[remoteID].publicKey
+      });
     } catch (err) {
       console.error(err);
     }
@@ -268,24 +276,29 @@ function receivePeerMessageAsNonHub(msg) {
 },
 
 function maybeFlushOneTick() {
-  var clockTickIndex = this.inputBuffer.findIndex(m => (m.op == 'clockTick'));
-  if (clockTickIndex != -1) {
-    // shift all the messages for this tick out of the input buffer (including
-    // the clockTick message itself)
-    var thisTickMsgs = this.inputBuffer.splice(0, clockTickIndex+1);
-    // dispatch them
-    thisTickMsgs.forEach(this.dispatchPeerMessageAsNonHub.bind(this));
-    // try this function again after the all the effects of those messages
-    // settle out
-    this.router.once('noMoreHits', this.maybeFlushOneTick.bind(this));
-  } else { // no more clockTicks in inputBuffer
-    this.allTicksFlushed = true;
+  try {
+    var clockTickIndex = this.inputBuffer.findIndex(m => (m.op == 'clockTick'));
+    if (clockTickIndex != -1) {
+      // shift all the messages for this tick out of the input buffer
+      // (including the clockTick message itself)
+      var thisTickMsgs = this.inputBuffer.splice(0, clockTickIndex+1);
+      // dispatch all the messages for this tick
+      thisTickMsgs.forEach(this.dispatchPeerMessageAsNonHub.bind(this));
+      // try this function again after the all the effects of those messages
+      // settle out
+      this.router.once('noMoreHits', this.maybeFlushOneTick.bind(this));
+    } else { // no more clockTicks in inputBuffer
+      this.allTicksFlushed = true;
+    }
+  } catch (err) {
+    console.error(err);
   }
 },
 
 function dispatchPeerMessageAsNonHub(msg) {
   switch (msg.op) {
     case 'setState':
+      console.log('received setState');
       // get player info from msg, and profile.know() each player after
       // checking for public key mismatches
       msg.players.forEach(player => {
@@ -307,6 +320,7 @@ function dispatchPeerMessageAsNonHub(msg) {
       break;
     case 'addPlayer':
       var playerID = msg.player.id;
+      console.log('received addPlayer ' + playerID);
       var playerThing = this.router.newThing();
       var playerName = 'Anonymous';
       if (playerID == this.id) { // we just got added
