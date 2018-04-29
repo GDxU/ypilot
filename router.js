@@ -56,12 +56,13 @@ function emit(eventName, ...args) {
   if (eventName in this.listeners) {
     // call each listener via setImmediate so that no listener gets called in
     // the middle of another listener and sees its effect only partly applied.
-    // Also (if this isn't already an 'idle' event) keep track of how many
-    // setImmediate calls are outstanding, and when that count drops to 0, emit
-    // an 'idle' event, which is used for e.g. detecting secondary collisions
-    // that happen when a primary collision causes something to move (bounce)
-    if (eventName == 'idle') {
-      this.listeners.idle.forEach(listener => setImmediate(listener));
+    // Also (if this isn't already an 'idle' or 'noMoreHits' event) keep track
+    // of how many setImmediate calls are outstanding, and when that count
+    // drops to 0, emit an 'idle' event, which is used for e.g. detecting
+    // secondary collisions that happen when a primary collision causes
+    // something to move (bounce)
+    if (eventName == 'idle' || eventName == 'noMoreHits') {
+      this.listeners[eventName].forEach(listener => setImmediate(listener));
     } else {
       this.listeners[eventName].forEach(listener => {
 	this.numPendingListeners++;
@@ -98,13 +99,13 @@ function isIdle() {
 // event (from Space) and the following 'clockTick' (from Uplink), and the
 // 'noMoreHits' event might have already happened.
 // also note that while we're in fn, we may or may not be considered "idle".
-function onIdle(fn) {
+/*function onIdle(fn) {
   if (this.isIdle()) {
     fn();
   } else {
     this.once('noMoreHits', fn);
   }
-},
+},*/
 
 function getEventLogURL() {
   return URL.createObjectURL(new Blob([this.eventLog.join("\n")]));

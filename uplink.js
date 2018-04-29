@@ -14,8 +14,11 @@ function Uplink(hubID) {
   this.hubID = null; // player ID of the hub
   this.players = {}; // map IDs to player descriptions
   this.connections = {}; // map IDs to SignalingRelays or PeerConnections
-  this.inputBuffer = []; // input event messages since the last clockTick
+  this.inputBuffer = []; // hub->nonhub messages since the last clockTick
   this.numTicks = 0;
+  // all clock ticks we've received so far have actually been flushed to the
+  // router
+  this.allTicksFlushed = true;
 }
 
 Uplink.startNewGame = function() {
@@ -212,6 +215,7 @@ function accept(remoteID, sendID) {
 	  publicKey: window.profile.knownPlayers[remoteID].publicKey
 	}
       }
+      // FIXME!!! I think somehow we're missing sending the clockTick that addPlayer is supposed to happen on (the one immediately after the state seen by setState), so the non-hub sees everything delayed by one tick, resulting in desync because input events (and tick numbers) *aren't* so delayed
       // NOTE: must send to new player separately, because receiving addPlayer
       // is what adds them to the list of players to be broadcast to
       this.connections[remoteID].send(msg);
@@ -255,6 +259,31 @@ function receivePeerMessageAsHub(msg) {
 },
 
 function receivePeerMessageAsNonHub(msg) {
+  this.inputBuffer.push(msg);
+  if (this.allTicksFlushed && msg.op == 'clockTick') {
+    // we thought we had flushed all ticks, but we just got another
+    this.allTicksFlushed = false;
+    this.maybeFlushOneTick();
+  }
+},
+
+function maybeFlushOneTick() {
+  var clockTickIndex = this.inputBuffer.findIndex(m => (m.op == 'clockTick'));
+  if (clockTickIndex != -1) {
+    // shift all the messages for this tick out of the input buffer (including
+    // the clockTick message itself)
+    var thisTickMsgs = this.inputBuffer.splice(0, clockTickIndex+1);
+    // dispatch them
+    thisTickMsgs.forEach(this.dispatchPeerMessageAsNonHub.bind(this));
+    // try this function again after the all the effects of those messages
+    // settle out
+    this.router.once('noMoreHits', this.maybeFlushOneTick.bind(this));
+  } else { // no more clockTicks in inputBuffer
+    this.allTicksFlushed = true;
+  }
+},
+
+function dispatchPeerMessageAsNonHub(msg) {
   switch (msg.op) {
     case 'setState':
       // get player info from msg, and profile.know() each player after
@@ -302,22 +331,18 @@ function receivePeerMessageAsNonHub(msg) {
       break;
     case 'press':
     case 'release':
-      this.inputBuffer.push(msg);
+      this.router.emit(msg.op, msg.player, msg.code);
       break;
     case 'clockTick':
-      // FIXME!!! if a lagspike causes us to receive multiple clockTicks together in a bunch, onIdle will still execute them all together, instead of waiting for the computation after each one to complete
-      this.router.onIdle(this.flushInputBuffer.bind(this, msg.numTicks));
+      if (this.numTicks < msg.numTicks) {
+	this.numTicks = msg.numTicks;
+      }
+      this.router.emit('clockTick', msg.numTicks);
       break;
     // TODO? more ops
     default:
       throw new Error('WTF');
   }
-},
-
-function flushInputBuffer(numTicks) {
-  this.inputBuffer.forEach(m => this.router.emit(m.op, m.player, m.code, numTicks));
-  this.inputBuffer.length = 0;
-  this.router.emit('clockTick', numTicks);
 },
 
 function localInput(op, player, code) {
@@ -344,8 +369,7 @@ function broadcast(msg) {
       this.connections[playerID].send(msg);
     }
   }
-  // send to the non-hub part of self
-  this.router.onIdle(this.receivePeerMessageAsNonHub.bind(this, msg));
+  this.receivePeerMessageAsNonHub(msg);
 }
 
 ]);
