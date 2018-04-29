@@ -213,6 +213,9 @@ function playerKeyState(player, code, state) {
 //
 
 function getState() {
+  if (this.eventLogEnabled) {
+    this.eventLog.push('getState');
+  }
   // NOTE: a few things that can be in adjective properties have toJSON
   // methods, which turn them into plain objects (notably, without cycles).
   // This includes Vec2, Space, Interface, and SVGGraphicsElement. The process
@@ -276,6 +279,9 @@ function convertAdjPropValFromJSON(prop2val, prop, alreadyConverted) {
 },
 
 function setState(msg) {
+  if (this.eventLogEnabled) {
+    this.eventLog.push('setState');
+  }
   this.nextThing = msg.nextThing;
   this.adjectives = msg.adjectives;
   this.playerKeysDown = msg.playerKeysDown;
