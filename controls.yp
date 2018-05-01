@@ -1,0 +1,168 @@
+use "standard:motile.yp"
+
+# movement controls
+
+when ?player presses "ArrowUp" and
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with isThrusting true
+
+when ?player releases "ArrowUp" and
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with isThrusting false
+
+when ?player presses "ArrowRight" and
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with turnDirection 1
+
+when ?player releases "ArrowRight" and
+  ?player is Piloting with ship ?ship
+  ?ship is Motile with turnDirection 1
+then
+  ?ship becomes Motile with turnDirection 0
+
+when ?player presses "ArrowLeft" and
+  ?player is Piloting with ship ?ship
+then
+  ?ship becomes Motile with turnDirection (-1)
+
+when ?player releases "ArrowLeft" and
+  ?player is Piloting with ship ?ship
+  ?ship is Motile with turnDirection (-1)
+then
+  ?ship becomes Motile with turnDirection 0
+
+# tool controls
+
+# while a player has a fire key held down, the corresponding tool is Active
+an Active thing has
+  a secondaryMode flag
+  a ship which is a BasicShip
+
+a Selective thing has
+  # the index of the primary selection in Holding slots
+  a primaryIndex which is a number (default 0)
+  # true iff the primary fire key activates the secondary fire mode of the
+  # primary selection (otherwise activates the primary fire mode)
+  a primarySecondary flag (default false)
+  # ditto for secondary selection/fire key
+  a secondaryIndex which is a number (default 0)
+  a secondarySecondary flag (default true)
+
+# TODO language extensions:
+# - array subscripting: ?slots[?i]
+# - Capacious line:
+#  . allow let in conditions
+#  . make == act like let in conditions when LHS is not yet declared
+#  . allow more than just variables to the left of 'is' in conditions
+# - pressing/releasing/holding one/all of a set of keys:
+#  - ?x is holding down ?y which is one of [...]
+#  - ?x is not holding down any of [...]
+#  - ?x presses/releases ?y which is one of [...]
+#  - ?x is (not) holding down all of [...]
+# - somehow convert digits to indices
+#  . "Digit3"[5] == "5" == 5 (no additional new language feature necessary)
+# - boolean logic operators as words (and or not), parens required to disambiguate with places where 'and' and 'not' occur elsewhere in the grammar
+# ? top-level let, and allow var after 'any/all/one of', so I can factor out digit list
+
+## primary fire key is right control
+#when ?player presses "ControlRight" and
+#  ?player is not holding any of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+#  ?player is Piloting with ship ?ship
+#  ?ship is Holding with slots ?slots
+#  ?ship is Selective with primaryIndex ?i and primarySecondary ?mode
+#  ?slots[?i] is Capacious with content ?tool
+#then
+#  ?tool becomes Active with secondaryMode ?mode and ship ?ship
+#
+#when ?player releases "ControlRight" and
+#  ?player is Piloting with ship ?ship
+#  ?ship is Holding with slots ?slots
+#  ?ship is Selective with primaryIndex ?i
+#  ?slots[?i] is Capacious with content ?tool
+#then
+#  ?tool becomes not Active
+#
+## secondary fire key is right shift
+#when ?player presses "ShiftRight" and
+#  ?player is not holding any of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+#  ?player is Piloting with ship ?ship
+#  ?ship is Holding with slots ?slots
+#  ?ship is Selective with secondaryIndex ?i and secondarySecondary ?mode
+#  ?slots[?i] is Capacious with content ?tool
+#then
+#  ?tool becomes Active with secondaryMode ?mode and ship ?ship
+#
+#when ?player releases "ShiftRight" and
+#  ?player is Piloting with ship ?ship
+#  ?ship is Holding with slots ?slots
+#  ?ship is Selective with secondaryIndex ?i
+#  ?slots[?i] is Capacious with content ?tool
+#then
+#  ?tool becomes not Active
+#
+## changing selected tools
+#
+## set both primary and secondary fire by just pressing the digit for the slot
+#a JustPressingADigit thing has
+#  a digit which is a string
+#
+#when ?player presses ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+#then
+#  ?player becomes JustPressingADigit with digit ?digit
+#
+#when ?player releases ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"] and
+#  ?player is JustPressingADigit with digit ?digit
+#  ?player is Piloting with ship ?ship
+#then
+#  let ?i be ?digit[5]
+#  ?ship becomes Selective with primaryIndex ?i and primarySecondary false and secondaryIndex ?i and secondarySecondary true
+#
+## select tool/mode for primary fire key by holding the digit for the tool's
+## slot and pressing the primary fire key to toggle between primary/secondary
+## fire modes
+#when ?player presses "ControlRight" and
+#  ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+#  ?player is Piloting with ship ?ship
+#  let ?i be ?digit[5]
+#  ?ship is Selective with primaryIndex ?j
+#  (?i != ?j)
+#then
+#  ?ship becomes
+#    Selective with primaryIndex ?i
+#    not JustPressingADigit
+#
+#when ?player presses "ControlRight" and
+#  ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+#  ?player is Piloting with ship ?ship
+#  let ?i be ?digit[5]
+#  ?ship is Selective with primaryIndex ?i and primarySecondary ?mode
+#then
+#  ?ship becomes
+#    Selective with primaryIndex ?i and primarySecondary (not ?mode)
+#    not JustPressingADigit
+#
+## select tool/mode for secondary fire key
+#when ?player presses "ShiftRight" and
+#  ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+#  ?player is Piloting with ship ?ship
+#  let ?i be ?digit[5]
+#  ?ship is Selective with secondaryIndex ?j
+#  (?i != ?j)
+#then
+#  ?ship becomes
+#    Selective with secondaryIndex ?i
+#    not JustPressingADigit
+#
+#when ?player presses "ShiftRight" and
+#  ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+#  ?player is Piloting with ship ?ship
+#  let ?i be ?digit[5]
+#  ?ship is Selective with secondaryIndex ?i and secondarySecondary ?mode
+#then
+#  ?ship becomes
+#    Selective with secondaryIndex ?i and secondarySecondary (not ?mode)
+#    not JustPressingADigit
+

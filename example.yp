@@ -5,6 +5,7 @@ use "standard:bouncy.yp"
 use "standard:motile.yp"
 use "standard:bullet.yp"
 use "standard:holding.yp"
+use "standard:controls.yp"
 
 a Map is Mapped
 a Wall is Bouncy and Visible
@@ -86,35 +87,3 @@ then
     Visible with graphics [<polygon points="15,0 -9,8 -9,-8" stroke="white" />]
     Holding with slots [?slot1, ?slot2] # TODO 3-10
   ?player becomes Piloting with ship ?ship
-
-when ?player presses "ArrowUp" and
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with isThrusting true
-
-when ?player releases "ArrowUp" and
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with isThrusting false
-
-when ?player presses "ArrowRight" and
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with turnDirection 1
-
-when ?player releases "ArrowRight" and
-  ?player is Piloting with ship ?ship
-  ?ship is Motile with turnDirection 1
-then
-  ?ship becomes Motile with turnDirection 0
-
-when ?player presses "ArrowLeft" and
-  ?player is Piloting with ship ?ship
-then
-  ?ship becomes Motile with turnDirection (-1)
-
-when ?player releases "ArrowLeft" and
-  ?player is Piloting with ship ?ship
-  ?ship is Motile with turnDirection (-1)
-then
-  ?ship becomes Motile with turnDirection 0
