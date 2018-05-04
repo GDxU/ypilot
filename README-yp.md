@@ -163,7 +163,7 @@ This effect causes `?map` to be read, which causes a `map reads` event for each 
 
     let ?x be (?y + 42)
 
-This effect assigns the value of the expression the right (`(?y + 42)` in this case) to the variable on the left (`?x`) for use in later effects in the same rule.
+This effect assigns the value of the expression the right (`(?y + 42)` in this case) to the variable on the left (`?x`) for use in later effects in the same rule. `let` may also be used as a condition, in which case it is always true (regardless of the assigned value), and the variable may be used in later conditions and effects in the same rule.
 
     debug (?y + 42)
 
@@ -181,7 +181,7 @@ A decimal number, e.g. `1.23`. If the decimal point is included, there must be s
 
 A string in double quotes, e.g. `"Hello, world!\n"`. This supports escape sequences as in JSON.
 
-Arithmetic and comparison operations with other value expressions as the operands. These obey the usual precedence rules, but at the top level you must include parentheses, e.g. `debug (?x + ?y * ?z)` is OK, and does the multiplication before the addition, but `debug ?x + ?y * z` won't parse. In addition to the usual addition `+`, subtraction `-`, multiplication `*`, division `/`, and remainder `%` operators, you also have cross product `x` or `×`, and dot product `.` or `·` operators for use with `Vec2` operands. The other operators can also work with `Vec2`s in certain ways, as long as at least the first operand is a `Vec2`. With `Vec2`s, `*` means scaling. And with strings, `+` means concatenation.
+Arithmetic, comparison, and boolean operations with other value expressions as the operands. These obey the usual precedence rules, but at the top level you must include parentheses, e.g. `debug (?x + ?y * ?z)` is OK, and does the multiplication before the addition, but `debug ?x + ?y * z` won't parse. In addition to the usual addition `+`, subtraction `-`, multiplication `*`, division `/`, and remainder `%` operators, you also have cross product `x` or `×`, and dot product `.` or `·` operators for use with `Vec2` operands. The other operators can also work with `Vec2`s in certain ways, as long as at least the first operand is a `Vec2`. With `Vec2`s, `*` means scaling. And with strings, `+` means concatenation. Boolean operations are spelled out: `and`, `or`, and `not` (not `&&`, `||`, and `!`).
 
 Math functions with one argument in parentheses, including trigonometric functions, `abs`, `sign`, `ceil`, `floor`, `round`, `sqrt`, `cbrt`, various logarithms, and exponentials. These use the methods on the [JavaScript `Math` object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math). For now, methods with more than one argument aren't supported.
 
@@ -193,6 +193,8 @@ Constructors for a few JavaScript object types, with arguments in square bracket
     Vec2[?x, ?y]
 
 Array literals in square brackets, e.g. `[1, 2, "buckle my shoe"]`.
+
+Array/string indexing, e.g. `?array[?index]`. Indexes start from 0. Indexing into a string yields a one-character string, and the index counts characters (not bytes).
 
 [SVG](https://www.w3.org/TR/SVG11/) literals. These are used for the `graphics` property of the built-in adjective `Visible`. An SVG literal must be a single valid SVG element of the type `SVGGraphicsElement`, which includes `<g>`, `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>`, and `<text>`. It must not include any `<script>` elements or event handler attributes like `onclick="launchTheNukes()"`.
 

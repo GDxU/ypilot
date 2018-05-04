@@ -243,7 +243,11 @@ function compileOp(ast) {
     case 'let':
       var val = compile(ast.value);
       variableInitialized[ast.variable.name] = true;
-      return '    let ' + ast.variable.name + ' = ' + val + ";\n";
+      if (ast.isCondition) {
+	return '((' + ast.variable.name + ' = ' + val + ') || true)';
+      } else {
+	return '    let ' + ast.variable.name + ' = ' + val + ";\n";
+      }
     case 'debug':
       return '    console.log(' + compile(ast.value) + ");\n";
     // conditions
@@ -323,6 +327,8 @@ function compileOp(ast) {
       return 'Math.' + ast.fn + '(' + compile(ast.arg) + ')';
     case '[]':
       return '[' + ast.args.map(compile).join(', ') + ']';
+    case '_':
+      return '(' + compile(ast.l) + ')[' + compile(ast.r) + ']';
     case 'graphics':
       return 'stringToSVGGraphicsElement(' + JSON.stringify(ast.string) + ')';
     case '.': // dot product
@@ -333,11 +339,11 @@ function compileOp(ast) {
       return compile(ast.l) + '.cross(' + compile(ast.r) + ')';
     default: // arithmetic and comparison operators
       if ('l' in ast) { // infix
-	if (!/^([<=>!]=|[<>*/%+-])$/.test(ast.op)) {
+	if (!/^([<=>!]=|[<>*/%+-]|&&|\|\|)$/.test(ast.op)) {
 	  throw new Error("invalid infix operator: " + ast.op);
 	}
 	if (/^[*+-]$/.test(ast.op) && 'number' != typeof ast.l) {
-	  // TODO? use static types tp decide whether to use builtin operators
+	  // TODO? use static types to decide whether to use builtin operators
 	  // or methods
 	  // TODO? define + and * for strings and Arrays, meaning concatenation and repetition (actually string+string should already work, and string*number will convert to number and multiply instead of doing repetition)
 	  var compiledL = compile(ast.l);
@@ -352,7 +358,7 @@ function compileOp(ast) {
 		 compile(ast.r) + ')';
 	}
       } else { // prefix
-        if (!/^[+-]$/.test(ast.op)) {
+        if (!/^[!+-]$/.test(ast.op)) {
 	  throw new Error("invalid prefix operator: " + ast.op);
 	}
 	return '(' + ast.op + ' ' + compile(ast.r) + ')';

@@ -94,13 +94,17 @@ effect
   / thing:variable 'becomes' sp adjectives:adjective_inst+
     { return { op: 'become', thing: thing, adjectives: adjectives }; }
   / thing:variable 'is' sp 'read' sp { return { op: 'read', thing: thing }; }
-  / 'let' sp variable:variable 'be' sp value:value_expr
-    { return { op: 'let', variable: variable, value: value }; }
+  / l:let { l.isCondition = false; return l; }
   / 'debug' sp value:value_expr
     { return { op: 'debug', value: value }; }
 
+let
+  = 'let' sp variable:variable 'be' sp value:value_expr
+    { return { op: 'let', variable: variable, value: value }; }
+
 condition
   = parens
+  / l:let { l.isCondition = true; return l; }
   / l:variable 'is' sp a r:type_name { return { op: 'isa', l: l, r: r }; }
   / l:variable 'is' sp r:adjective_inst { return { op: 'is', l: l, r: r }; }
   / 'there' sp 'is' sp a 'thing' sp v:variable
@@ -124,6 +128,10 @@ adjective_inst
   / 'not' sp name:type_name { return { op: 'unadjective', name: name }; }
 
 value_expr
+  = first:value_expr_no_subscript rest:('[' sp r:(value_expr / or) ']' { return { op: '_', r: r }; })*
+  { return nestInfix(first, rest); }
+
+value_expr_no_subscript
   = variable
   / constant
   / parens
@@ -137,7 +145,7 @@ value_expr
   / nothing
 
 parens
-  = '(' sp expr:cmp ')' sp { return expr; }
+  = '(' sp expr:or ')' sp { return expr; }
 
 constructor
   = name:type_name args:array
@@ -154,13 +162,26 @@ math
   { return { op: 'math', fn: name, arg: arg }; }
 
 array
-  = '[' sp first:(value_expr / cmp) rest:(',' sp arg:(value_expr / cmp) { return arg; })* ']' sp
+  = '[' sp first:(value_expr / or) rest:(',' sp arg:(value_expr / or) { return arg; })* ']' sp
   { return { op: '[]', args: [first, ...rest] }; }
   / '[' sp ']' sp { return { op: '[]', args: [] }; }
+
+or
+  = first:and rest:('or' sp r:and { return { op: '||', r: r }; })*
+  { return nestInfix(first, rest); }
+
+and
+  = first:not rest:('and' sp r:not { return { op: '&&', r: r }; })*
+  { return nestInfix(first, rest); }
+
+not
+  = 'not' sp r:cmp { return { op: '!', r: r}; }
+  / cmp
 
 cmp
   = l:add op:$([<=>!] '=' / [<>]) sp r:add { return { op: op, l: l, r: r }; }
   / add
+// TODO? also allow conditions in parens as boolean expressions
 
 add
   = first:mul rest:(op:[+-] sp r:mul { return { op: op, r: r}; })*
