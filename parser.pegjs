@@ -147,6 +147,7 @@ adjective_inst
          )*
     { return { op: 'adjective', name: name, properties: [[first_prop, first_val], ...rest] }; }
   / 'not' sp name:type_name { return { op: 'unadjective', name: name }; }
+  / name:type_name { return { op: 'adjective', name: name, properties: [] }; }
 
 value_expr
   = first:value_expr_no_subscript rest:('[' sp r:(value_expr / or) ']' { return { op: '_', r: r }; })* sp

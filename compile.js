@@ -36,6 +36,7 @@ function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
 function getVars(ast) {
   switch (typeof ast) {
     case 'object':
+      if (ast === null) return {};
       var vars = {};
       if (('op' in ast) && ast.op == 'var') {
 	vars[ast.name] = true;
@@ -402,7 +403,7 @@ function compileStatements(statements) {
 	return compile(s);
       } catch (e) {
 	console.warn("failed to compile statement; skipping");
-	console.warn(s.text);
+	console.warn(s /*.text*/);
 	console.warn(e);
 	return "/* failed to compile statement */\n";
       }
