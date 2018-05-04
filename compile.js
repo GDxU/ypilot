@@ -236,6 +236,7 @@ function compileOp(ast) {
       // TODO? add any missing dependencies, recursively
       return ast.adjectives.map(adj =>
         '    router.become(' + ast.thing.name + ", '" + adj.name + "', { " +
+	// TODO!!! handle not
 	adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
 	" });\n").join('');
     case 'read':
@@ -255,6 +256,8 @@ function compileOp(ast) {
       return '((' + ast.l.name + ' in router.adjectives.Typed) &&' +
              ' subsumes(' + ast.r + ', ' +
 	         'router.adjectives.Typed[' + ast.l.name + '].type))';
+    case 'isin':
+      return '(' + compile(ast.r) + ').includes(' + compile(ast.l) + ')';
     case 'is':
       if (ast.r.op == 'adjective') {
         return '(' +
@@ -307,9 +310,25 @@ function compileOp(ast) {
 	  ).join(" &&\n\t");
 	  // end unbalanced, missing }} (see above)
     case 'keyState':
-      return '(' + (ast.state ? '' : '!') +
-	       'router.playerKeyState(' +
-		 compile(ast.player) + ', ' + compile(ast.key) + '))';
+      if ('keys' in ast) {
+	var keys = '(' + compile(ast.keys) + ')';
+	var predicate =
+	  '(x => router.playerKeyState(' + compile(ast.player) + ', x))';
+	if ('key' in ast) {
+	  if (!ast.state) { throw new Error('WTF'); }
+	  if (ast.key.op != 'var') { throw new Error('WTF'); }
+	  variableInitialized[ast.key.name] = true;
+	  return '(' + ast.key.name + ' = ' + keys + '.find' + predicate + ')';
+	} else { // no key variable
+	  return '(' + (ast.state ? '' : '!') + keys +
+	           '.' + (ast.quantifier == 'any' ? 'some' : 'every') +
+		     predicate + ')';
+	}
+      } else {
+	return '(' + (ast.state ? '' : '!') +
+		 'router.playerKeyState(' +
+		   compile(ast.player) + ', ' + compile(ast.key) + '))';
+      }
     /* adjective_inst handled in other cases
     case 'adjective':
     case 'unadjective':*/

@@ -2,6 +2,8 @@
 
 YPilot's game rules and maps are described in a simple English-like language, described in this document. Files written in this language normally have the extension `.yp`. A `.yp` file contains a sequence of statements. Statements can be adjective definitions, noun definitions, rules, or uses of other `.yp` files. A `.yp` file may also contain comments anywhere (including within statements). Comments start with a `#` character and continue until the end of the line. Comments are treated as whitespace. For the most part, any amount of whitespace is treated the same as a single space character, but there are a few situations where line breaks are significant.
 
+TODO metadata
+
 ## Adjective definitions
 
 An adjective definition gives a name for an adjective, optionally a list of other adjectives implied by this adjective, and then a list of properties that things described by this adjective have. Properties have a name, and optionally a type and/or a default value. Here's an example of an adjective definition:
@@ -93,11 +95,13 @@ This event happens once for every collision between `Solid` things, and gives mo
 
     ?player presses "ControlLeft"
 
-This event happens when the player `?player` starts pressing the identified key on their keyboard (in this case, the control key on the left side of the keyboard). The string identifying the key must match the value of the `code` property of the `KeyboardEvent` object; see the [MDN page for KeyboardEvent.code](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code) for some tables of values.
+This event happens when the player `?player` starts pressing the identified key on their keyboard (in this case, the control key on the left side of the keyboard). The string identifying the key must match the value of the `code` property of the `KeyboardEvent` object; see the [MDN page for KeyboardEvent.code](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code) for some tables of values. The key may also be a variable, in which case the event happens when the player starts pressing any key, and the key is assigned to the variable for use later in the rule.
 
     ?player releases "ControlLeft"
 
 This event happens when the player `?player` stops pressing the identified key.
+
+Note that the `any of`/`all of`/`one of` constructions used with the `holding down` condition (see below) do not apply to `presses`/`releases` events; use an `is in` condition instead of `any of`/`one of`, and add a `holding down` condition in order to use `all of`.
 
 ### Conditions
 
@@ -119,7 +123,7 @@ This condition is true when `?thing` is not described by the adjective `Wiggly`.
       Wiggly with phase ?phase
       not Mortal
 
-This condition searches the game for a thing described by all of the given adjectives (or `not`), and if found, assigns it to the `?thing` variable and makes the condition true. If a variable like `?phase` is bound to a property like `phase`, it can mean one of two things. If the variable was already assigned, it further constrains the search by requiring that the property have the same value. If the variable was not already assigned, the value of the property is assigned to the variable. More complex expressions can be bound to a property, not just variables, and in this case the first meaning is used. A `there is` condition must include at least one adjective without `not` in front of it.
+This condition searches the game for a thing described by all of the given adjectives (or `not`), and if found, assigns it to the `?thing` variable and makes the condition true. If multiple things match the description, the rest of the rule applies independently for each matching thing. If a variable like `?phase` is bound to a property like `phase`, it can mean one of two things. If the variable was already assigned, it further constrains the search by requiring that the property have the same value. If the variable was not already assigned, the value of the property is assigned to the variable. More complex expressions can be bound to a property, not just variables, and in this case the first meaning is used. A `there is` condition must include at least one adjective without `not` in front of it.
 
     ?player is holding down "ControlLeft"
 
@@ -127,7 +131,25 @@ This condition is true when the player `?player` has pressed the identified key 
 
     ?player is not holding down "ControlLeft"
 
-This condition is true when the previously described condition is false.
+This condition is true when the previously described condition is false. The `not` works similarly for all of the `holding down` conditions.
+
+    ?player is holding down all of ["ControlLeft", "ShiftLeft"]
+
+This condition is true when `?player` has pressed all of the listed keys and not yet released any of them.
+
+    ?player is holding down any of ["ControlLeft", "ShiftLeft"]
+
+This condition is true when `?player` has pressed any of the listed keys and not yet released it.
+
+    ?player is holding down ?key which is one of ["ControlLeft", "ShiftLeft"]
+
+This condition has the same truth value as the previous condition, but it captures the first key in the list which is being held down, and puts it in the new variable `?key`.
+
+Usually keys and key lists will be literal values as above, but they may also be variables or value expressions.
+
+    ?part is in ?whole
+
+This condition is true when `?part` is an element of the array `?whole`, or when `?part` is a substring of the string `?whole`. This can be particularly useful in combination with `presses`/`releases` events, e.g. a rule starting with `when ?player presses ?key and ?key is in ["ShiftLeft", "ShiftRight"] ...` will fire when a player presses either shift key.
 
     (?x <= ?y)
 

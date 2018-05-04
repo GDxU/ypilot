@@ -107,16 +107,37 @@ condition
   / l:let { l.isCondition = true; return l; }
   / l:variable 'is' sp a r:type_name { return { op: 'isa', l: l, r: r }; }
   / l:variable 'is' sp r:adjective_inst { return { op: 'is', l: l, r: r }; }
+  / l:value_expr 'is' sp 'in' sp r:value_expr
+    { return { op: 'isin', l: l, r: r }; }
+  / l:value_expr 'is' sp 'not' sp 'in' sp r:value_expr
+    { return { op: '!', r: { op: 'isin', l: l, r: r } }; }
   / 'there' sp 'is' sp a 'thing' sp v:variable
     'which' sp 'is' sp st:adjective_inst+
     { return { op: 'exists', variable: v, suchThat: st }; }
-  / player:variable 'is' sp not:('not' sp)? 'holding' sp 'down' sp key:value_expr
+  / player:variable 'is' sp 'holding' sp 'down' sp key:variable 'which' sp 'is' sp 'one' sp 'of' sp keys:value_expr
     { return {
+      op: 'keyState',
+      player: player,
+      key: key,
+      keys: keys,
+      state: true
+    }; }
+  / player:variable 'is' sp not:('not' sp)? 'holding' sp 'down' sp
+    quantifier:(q:('any' / 'all') sp 'of' sp { return q; })? key:value_expr
+    {
+      var ast = {
 	op: 'keyState',
 	player: player,
-	key: key,
 	state: (!not)
-    }; }
+      };
+      if (quantifier) {
+	ast.keys = key;
+	ast.quantifier = quantifier;
+      } else {
+	ast.key = key;
+      }
+      return ast;
+    }
 
 adjective_inst
   = name:type_name
@@ -128,7 +149,7 @@ adjective_inst
   / 'not' sp name:type_name { return { op: 'unadjective', name: name }; }
 
 value_expr
-  = first:value_expr_no_subscript rest:('[' sp r:(value_expr / or) ']' { return { op: '_', r: r }; })*
+  = first:value_expr_no_subscript rest:('[' sp r:(value_expr / or) ']' { return { op: '_', r: r }; })* sp
   { return nestInfix(first, rest); }
 
 value_expr_no_subscript
@@ -309,7 +330,7 @@ a
 reserved_word
   = ( 'true' / 'false'
     / 'added' / 'removed' / 'becomes'
-    / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there'
+    / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there' / 'let'
     / 'which' / 'with' / 'when' / 'then' / 'of' / 'new' / 'use'
     / ('thing' / 'object' / 'flag' / 'boolean' / 'number' / 'string') 's'?
     / 'the' / 'clock' / 'ticks' / 'hits' / 'penetrates'
