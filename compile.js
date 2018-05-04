@@ -111,7 +111,8 @@ function compileOp(ast) {
 	"  var queue = [];\n" +
 	"  for (var adjective in adjectivesProps) {\n" +
 	"    if (!(adjective in adjectives)) {\n" +
-	"      adjectives[adjective] = this[adjective](adjectivesProps);\n" +
+	"      adjectives[adjective] = " +
+		"new this[adjective](adjectivesProps[adjective]);\n" +
 	"      this[adjective].dependencies.forEach(d => queue.push(d));\n" +
 	"    }\n" +
 	"  }\n" +
@@ -119,7 +120,7 @@ function compileOp(ast) {
 	"  while (queue.length > 0) {\n" +
 	"    var d = queue.shift();\n" +
 	"    if (!(d in adjectives)) {\n" +
-	"      adjectives[d] = this[d]({});\n" +
+	"      adjectives[d] = new this[d]({});\n" +
 	"      this[d].dependencies.forEach(d2 => queue.push(d2));\n" +
 	"    }\n" +
 	"  }\n" +
@@ -233,12 +234,21 @@ function compileOp(ast) {
     case 'remove':
       return '    router.remove(' + ast.thing.name + ");\n";
     case 'become':
-      // TODO? add any missing dependencies, recursively
-      return ast.adjectives.map(adj =>
-        '    router.become(' + ast.thing.name + ", '" + adj.name + "', { " +
-	// TODO!!! handle not
-	adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
-	" });\n").join('');
+      return ast.adjectives.map(adj => {
+	switch (adj.op) {
+	  case 'adjective':
+	    return '    router.become(' +
+	      ast.thing.name + ", '" + adj.name + "', { " +
+	      adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).
+		join(', ') +
+	      " });\n";
+	  case 'unadjective':
+	    return '    router.unbecome(' +
+	      ast.thing.name + ", '" + adj.name + "');\n";
+	  default:
+	    throw new Error('WTF');
+	}
+      }).join('');
     case 'read':
       return '    router.readMap(' + compile(ast.thing) + ");\n";
     case 'let':
