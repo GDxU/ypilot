@@ -97,7 +97,11 @@
    <label>ICE (STUN/TURN) server list:<br>
    <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
 {"urls":"stun:stun.ekiga.net"},
-{"urls":"stun:stun.l.google.com:19302"}
+{"urls":"stun:stun.l.google.com:19302"},
+{ "urls": "turn:willdb.net:5349",
+  "username": "ypilot",
+  "credential": "I agree not to use this service to break the law."
+}
 ]</textarea><br></label>
    <hr>
    <button id="restore-default-network-settings">restore defaults</button>
