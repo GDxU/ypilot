@@ -12,13 +12,19 @@ function id2bits(id) {
   return bits;
 }
 
-// convert a UUIDv4 to a representative SVG that's easy to compare at a glance
-function id2svg(id) {
-  var bits = id2bits(id);
+// take the first 9 bits out, and use 3 each for R,G,B
+function bits2color(bits) {
   var r = (bits.shift()<<3) | (bits.shift()<<2) | (bits.shift()<<1) | 1;
   var g = (bits.shift()<<3) | (bits.shift()<<2) | (bits.shift()<<1) | 1;
   var b = (bits.shift()<<3) | (bits.shift()<<2) | (bits.shift()<<1) | 1;
   var color = '#' + r.toString(16) + g.toString(16) + b.toString(16);
+  return color;
+}
+
+// convert a UUIDv4 to a representative SVG that's easy to compare at a glance
+function id2svg(id) {
+  var bits = id2bits(id);
+  var color = bits2color(bits);
   var points = [];
   for (var i = 0; i < 36; i++) {
     points.push((bits.shift()<<2) | (bits.shift()<<1) | bits.shift());
@@ -35,5 +41,14 @@ function id2svg(id) {
   '</g>' +
   '</svg>';
 }
+
+// just do the color part of id2svg
+function id2color(id) {
+  var bits = id2bits(id);
+  var color = bits2color(bits);
+  return color;
+}
+
+id2svg.id2color = id2color; // so it shows up in exports
 
 module.exports = id2svg;

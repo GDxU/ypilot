@@ -15,6 +15,7 @@ INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \
 	$(MAIN) \
+	chat.js \
 	clock.js \
 	compile.js \
 	define-methods.js \

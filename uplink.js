@@ -5,6 +5,7 @@ const SignalingRelay = require('./signaling-relay.js');
 const PeerConnection = require('./peer-connection.js');
 const Clock = require('./clock.js');
 const Game = require('./game.js');
+const Chat = require('./chat.js');
 
 function Uplink(hubID) {
   this.id = window.profile.id;
@@ -20,6 +21,7 @@ function Uplink(hubID) {
   // all clock ticks we've received so far have actually been flushed to the
   // router
   this.allTicksFlushed = true;
+  this.chatShown = false;
 }
 
 Uplink.startNewGame = function() {
@@ -262,6 +264,7 @@ function receivePeerMessageAsHub(msg) {
       break;
     case 'press':
     case 'release':
+    case 'chat':
       this.broadcast(msg);
       break;
     // TODO? more ops
@@ -352,6 +355,7 @@ function dispatchPeerMessageAsNonHub(msg) {
 	Named: new Named({ name: playerName }),
 	Interfaced: new Interfaced({ interface: new Interface(playerThing) })
       });
+      Chat.appendToHistory(playerID, playerName, '/me just joined the game');
       break;
     case 'removePlayer':
       // TODO
@@ -366,24 +370,80 @@ function dispatchPeerMessageAsNonHub(msg) {
       }
       this.router.emit('clockTick', msg.numTicks);
       break;
+    case 'chat':
+      // FIXME need a better way to get speaker's player ID
+      var speakerID = 'ffffff'; // default to white if not found
+      for (var id in this.players) {
+	if (this.players[id].thing == msg.player) {
+	  speakerID = id;
+	  break;
+	}
+      }
+      var speakerName = router.adjectives.Named[msg.player].name;
+      Chat.appendToHistory(speakerID, speakerName, msg.text);
+      break;
     // TODO? more ops
     default:
       throw new Error('WTF');
   }
 },
 
-function localInput(op, player, code) {
-  if (code == 'Backquote') { // special case for menu key
-    if (op == 'press') {
-      $('#menu').toggle();
-    }
+function showChatInput() {
+  this.chatShown = true;
+  Chat.showInput();
+},
+
+function hideChatInput() {
+  this.chatShown = false;
+  Chat.hideInput();
+},
+
+function sendChatMessage() {
+  var player = this.players[this.id].thing;
+  var msg = { op: 'chat', player: player, text: Chat.inputVal() };
+  this.hideChatInput();
+  if (this.id == this.hubID) {
+    this.receivePeerMessageAsHub(msg);
   } else {
-    var msg = { op: op, player: player, code: code };
-    if (this.id == this.hubID) {
-      this.receivePeerMessageAsHub(msg);
-    } else {
-      this.connections[this.hubID].send(msg);
+    this.connections[this.hubID].send(msg);
+  }
+},
+
+function localInput(op, player, code) {
+  if (code == 'Escape') { // general cancel key
+    if (op == 'press') {
+      $('#menu').hide();
+      this.hideChatInput();
     }
+  }
+  if (Chat.inputFocused()) {
+    if (code == 'Enter' && op == 'release') {
+      this.sendChatMessage();
+    }
+    return;
+  }
+  switch (code) {
+    case 'Backquote': // menu key
+      if (op == 'press') {
+	$('#menu').toggle();
+      }
+      break;
+    case 'KeyM': // chat key
+      if (op == 'release') { // release not press, so we don't type 'm' in chat
+	if (this.chatShown) {
+	  this.hideChatInput();
+	} else {
+	  this.showChatInput();
+	}
+      }
+      break;
+    default: // ship controls (general case)
+      var msg = { op: op, player: player, code: code };
+      if (this.id == this.hubID) {
+	this.receivePeerMessageAsHub(msg);
+      } else {
+	this.connections[this.hubID].send(msg);
+      }
   }
 },
 
