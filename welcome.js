@@ -346,7 +346,7 @@ $('#search-for-games').on('click', updateJoinGamesTable);
 
 $('#restore-default-network-settings').on('click', function(evt) {
   $('#signaling-relay-url').val(
-    "https://ssl.uofr.net/~willdb/cgi-bin/relay.pl"
+    "https://willdb.net/cgi-bin/relay.pl"
   );
   $('#ice-servers').val(
     "[\n" +

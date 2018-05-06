@@ -18,7 +18,7 @@
 <h2>Signaling relay</h2>
 <p>In general, players do not know each other's network addresses at first, so a third party is necessary to initiate a connection. This third party is the <dfn>signaling relay</dfn>. The signaling relay allows two players who share a <dfn>relay ID</dfn> to send messages in one direction; the receiver first makes a request to the relay with just the relay ID, which stalls until the sender makes another request to the relay with the relay ID and a message. Then the receiver receives the message, and both requests terminate. To send multiple messages both sides must make multiple requests.</p>
 
-<p>YPilot shares its signaling relay with <a href="https://github.com/wdebeaum/svg-whiteboard">SVG Whiteboard</a>. The default <dfn>relay <a href="https://tools.ietf.org/html/rfc1738">URL</a></dfn> is <code>https://ssl.uofr.net/~willdb/cgi-bin/relay.pl</code>, but other <a href="https://github.com/wdebeaum/svg-whiteboard/blob/master/relay.pl">relays</a> may be used instead as long as all players who wish to connect to each other agree.</p>
+<p>YPilot shares its signaling relay with <a href="https://github.com/wdebeaum/svg-whiteboard">SVG Whiteboard</a>. The default <dfn>relay <a href="https://tools.ietf.org/html/rfc1738">URL</a></dfn> is <code>https://willdb.net/cgi-bin/relay.pl</code>, but other <a href="https://github.com/wdebeaum/svg-whiteboard/blob/master/relay.pl">relays</a> may be used instead as long as all players who wish to connect to each other agree.</p>
 
 <p>The relay ID must consist of alphanumeric characters, hyphens, and underscores, and must be at least one character. If the message contains any line feed (<code>\n</code>) or carriage return (<code>\r</code>) characters, they will be converted to spaces.</p>
 
