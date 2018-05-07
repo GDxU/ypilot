@@ -352,7 +352,7 @@ $('#restore-default-network-settings').on('click', function(evt) {
     "[\n" +
     "{\"urls\":\"stun:stun.ekiga.net\"},\n" +
     "{\"urls\":\"stun:stun.l.google.com:19302\"},\n" +
-    "{ \"urls\": \"turn:willdb.net:5349\",\n" +
+    "{ \"urls\": \"turns:willdb.net?transport=tcp\",\n" +
     "  \"username\": \"ypilot\",\n" +
     "  \"credential\": \"I agree not to use this service to break the law.\"\n"+
     "}\n"+
