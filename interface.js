@@ -1,6 +1,19 @@
 const $ = require('jquery');
 const defineMethods = require('./define-methods.js');
 
+// get what the value of evt.code should be, even if it's actually ""
+// (that happens on mobile)
+// NOTE: this is probably not complete; it just works for the keys we use
+function getRobustKeyCode(evt) {
+  if (evt.code != '') {
+    return evt.code;
+  } else if (/^[0-9a-z]$/i.test(evt.key)) {
+    return 'Key' + evt.key.toUpperCase();
+  } else {
+    return evt.key;
+  }
+}
+
 function Interface(player) {
   this.player = player;
   this.isLocal = (
@@ -157,11 +170,11 @@ function unbecomeOriented(thing, {orientation}) {
 },
 
 function keydown(evt) {
-  router.uplink.localInput('press', this.player, evt.code);
+  router.uplink.localInput('press', this.player, getRobustKeyCode(evt));
 },
 
 function keyup(evt) {
-  router.uplink.localInput('release', this.player, evt.code);
+  router.uplink.localInput('release', this.player, getRobustKeyCode(evt));
 },
 
 function mousedown(evt) {
