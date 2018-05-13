@@ -57,7 +57,7 @@ function toJSON() {
 
 function thingIsInPlayersSpace(thing) {
   return (this.playerShipLocated && (thing in this.located) &&
-	  this.located[thing].space === this.playerShipLocated.space);
+	  this.located[thing].space == this.playerShipLocated.space);
 },
 
 function setViewBox() {
@@ -88,7 +88,7 @@ function changeSpace() {
   // add all graphics of visible things located in the new space
   for (var t in this.located) {
     t |= 0; // enforce integer thing IDs (not strings)
-    if (this.located[t].space === this.playerShipLocated.space &&
+    if (this.located[t].space == this.playerShipLocated.space &&
         (t in this.visible)) {
       this.becomeVisible(t, this.visible[t], undefined);
     }
@@ -130,13 +130,13 @@ function unbecomeVisible(thing, {graphics}) {
 
 function becomeLocated(thing, {space, position}, oldLocated) {
   if (!(thing in this.visible)) return;
-  if (this.playerShipLocated && space === this.playerShipLocated.space) {
+  if (this.playerShipLocated && space == this.playerShipLocated.space) {
     this.setThingTransform(this.visible[thing].graphics,
       position, this.getThingOrientation(thing));
     if ((this.player in this.piloting) &&
         thing == this.piloting[this.player].ship) { // just moved player's ship
       this.setViewBox();
-      if (space !== oldLocated.space) this.changeSpace();
+      if (space != oldLocated.space) this.changeSpace();
     }
   } else if (oldLocated) {
     this.unbecomeLocated(thing, oldLocated);
@@ -144,7 +144,7 @@ function becomeLocated(thing, {space, position}, oldLocated) {
 },
 
 function unbecomeLocated(thing, {space, position}) {
-  if (this.playerShipLocated && space === this.playerShipLocated.space &&
+  if (this.playerShipLocated && space == this.playerShipLocated.space &&
       (thing in this.visible)) {
     this.unbecomeVisible(thing, this.visible[thing]);
   }

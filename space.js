@@ -34,9 +34,11 @@ function pointIsInPolygon(point, polygon) {
   return (windingNumber != 0);
 }
 
-function Space(thingID) {
-  this.id = ((thingID === undefined) ? router.newThing() : thingID);
+function SpatialIndex(thingID) {
+  // if thingID wasn't provided, use -1 as a placeholder until becomeSpatial
+  this.id = ((thingID === undefined) ? -1 : thingID);
   this.bin2things = {};
+  router.on('becomeSpatial', this.becomeSpatial.bind(this));
   this.located = router.getAdjectivePropertiesMap('Located');
   router.on('becomeLocated', this.becomeLocated.bind(this));
   router.on('unbecomeLocated', this.unbecomeLocated.bind(this));
@@ -47,7 +49,7 @@ function Space(thingID) {
   this.somethingMoved = true;
 }
 
-Space.position2bin = function(position) {
+SpatialIndex.position2bin = function(position) {
   return Math.floor(position.x / 32) + ',' + Math.floor(position.y / 32);
 }
 
@@ -56,12 +58,18 @@ Space.position2bin = function(position) {
 const emptyArray = [];
 Object.freeze(emptyArray);
 
-defineMethods(Space, [
-  function toJSON() {
-    return { op: 'Space', args: [this.id] };
+defineMethods(SpatialIndex, [
+  function becomeSpatial(thing, { index }, oldSpatial) {
+    if (index === this) {
+      this.id = thing;
+    }
   },
 
-  // called after constructing a new Space from a JSON description
+  function toJSON() {
+    return { op: 'SpatialIndex', args: [this.id] };
+  },
+
+  // called after constructing a new SpatialIndex from a JSON description
   function reconstitute() {
     for (var thing in this.located) {
       this.becomeLocated(thing | 0, this.located[thing], null);
@@ -93,12 +101,12 @@ defineMethods(Space, [
   function becomeLocated(thing, {space, position}, oldLocated) {
     var oldBin = null;
     var newBin = null;
-    if (oldLocated && oldLocated.space === this) {
+    if (oldLocated && oldLocated.space == this.id) {
       var oldPosition = oldLocated.position;
-      oldBin = Space.position2bin(oldPosition);
+      oldBin = SpatialIndex.position2bin(oldPosition);
     }
-    if (space === this) {
-      newBin = Space.position2bin(position);
+    if (space == this.id) {
+      newBin = SpatialIndex.position2bin(position);
       this.somethingMoved = true;
     }
     if (newBin != oldBin) {
@@ -115,8 +123,8 @@ defineMethods(Space, [
   },
 
   function unbecomeLocated(thing, {space, position}) {
-    if (space === this) {
-      var bin = Space.position2bin(position);
+    if (space == this.id) {
+      var bin = SpatialIndex.position2bin(position);
       this.removeFromBin(thing, bin);
     }
   },
@@ -252,8 +260,8 @@ defineMethods(Space, [
     var bins = {};
     for (var thing in this.mobile) {
       var { space, position } = this.located[thing];
-      if (space === this) {
-	var bin = Space.position2bin(position);
+      if (space == this.id) {
+	var bin = SpatialIndex.position2bin(position);
 	bins[bin] = true;
         var here = bin.split(',',2);
 	here[0]++; bins[here[0]+','+here[1]] = true;
@@ -377,4 +385,4 @@ defineMethods(Space, [
   }
 ]);
 
-module.exports = Space;
+module.exports = SpatialIndex;

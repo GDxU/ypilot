@@ -15,8 +15,9 @@ an Item is Fleeting and Mobile and Solid and Visible
 
 when the game starts
 then
+  a new Space ?space is added
   a new Map ?map is added which is
-    Located with space Space[] and position Vec2[-64,-64]
+    Located with space ?space and position Vec2[-64,-64]
     Mapped with mapSize Vec2[10,10] and map (
       "xxxxxxxxxx\n" +
       "xs      ax\n" +

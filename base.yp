@@ -12,9 +12,23 @@ a Typing thing is Named and has
 a Typed thing has
   a type which is a Typing thing
 
+a Spatial thing has
+  an index which is a SpatialIndex object (default SpatialIndex[])
+
+a Space is Spatial # for convenience
+
 a Located thing has
-  a space which is a Space object
+  a space which is a Spatial thing
   a position which is a Vec2 object (default Vec2[0,0])
+
+a Toroidal thing is Spatial and has
+  a size which is a Vec2 object
+
+when ?x becomes Located with space ?sp and position ?p and
+  ?s is Toroidal with size ?sz
+  (?p["x"] < 0 or ?p["y"] < 0 or ?p["x"] >= ?sz["x"] or ?p["y"] >= ?sz["y"])
+then
+  ?x becomes Located with position ((?p + ?sz) % ?sz)
 
 # solid things participate in collisions
 a Solid thing is Located and has

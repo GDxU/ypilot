@@ -94,19 +94,6 @@ function isIdle() {
   return (this.numPendingListeners == 0);
 },
 
-// call function when we're next truly idle (including now)
-// note that this is not at the next 'idle' event, but between the 'noMoreHits'
-// event (from Space) and the following 'clockTick' (from Uplink), and the
-// 'noMoreHits' event might have already happened.
-// also note that while we're in fn, we may or may not be considered "idle".
-/*function onIdle(fn) {
-  if (this.isIdle()) {
-    fn();
-  } else {
-    this.once('noMoreHits', fn);
-  }
-},*/
-
 function getEventLogURL() {
   return URL.createObjectURL(new Blob([this.eventLog.join("\n")]));
 },
@@ -218,8 +205,8 @@ function getState() {
   }
   // NOTE: a few things that can be in adjective properties have toJSON
   // methods, which turn them into plain objects (notably, without cycles).
-  // This includes Vec2, Space, Interface, and SVGGraphicsElement. The process
-  // is reversed in setState below.
+  // This includes Vec2, SpatialIndex, Interface, and SVGGraphicsElement. The
+  // process is reversed in setState below.
   return {
     nextThing: this.nextThing,
     adjectives: this.adjectives,
@@ -236,7 +223,7 @@ function convertAdjPropValFromJSON(prop2val, prop, alreadyConverted) {
     }
   } else if ('op' in val) {
     switch (val.op) {
-      case 'Space': // fall through
+      case 'SpatialIndex': // fall through
       case 'Interface':
 	if (!(('args' in val) &&
 	      (val.args instanceof Array) &&
@@ -248,8 +235,8 @@ function convertAdjPropValFromJSON(prop2val, prop, alreadyConverted) {
 	if (valStr in alreadyConverted) {
 	  prop2val[prop] = alreadyConverted[valStr];
 	} else {
-	  if (val.op == 'Space') {
-	    prop2val[prop] = new Space(val.args[0]);
+	  if (val.op == 'SpatialIndex') {
+	    prop2val[prop] = new SpatialIndex(val.args[0]);
 	  } else {
 	    prop2val[prop] = new Interface(val.args[0]);
 	  }
@@ -286,9 +273,9 @@ function setState(msg) {
   this.adjectives = msg.adjectives;
   this.playerKeysDown = msg.playerKeysDown;
   // reverse toJSON->{op:...} conversions
-  // map stringified JSON to final objects for Space and Interface, so object
-  // identity is restored (Vec2 and SVGGraphicsElement should remain separate
-  // objects regardless)
+  // map stringified JSON to final objects for SpatialIndex and Interface, so
+  // object identity is restored (Vec2 and SVGGraphicsElement should remain
+  // separate objects regardless)
   var alreadyConverted = {};
   for (var adj in this.adjectives) {
     var thing2props = this.adjectives[adj];
@@ -299,11 +286,11 @@ function setState(msg) {
       }
     }
   }
-  // Space requires additional initialization after everything points to it
-  // instead of the JSON version
+  // SpatialIndex requires additional initialization after everything points to
+  // it instead of the JSON version
   for (var key in alreadyConverted) {
     var val = alreadyConverted[key];
-    if (val instanceof Space) {
+    if (val instanceof SpatialIndex) {
       val.reconstitute();
     }
   }

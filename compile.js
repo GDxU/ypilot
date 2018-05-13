@@ -349,7 +349,7 @@ function compileOp(ast) {
     case 'new':
       // TODO? allow more constructors
       // TODO? disallow Interface (JS code makes that now)
-      if (!/^(Vec2|Array|Space|Interface)$/.test(ast.constructor)) {
+      if (!/^(Vec2|Array|SpatialIndex|Interface)$/.test(ast.constructor)) {
 	throw new Error("constructing a new " + ast.constructor + " not allowed");
       }
       return 'new ' + ast.constructor + '(' + ast.args.map(compile).join(', ') + ')';
@@ -372,7 +372,7 @@ function compileOp(ast) {
 	if (!/^([<=>!]=|[<>*/%+-]|&&|\|\|)$/.test(ast.op)) {
 	  throw new Error("invalid infix operator: " + ast.op);
 	}
-	if (/^[*+-]$/.test(ast.op) && 'number' != typeof ast.l) {
+	if (/^[*/%+-]$/.test(ast.op) && 'number' != typeof ast.l) {
 	  // TODO? use static types to decide whether to use builtin operators
 	  // or methods
 	  // TODO? define + and * for strings and Arrays, meaning concatenation and repetition (actually string+string should already work, and string*number will convert to number and multiply instead of doing repetition)
@@ -380,7 +380,8 @@ function compileOp(ast) {
 	  var compiledR = compile(ast.r);
 	  return '(("object" == typeof ' + compiledL + ')? ' +
 		 compiledL +
-		 '.' + ({ '*': 'scale', '+': 'add', '-': 'subtract' })[ast.op] +
+		 '.' + ({ '*': 'scale', '/': 'divide', '%': 'remainder',
+			  '+': 'add', '-': 'subtract' })[ast.op] +
 		 '(' + compiledR + ') : (' +
 		 compiledL + ' ' + ast.op + ' ' + compiledR + '))';
 	} else {

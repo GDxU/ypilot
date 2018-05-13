@@ -211,7 +211,7 @@ Constructors for a few JavaScript object types, with arguments in square bracket
 
     Array[?length]
     Interface[?player]
-    Space[]
+    SpatialIndex[]
     Vec2[?x, ?y]
 
 Array literals in square brackets, e.g. `[1, 2, "buckle my shoe"]`.
@@ -255,7 +255,7 @@ Describes players who are playing through a user interface (not NPCs), and thus 
 
     Located
 
-Describes things that have a single physical location in a space. Used by the `Space` object for collision detection, by `Interface` objects for drawing, and by the map reading functionality.
+Describes things that have a single physical location in a space. Used by the `SpatialIndex` object for collision detection, by `Interface` objects for drawing, and by the map reading functionality.
 
     Mapped
 
@@ -263,7 +263,7 @@ Describes things that can be `read` as a map.
 
     Mobile
 
-Describes things that move and/or spin through space. Used by the `Space` object for collision detection.
+Describes things that move and/or spin through space. Used by the `SpatialIndex` object for collision detection.
 
     Named
 
@@ -271,7 +271,7 @@ Describes things that have a name (or handle).
 
     Oriented
 
-Describes things that have a non-trivial orientation. Used by the `Space` object for collision detection, and by `Interface` objects for drawing.
+Describes things that have a non-trivial orientation. Used by the `SpatialIndex` object for collision detection, and by `Interface` objects for drawing.
 
     Piloting
 
@@ -279,7 +279,15 @@ Describes players that are currently controlling a `BasicShip`. Used by the play
 
     Solid
 
-Describes things that participate in collision detection (whether they bounce, blow up, or something else). Used by the `Space` object.
+Describes things that participate in collision detection (whether they bounce, blow up, or something else). Used by the `SpatialIndex` object.
+
+    Spatial
+
+Describes spaces in which collisions may be detected. Has a `SpatialIndex` object. For convenience the noun `Space` is also defined in base.yp, as `a Space is Spatial`, but `Space` isn't used in the JS code, only `Spatial`.
+
+    Toroidal
+
+Describes bounded spaces where the edges wrap, so that anything that becomes `Located` outside of one edge ends up `Located` inside of the opposite edge, giving the space a toroidal topology. That functionality is implemented in base.yp itself (not JS), but `Toroidal` is also used by `Interface` objects in order to display the opposite edge when you're near an edge (TODO).
 
     Typed
 

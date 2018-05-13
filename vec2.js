@@ -39,6 +39,22 @@ function scale(other) {
   }
 },
 
+function divide(other) {
+  if (other instanceof Vec2) {
+    return new Vec2(this.x / other.x, this.y / other.y);
+  } else { // Number
+    return new Vec2(this.x / other, this.y / other);
+  }
+},
+
+function remainder(other) {
+  if (other instanceof Vec2) {
+    return new Vec2(this.x % other.x, this.y % other.y);
+  } else { // Number
+    return new Vec2(this.x % other, this.y % other);
+  }
+},
+
 function magnitude() {
   return Math.sqrt(this.x * this.x + this.y * this.y);
 },
