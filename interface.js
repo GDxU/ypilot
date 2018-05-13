@@ -33,7 +33,10 @@ function Interface(player) {
     this.oriented = router.getAdjectivePropertiesMap('Oriented');
     router.on('becomeOriented', this.becomeOriented.bind(this));
     router.on('unbecomeOriented', this.unbecomeOriented.bind(this));
+    this.toroidal = router.getAdjectivePropertiesMap('Toroidal');
+    // TODO support dynamically changing Toroidal status of a space?
     this.svg = $('#svg-container svg')[0];
+    this.centerG = $('#center-g')[0];
     document.body.onkeydown = this.keydown.bind(this);
     document.body.onkeyup = this.keyup.bind(this);
     $('.key').
@@ -84,7 +87,7 @@ function getThingOrientation(thing) {
 
 function changeSpace() {
 //  console.log('Interface#changeSpace()');
-  this.svg.innerHTML = ''; // remove all children from the old space
+  this.centerG.innerHTML = ''; // remove all children from the old space
   // add all graphics of visible things located in the new space
   for (var t in this.located) {
     t |= 0; // enforce integer thing IDs (not strings)
@@ -92,6 +95,21 @@ function changeSpace() {
         (t in this.visible)) {
       this.becomeVisible(t, this.visible[t], undefined);
     }
+  }
+  // apply toroidal wrapping or not
+  if (this.playerShipLocated.space in this.toroidal) {
+    var size = this.toroidal[this.playerShipLocated.space].size;
+    $('#nw-use').attr({ x: -size.x, y: -size.y });
+    $('#n-use' ).attr({ x:       0, y: -size.y });
+    $('#ne-use').attr({ x:  size.x, y: -size.y });
+    $( '#w-use').attr({ x: -size.x, y:       0 });
+    $( '#e-use').attr({ x:  size.x, y:       0 });
+    $('#sw-use').attr({ x: -size.x, y:  size.y });
+    $('#s-use' ).attr({ x:       0, y:  size.y });
+    $('#se-use').attr({ x:  size.x, y:  size.y });
+    $('#periphery-g').show();
+  } else {
+    $('#periphery-g').hide();
   }
 },
 
@@ -110,7 +128,7 @@ function becomeVisible(thing, {graphics}, oldVisible) {
   if (this.thingIsInPlayersSpace(thing)) {
 //    console.log("...is in player's space, appending");
     graphics.forEach(g => {
-      this.svg.appendChild(g);
+      this.centerG.appendChild(g);
     });
     this.setThingTransform(graphics,
       this.located[thing].position, this.getThingOrientation(thing));
@@ -122,7 +140,7 @@ function becomeVisible(thing, {graphics}, oldVisible) {
 function unbecomeVisible(thing, {graphics}) {
 //  console.log('Interface#unbecomeVisible(' + thing + ', #)');
   graphics.forEach(g => {
-    if (g.parentNode === this.svg) {
+    if (g.parentNode === this.centerG) {
       g.remove();
     }
   });
@@ -152,7 +170,7 @@ function unbecomeLocated(thing, {space, position}) {
 
 function thingIsShown(thing) {
   return ((thing in this.visible) && (thing in this.located) &&
-	  this.visible[thing].graphics.parentNode === this.svg);
+	  this.visible[thing].graphics.parentNode === this.centerG);
 },
 
 function becomeOriented(thing, {orientation}, oldOriented) {

@@ -287,7 +287,7 @@ Describes spaces in which collisions may be detected. Has a `SpatialIndex` objec
 
     Toroidal
 
-Describes bounded spaces where the edges wrap, so that anything that becomes `Located` outside of one edge ends up `Located` inside of the opposite edge, giving the space a toroidal topology. That functionality is implemented in base.yp itself (not JS), but `Toroidal` is also used by `Interface` objects in order to display the opposite edge when you're near an edge (TODO).
+Describes bounded spaces where the edges wrap, so that anything that becomes `Located` outside of one edge ends up `Located` inside of the opposite edge, giving the space a toroidal topology. That functionality is implemented in base.yp itself (not JS), but `Toroidal` is also used by `Interface` objects in order to display the opposite edge when you're near an edge.
 
     Typed
 
