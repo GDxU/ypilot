@@ -80,7 +80,9 @@ function compileOp(ast) {
 	  // TODO? check that p[0] is of type p[1]
 	  return '  this.' + p[0] + ' = ' + p[0] + ";\n";
 	}).join('') + "}\n" +
-	ast.name + '.dependencies = [' + ast.dependencies.join(', ') + "];\n" +
+	ast.name + '.dependencies = [' +
+	  ast.dependencies.map(x => ('"' + x + '"')).join(', ') +
+	"];\n" +
 	"router.declareAdjective('" + ast.name + "');\n";
     case 'defineNoun':
       var supertypes =
@@ -121,6 +123,7 @@ function compileOp(ast) {
 	"  while (queue.length > 0) {\n" +
 	"    var d = queue.shift();\n" +
 	"    if (!(d in adjectives)) {\n" +
+	"      if ('function' != typeof this[d]) throw new Error('no constructor for adjective ' + d);\n" +
 	"      adjectives[d] = new this[d]({});\n" +
 	"      this[d].dependencies.forEach(d2 => queue.push(d2));\n" +
 	"    }\n" +

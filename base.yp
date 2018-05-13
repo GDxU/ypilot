@@ -25,7 +25,7 @@ a Toroidal thing is Spatial and has
   a size which is a Vec2 object
 
 when ?x becomes Located with space ?sp and position ?p and
-  ?s is Toroidal with size ?sz
+  ?sp is Toroidal with size ?sz
   (?p["x"] < 0 or ?p["y"] < 0 or ?p["x"] >= ?sz["x"] or ?p["y"] >= ?sz["y"])
 then
   ?x becomes Located with position ((?p + ?sz) % ?sz)
