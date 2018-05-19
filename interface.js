@@ -22,6 +22,7 @@ function Interface(player) {
   );
   if (this.isLocal) {
     this.playerShipLocated = undefined;
+    this.toroidSize = undefined;
     this.piloting = router.getAdjectivePropertiesMap('Piloting');
     router.on('becomePiloting', this.becomePiloting.bind(this));
     this.visible = router.getAdjectivePropertiesMap('Visible');
@@ -36,7 +37,6 @@ function Interface(player) {
     this.toroidal = router.getAdjectivePropertiesMap('Toroidal');
     // TODO support dynamically changing Toroidal status of a space?
     this.svg = $('#svg-container svg')[0];
-    this.centerG = $('#center-g')[0];
     document.body.onkeydown = this.keydown.bind(this);
     document.body.onkeyup = this.keyup.bind(this);
     $('.key').
@@ -74,9 +74,27 @@ function setViewBox() {
 },
 
 function setThingTransform(graphics, position, orientation) {
+  var wrappedPos = position;
+  // when the space is Toroidal, wrap the position of things that are distant
+  // from the player around to the opposite side
+  if (this.toroidSize !== undefined) {
+    var wrappedPos = new Vec2(position.x, position.y);
+    var playerPos = this.playerShipLocated.position;
+    var relPos = position.subtract(playerPos);
+    if (relPos.x < -this.toroidSize.x / 2) {
+      wrappedPos.x += this.toroidSize.x;
+    } else if (relPos.x > this.toroidSize.x / 2) {
+      wrappedPos.x -= this.toroidSize.x;
+    }
+    if (relPos.y < -this.toroidSize.y / 2) {
+      wrappedPos.y += this.toroidSize.y;
+    } else if (relPos.y > this.toroidSize.y / 2) {
+      wrappedPos.y -= this.toroidSize.y;
+    }
+  }
   // TODO maybe put everything in a <g> instead of setting transform on each?
   var attrVal =
-    'translate(' + position.x + ', ' + position.y + ') ' +
+    'translate(' + wrappedPos.x + ', ' + wrappedPos.y + ') ' +
     'rotate(' + (orientation * 180 / Math.PI) + ')';
   graphics.forEach(g => g.setAttributeNS(null, 'transform', attrVal));
 },
@@ -87,7 +105,13 @@ function getThingOrientation(thing) {
 
 function changeSpace() {
 //  console.log('Interface#changeSpace()');
-  this.centerG.innerHTML = ''; // remove all children from the old space
+  // apply toroidal wrapping or not
+  if (this.playerShipLocated.space in this.toroidal) {
+    this.toroidSize = this.toroidal[this.playerShipLocated.space].size;
+  } else {
+    this.toroidSize = undefined;
+  }
+  this.svg.innerHTML = ''; // remove all children from the old space
   // add all graphics of visible things located in the new space
   for (var t in this.located) {
     t |= 0; // enforce integer thing IDs (not strings)
@@ -96,20 +120,28 @@ function changeSpace() {
       this.becomeVisible(t, this.visible[t], undefined);
     }
   }
-  // apply toroidal wrapping or not
-  if (this.playerShipLocated.space in this.toroidal) {
-    var size = this.toroidal[this.playerShipLocated.space].size;
-    $('#nw-use').attr({ x: -size.x, y: -size.y });
-    $('#n-use' ).attr({ x:       0, y: -size.y });
-    $('#ne-use').attr({ x:  size.x, y: -size.y });
-    $( '#w-use').attr({ x: -size.x, y:       0 });
-    $( '#e-use').attr({ x:  size.x, y:       0 });
-    $('#sw-use').attr({ x: -size.x, y:  size.y });
-    $('#s-use' ).attr({ x:       0, y:  size.y });
-    $('#se-use').attr({ x:  size.x, y:  size.y });
-    $('#periphery-g').show();
-  } else {
-    $('#periphery-g').hide();
+},
+
+function updateWrap(newPlayerPos, oldPlayerPos) {
+  // go through all visible things located in the player's space
+  for (var thing in this.visible) {
+    if (this.located[thing].space === this.playerShipLocated.space) {
+      // if the thing's position relative to the player's new and old positions
+      // crosses the toroidSize/2 boundary in either direction, redo its
+      // transform
+      var thingPos = this.located[thing].position;
+      var oldRelPos = thingPos.subtract(oldPlayerPos);
+      var newRelPos = thingPos.subtract(newPlayerPos);
+      var oldXInRange = (Math.abs(oldRelPos.x) <= this.toroidSize.x / 2);
+      var oldYInRange = (Math.abs(oldRelPos.y) <= this.toroidSize.y / 2);
+      var newXInRange = (Math.abs(newRelPos.x) <= this.toroidSize.x / 2);
+      var newYInRange = (Math.abs(newRelPos.y) <= this.toroidSize.y / 2);
+      if ((oldXInRange ^ newXInRange) || (oldYInRange ^ newYInRange)) {
+	// see also becomeLocated()
+	this.setThingTransform(this.visible[thing].graphics,
+	  thingPos, this.getThingOrientation(thing));
+      }
+    }
   }
 },
 
@@ -128,7 +160,7 @@ function becomeVisible(thing, {graphics}, oldVisible) {
   if (this.thingIsInPlayersSpace(thing)) {
 //    console.log("...is in player's space, appending");
     graphics.forEach(g => {
-      this.centerG.appendChild(g);
+      this.svg.appendChild(g);
     });
     this.setThingTransform(graphics,
       this.located[thing].position, this.getThingOrientation(thing));
@@ -140,7 +172,7 @@ function becomeVisible(thing, {graphics}, oldVisible) {
 function unbecomeVisible(thing, {graphics}) {
 //  console.log('Interface#unbecomeVisible(' + thing + ', #)');
   graphics.forEach(g => {
-    if (g.parentNode === this.centerG) {
+    if (g.parentNode === this.svg) {
       g.remove();
     }
   });
@@ -154,7 +186,11 @@ function becomeLocated(thing, {space, position}, oldLocated) {
     if ((this.player in this.piloting) &&
         thing == this.piloting[this.player].ship) { // just moved player's ship
       this.setViewBox();
-      if (space != oldLocated.space) this.changeSpace();
+      if (space != oldLocated.space) {
+	this.changeSpace();
+      } else if (this.toroidSize !== undefined) {
+	this.updateWrap(position, oldLocated.position);
+      }
     }
   } else if (oldLocated) {
     this.unbecomeLocated(thing, oldLocated);
@@ -170,7 +206,7 @@ function unbecomeLocated(thing, {space, position}) {
 
 function thingIsShown(thing) {
   return ((thing in this.visible) && (thing in this.located) &&
-	  this.visible[thing].graphics.parentNode === this.centerG);
+	  this.visible[thing].graphics.parentNode === this.svg);
 },
 
 function becomeOriented(thing, {orientation}, oldOriented) {
