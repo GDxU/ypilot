@@ -21,6 +21,8 @@ a Located thing has
   a space which is a Spatial thing
   a position which is a Vec2 object (default Vec2[0,0])
 
+a Point is Located
+
 a Toroidal thing is Spatial and has
   a size which is a Vec2 object
 

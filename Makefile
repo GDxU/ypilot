@@ -36,6 +36,7 @@ SRCS = \
 		bouncy.yp \
 		bullet.yp \
 		controls.yp \
+		fleeting.yp \
 		gun.yp \
 		holding.yp \
 		inertial.yp \

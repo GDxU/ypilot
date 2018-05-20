@@ -1,0 +1,12 @@
+# expires after some time has elapsed (distinct from hitpoints)
+a Fleeting thing has
+  a timeToLive which is a number (default 30) # 30 ticks, i.e. 1 second
+
+when the clock ticks and
+  there is a thing ?f which is Fleeting with timeToLive ?t
+  (?t > 0)
+then
+  ?f becomes Fleeting with timeToLive (?t - 1)
+
+when ?f becomes Fleeting with timeToLive 0
+then ?f is removed

@@ -320,6 +320,7 @@ variable
 constant
   = ('PI' / 'π') !id_char sp { return { op: 'var', name: 'Math.PI' }; }
   / ('E' / 'e') !id_char sp { return { op: 'var', name: 'Math.E' }; }
+  / ('INFINITY' / '∞') !id_char sp { return { op: 'var', name: 'Infinity' }; }
 
 id_char
   = '_' / [0-9] / [a-z]i

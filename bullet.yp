@@ -1,3 +1,4 @@
+use "standard:fleeting.yp"
 use "standard:mortal.yp"
 
 a Bullet is Damaging and Fleeting and Mobile and Solid and Visible

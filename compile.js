@@ -163,15 +163,32 @@ function compileOp(ast) {
 	var adjective = ast.trigger.adjectives[0]
 	if (adjective.op == 'unadjective') {
 	  eventName = 'unbecome' + adjective.name;
+	  // TODO? allow unbecome (and become?) to capture old property values
 	} else {
 	  eventName = 'become' + adjective.name;
+	  eventParams.push('{ ' + adjective.properties.map(p => {
+	    if (('object' == typeof p[1]) && p[1] !== null &&
+	        p[1].op == 'var') {
+	      // property value is a variable, destructure it into that var
+	      return p[0] + ': ' + p[1].name;
+	    } else {
+	      // property value is not a variable, just use a mangled version
+	      // of the property name as the variable name, and prepend a
+	      // condition to check its value (we mangle it to prevent
+	      // conflicts)
+	      var mangledName = p[0] + '$';
+	      conditions.unshift({
+		op: '==',
+		l: { op: 'var', name: mangledName },
+		r: p[1]
+	      });
+	      return p[0] + ': ' + mangledName;
+	    }
+	  }).join(', ') + ' }');
+	  adjective.properties.forEach(p => {
+	    variableInitialized[p[1].name] = true;
+	  });
 	}
-	// TODO check that all property values are simple variables
-	// alternatively, turn those that aren't into variables and prepended conditions, like key above
-	eventParams.push('{ ' + adjective.properties.map(p => p[0] + ': ' + p[1].name).join(', ') + ' }');
-	adjective.properties.forEach(p => {
-	  variableInitialized[p[1].name] = true;
-	});
       } else if (eventName == 'read') {
 	eventName += ast.trigger.character;
       }
@@ -275,7 +292,7 @@ function compileOp(ast) {
     case 'is':
       if (ast.r.op == 'adjective') {
         return '(' +
-	  '(' + ast.l.name + ' in router.adjectives.' + ast.r.name + ') && ' +
+	  '(' + ast.l.name + ' in router.adjectives.' + ast.r.name + ')' +
 	  ast.r.properties.map(p => {
 	    var op;
 	    var rhs =
@@ -285,14 +302,14 @@ function compileOp(ast) {
 	        p[1].op == 'var' && !(p[1].name in variableInitialized)) {
 	      // p[1] is an uninitialized variable, assign to it, but make sure
 	      // the condition is true regardless of the value we assign
-	      return '((' + p[1].name + ' = ' + rhs + ') || true)';
+	      return ' && ((' + p[1].name + ' = ' + rhs + ') || true)';
 	    } else {
 	      // p[1] is an initialized variable or some other kind of value,
 	      // test equality
 	      // FIXME == or === ?
-	      return compile(p[1]) + ' == ' + rhs;
+	      return ' && ' + compile(p[1]) + ' == ' + rhs;
 	    }
-	  }).join(' && ') +
+	  }).join('') +
 	')';
       } else { // unadjective
 	return '(!(' + ast.l.name + ' in router.adjectives.' + ast.r.name +'))';

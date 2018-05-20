@@ -17,7 +17,7 @@ when the game starts
 then
   a new Space ?space is added
   a new Map ?map is added which is
-    Located with space ?space and position Vec2[-64,-64]
+    Located with space ?space
     Mapped with mapSize Vec2[10,10] and map (
       "xxxxxxxxxx\n" +
       "xs      ax\n" +
@@ -84,8 +84,12 @@ then
   a new Slot ?slot1 is added which is Capacious with content ?gun
   a new Slot ?slot2 is added
   # TODO 3-10
+  let ?spawnPos be Vec2[64,64]
+  a new Point ?spawnPoint is added which is
+    Located with space ?space and position ?spawnPos
   a new Ship ?ship is added which is
-    Located with space ?space
+    Located with space ?space and position ?spawnPos
+    Respawnable with spawnPoint ?spawnPoint
     Oriented with orientation (-π/2)
     Solid with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
     Bouncy with coefficientOfRestitution 0.2

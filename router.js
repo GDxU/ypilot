@@ -129,9 +129,11 @@ function become(thing, adjective, properties) {
 
 function unbecome(thing, adjective) {
   this.declareAdjective(adjective); // make sure it exists first
-  oldProperties = this.adjectives[adjective][thing];
-  delete this.adjectives[adjective][thing];
-  this.emit('unbecome' + adjective, thing, oldProperties);
+  if (thing in this.adjectives[adjective]) {
+    oldProperties = this.adjectives[adjective][thing];
+    delete this.adjectives[adjective][thing];
+    this.emit('unbecome' + adjective, thing, oldProperties);
+  }
 },
 
 //

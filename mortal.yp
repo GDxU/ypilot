@@ -1,4 +1,4 @@
-# can be damaged and destroyed
+# can be damaged and killed
 a Mortal thing has
   a number of hitPoints (default 1)
 
@@ -6,6 +6,7 @@ a Mortal thing has
 a Damaging thing has
   a number of hitPoints (default 1)
 
+# Damaging things deduct hitPoints from Mortal things when they collide
 when ?a hits ?b and
   ?a is Damaging with hitPoints ?damage
   ?b is Mortal with hitPoints ?hp
@@ -13,27 +14,78 @@ then
   ?b becomes
     Mortal with hitPoints (?hp - ?damage)
 
+# Dead mostly just marks things that have died, but adjectives are required to
+# have properties, so we might as well include a death point
+a Dead thing has
+  a deathPoint which is a Located thing (default nothing)
+
+# just in case someone wants something that is Mortal but not Located, whose
+# hitPoints would be deducted by something other than Damaging hits
 when ?a becomes Mortal with hitPoints ?hp and
   (?hp <= 0)
+  ?a is not Located
+then ?a becomes Dead
+
+# when you have no more hitPoints, you become Dead at your current location,
+# but you temporarily go to a private space (to avoid becoming not Located at
+# all, which isn't allowed for e.g. player ships)
+when ?a becomes Mortal with hitPoints ?hp and
+  (?hp <= 0)
+  ?a is Located with space ?s and position ?p
 then
-  ?a is removed
+  a new Point ?dp is added which is
+    Located with space ?s and position ?p
+  a new Space ?purgatory is added
+  ?a becomes
+    Located with space ?purgatory
+    Dead with deathPoint ?dp
 
-# expires after some time has elapsed (distinct from hitpoints)
-a Fleeting thing has
-  a timeToLive which is a number (default 30) # 30 ticks, i.e. 1 second
+# no matter how you become Dead, you're not Mortal anymore (until respawn)
+when ?a becomes Dead
+then ?a becomes not Mortal
 
+# returns to a spawn point after being killed, after a delay
+a Respawnable thing is Mortal and has
+  a spawnPoint which is a Located thing
+  a spawnDelay which is a number (default 30) # initial timeToRespawn
+  a number of lives (default ∞)
+  a number of initialHitPoints (default 1)
+
+# currently waiting to respawn
+a Respawning thing is Dead and has
+  a timeToRespawn which is a number
+
+# when you die and have lives left, decrement lives and start respawning
+when ?a becomes Dead and
+  ?a is Respawnable with spawnDelay ?d and lives ?l
+  (?l > 0)
+then
+  ?a becomes
+    Respawnable with lives (?l - 1)
+    Respawning with timeToRespawn ?d
+
+# count down timeToRespawn each tick
 when the clock ticks and
-  there is a thing ?f which is Fleeting with timeToLive ?t
+  there is a thing ?a which is Respawning with timeToRespawn ?t
   (?t > 0)
-then
-  ?f becomes Fleeting with timeToLive (?t - 1)
+then ?a becomes Respawning with timeToRespawn (?t - 1)
 
-when the clock ticks and
-  there is a thing ?f which is Fleeting with timeToLive 0
+# respawn now
+when ?a becomes Respawning with timeToRespawn 0 and
+  ?a is Respawnable with spawnPoint ?sp and initialHitPoints ?hp
+  ?a is Located with space ?purgatory
+  ?sp is Located with space ?s and position ?p
 then
-  ?f is removed
+  ?a becomes
+    not Respawning
+    Located with space ?s and position ?p
+    Mortal with hitPoints ?hp
+  ?purgatory is removed
 
-# comes back after being destroyed, after a delay
-a Respawning thing is Mortal and has
-  a timeToRespawn which is a number (default 1)
-# TODO
+# reset velocity and orientation when we finish respawning (but only if
+# Mobile/Oriented to begin with)
+when ?a becomes not Respawning and ?a is Mobile
+then ?a becomes Mobile with velocity Vec2[0,0]
+
+when ?a becomes not Respawning and ?a is Oriented
+then ?a becomes Oriented with orientation (-π/2) # FIXME should be a property of the spawn point and/or Respawnable?

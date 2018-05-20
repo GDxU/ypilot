@@ -193,11 +193,11 @@ This effect prints the value of the expression `(?y + 42)` to the browser consol
 
 ### Value expressions
 
-Several conditions and effects can use value expressions instead of just variables in some places. A value expression can be one of several things:
+Several conditions and effects, as well as properties of `become` events, can use value expressions instead of just variables in some places. A value expression can be one of several things:
 
 A variable as always.
 
-A numeric constant, `π` or `e` (or equivalently `PI` or `E`), a boolean constant `true` or `false`, or the `nothing` constant (equivalent to `null` in JavaScript).
+A numeric constant, `π`, `e`, or `∞` (or equivalently `PI`, `E`, or `INFINITY`), a boolean constant `true` or `false`, or the `nothing` constant (equivalent to `null` in JavaScript).
 
 A decimal number, e.g. `1.23`. If the decimal point is included, there must be some digits on both sides of it, e.g. `1.` and `.23` are not allowed (use `1.0` or `0.23` instead).
 
@@ -255,7 +255,7 @@ Describes players who are playing through a user interface (not NPCs), and thus 
 
     Located
 
-Describes things that have a single physical location in a space. Used by the `SpatialIndex` object for collision detection, by `Interface` objects for drawing, and by the map reading functionality.
+Describes things that have a single physical location in a space. Used by the `SpatialIndex` object for collision detection, by `Interface` objects for drawing, and by the map reading functionality. For convenience the noun `Point` is also defined in base.yp, as `a Point is Located`, but `Point` isn't used in the JS code, only `Located`.
 
     Mapped
 
@@ -309,6 +309,9 @@ TODO
 
     bouncy.yp
     bullet.yp
+    controls.yp
+    fleeting.yp
+    gun.yp
     holding.yp
     inertial.yp
     mortal.yp
