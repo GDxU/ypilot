@@ -9,6 +9,7 @@ module.exports = {
   "holding.yp":	fs.readFileSync(__dirname + '/holding.yp',	'utf8'),
   "inertial.yp":fs.readFileSync(__dirname + '/inertial.yp',	'utf8'),
   "mortal.yp":	fs.readFileSync(__dirname + '/mortal.yp',	'utf8'),
-  "motile.yp":	fs.readFileSync(__dirname + '/motile.yp',	'utf8')
+  "motile.yp":	fs.readFileSync(__dirname + '/motile.yp',	'utf8'),
+  "wall.yp":	fs.readFileSync(__dirname + '/wall.yp',		'utf8')
 };
 

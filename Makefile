@@ -42,6 +42,7 @@ SRCS = \
 		inertial.yp \
 		mortal.yp \
 		motile.yp \
+		wall.yp \
 	uplink.js \
 	user-names.js \
 	vec2.js \
