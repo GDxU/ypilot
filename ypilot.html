@@ -58,128 +58,128 @@
    <li><a href="#help">Help</a>
   </ul>
   <div class="tab-container">
-  <div id="profile" class="selected">
-   <div id="id-svg" title="visual representation of your ID"></div>
-   <label>Your ID: <input type="text" id="id" size="36" disabled></label><br>
-   <label>Your handle: <input type="text" id="handle"></label><button id="generate-handle">Generate random handle</button><br>
-   <!-- TODO your shipshape -->
-   <!-- TODO key pair? -->
-   Your profile also includes the information in the "Players you have met", "Start a new game", and "Network settings" tabs.<br>
-   <label><input type="checkbox" id="use-local-storage" checked> Save profile in browser (local storage/site data)</label><br>
-   <hr>
-   <button id="export-profile">Export profile</button>
-   <a id="export-profile-link" download="ypilot-profile.json">ypilot-profile.json</a>
-   <div class="dangerous">
-    <p>These buttons will erase the profile currently loaded in your browser. If you want to keep the currently loaded profile, export it to a file first.</p>
-    <label>Import profile: <input type="file" id="import-profile"></label><br>
-    <button id="new-profile">New profile</button>
+   <div id="profile" class="selected">
+    <div id="id-svg" title="visual representation of your ID"></div>
+    <label>Your ID: <input type="text" id="id" size="36" disabled></label><br>
+    <label>Your handle: <input type="text" id="handle"></label><button id="generate-handle">Generate random handle</button><br>
+    <!-- TODO your shipshape -->
+    <!-- TODO key pair? -->
+    Your profile also includes the information in the "Players you have met", "Start a new game", and "Network settings" tabs.<br>
+    <label><input type="checkbox" id="use-local-storage" checked> Save profile in browser (local storage/site data)</label><br>
+    <hr>
+    <button id="export-profile">Export profile</button>
+    <a id="export-profile-link" download="ypilot-profile.json">ypilot-profile.json</a>
+    <div class="dangerous">
+     <p>These buttons will erase the profile currently loaded in your browser. If you want to keep the currently loaded profile, export it to a file first.</p>
+     <label>Import profile: <input type="file" id="import-profile"></label><br>
+     <button id="new-profile">New profile</button>
+    </div>
    </div>
-  </div>
-  <div id="players">
-   <table>
-    <tr><th>ID</th><th>Handle(s)</th><th>If they ask your status</th><th>If they ask to join</th><th>Ask their status</th><th>Forget</th></tr>
-   </table>
-  </div>
-  <div id="new-game">
-   <table id="games">
-    <caption>Games you can start</caption>
-    <tr><th>Start</th><th>Title</th><th>Author</th><th>URL</th></tr>
-   </table>
-   <button id="add-from-url">Add</button>
-   <label>from URL: <input type="url" id="config-url"></label><br>
-   <label>Start from file (singleplayer only): <input type="file" id="config-file"></label>
-  </div>
-  <div id="join-game">
-   <button id="search-for-games">Look for games my friends are playing</button>
-   <table id="games-to-join">
-   <caption>Games you can join</caption>
-    <tr><th>Join</th><th>Title</th><th>Current players</th></tr>
-   </table>
-  </div>
-  <div id="network-settings">
-   <p>Only change these settings if you have set up your own relay server, or know some better ICE servers. The defaults should work OK for most people.</p>
-   <label>WebRTC signaling relay URL:<br>
-    <input type="url" id="signaling-relay-url" value="https://willdb.net/cgi-bin/relay.pl"><br>
-   </label>
-   <label>ICE (STUN/TURN) server list:<br>
-   <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
-{"urls":"stun:stun.ekiga.net"},
-{"urls":"stun:stun.l.google.com:19302"},
-{ "urls": "turns:willdb.net",
-  "username": "ypilot",
-  "credential": "I agree not to use this service to break the law."
-}
-]</textarea><br></label>
-   <hr>
-   <button id="restore-default-network-settings">restore defaults</button>
-  </div>
-  <div id="help">
-   <h2>Welcome screen</h2>
-   <p>This is the welcome screen. It has several tabs you may select from:</p>
-   <dl>
-    <dt>Your profile
-     <dd>
-      <p>Here you can manage your identity and other things your browser will remember. This includes the contents of the two fields in this tab, as well as a cryptographic key pair (not displayed), and the contents of a few of the other tabs.</p>
-      <p>Your handle is the name that YPilot will display to other players in-game to identify you. You can change your handle when you want.</p>
-      <p>Your ID is a permanent, randomly generated number that (along with your crypto keys) helps to identify you consistently to other players you have met, before you agree to play together. Your ID is visualized in the small square drawing to the left, which should be easier to check at a glance (the color of this drawing is also used to help identify players in chat). You can only get a new ID by generating a new profile, but this will erase all the other profile info currently in your browser as well.</p>
-      <p>Normally these things will be saved in your browser's local storage for this website, but you can choose not to use that feature by unchecking the "Save profile in browser" checkbox. If your browser doesn't allow this site to use this feature for whatever reason, the checkbox will be unchecked (hint: check your browser's privacy settings). You can instead export your profile to a file on your computer, and then import it from that file when you come back to YPilot later. You can also use the export/import buttons to transfer your profile to another computer, or to a different browser on the same computer.</p>
-    <dt>Players you have met
-     <dd>
-      <p>Here you can see a list of the players you have met, and manage your policy regarding these players. You can also choose to forget a player, removing them from your profile.</p>
-    <dt>Start a new game
-     <dd>
-      <p>Here you can start a new game by loading a <code>.yp</code> file containing the game rules and map. In order to play with other people, the file should be available on the web in a way that this webpage can fetch it (i.e. http(s), CORS-enabled). Games you have played before are automatically added to this list, but you can add a new game by providing the URL to fetch it from. You can also start a single player game from a file on your computer.</p>
-    <dt>Join a game
-     <dd>
-      <p>Here you can look for games your friends are currently playing, and join them. When you click the button at the top, YPilot will ask for the status of each player that you have met and selected "when I search" under "Ask their status". If they are currently playing a game, and have chosen to give you their status (they selected "always give it" or "ask me" under "If they ask your status"), the title of the game, and the handle of each player, will be listed below (more information is available in tooltips, including the game author and player IDs). Click the "Join" button next to a game to ask to join it.</p>
-      <p>You can also ask for a specific player's status by going to the "Players you have met" tab and clicking the "Now" button under "Ask their status". Their current game will be added to the "Join a game" tab.</p>
-      <p>When a player invites to you a game, they will send you a link containing their player ID. The link will take you to this page, automatically ask their status, and switch to the "Join a game" tab. Then all you have to do is click the "Join" button (you may wish to first change your handle in the "Your profile" tab).</p>
-    <dt>Network settings
-     <dd>
-      <p>Here you can adjust some networking settings. The defaults should work OK for most people. See the Networking section below for more detail about how the networking actually works.</p>
-    <dt>Help
-     <dd>This tab.
-   </dl>
-   <h2>In-game controls</h2>
-   <table>
-    <tr><th>symbol</th><th>key name</th><th>on-screen button location</th><th>standard function</th></tr>
-    <tr><td>←</td><td>left arrow</td><td>right side (left)</td><td>turn left</td></tr>
-    <tr><td>→</td><td>right arrow</td><td>right side (right)</td><td>turn right</td></tr>
-    <tr><td>↑</td><td>up arrow</td><td>left side (bottom)</td><td>thrust (accelerate forward)</td></tr>
-    <tr><td>·</td><td>right control</td><td>left side (right)</td><td>primary fire/use</td></tr>
-    <tr><td>×</td><td>right shift</td><td>left side (left)</td><td>secondary fire/use</td></tr>
-    <tr><td>1-9, 0</td><td>numbers</td><td>top</td><td>weapon/tool select</td></tr>
-    <tr><td>≡</td><td>backquote</td><td>top left</td><td>toggle menu</td></tr>
-    <tr><td>Chat</td><td>m</td><td>bottom</td><td>open chat input box</td></tr>
-    <tr><td>N/A</td><td>escape</td><td>N/A</td><td>cancel chat message/close menu</td></tr>
-    <tr><td>N/A</td><td>enter</td><td>N/A</td><td>send chat message</td></tr>
-   </table>
-   <p>Note that you can hover the mouse over any of the on-screen buttons to see a tooltip with its corresponding key and what it does.</p>
-   <h2>In-game menu options</h2>
-   <dl>
-    <dt>close menu
-     <dd><p>Closes the menu (same as escape).</p>
-    <dt>display invite
-     <dd><p>Displays an invitation for other players to join your game. This is a URL they can go to in order to ask you to let them join the game. The URL is displayed both as text and as a QR code they can scan with any QR code reading app.</p>
-    <dt>toggle on-screen controls
-     <dd><p>Toggles whether the buttons on the screen are displayed (including the menu button!). Keyboard controls will still work either way. The key to display the menu is the backquote key <code>`</code>, which is usually above the tab key and to the left of the 1 key.</p>
-    <dt>leave game
-     <dd><p>Leaves the game you had joined, and returns to the welcome screen.</p>
-   </dl>
-   <h2>Networking</h2>
-   <p>YPilot uses the WebRTC API to set up peer-to-peer connections between the browsers of the players of a game. RTC stands for Real Time Communication, and WebRTC is normally used for audio/video telephony applications, but it can also be used to communicate other kinds of data in real time between web browsers.</p>
-   <p>The web server's involvement in this communication is minimal by design. In many situations, it is only used for "signaling", letting the two browsers communicate about how they can set up the connection between them. After the connection is set up, they communicate directly over the network, without the web server. YPilot's signaling relay is a small CGI program on the web server that simply relays short messages from a sender who knows a key to a receiver who listens on that key. You can set up your own copy of this CGI program on another server, but players using different signaling relays will not be able to connect to each other.</p>
-   <p>In an ideal world, players would just send each other their network addresses (IP addresses) and be able to send data packets directly using those addresses. We do not live in an ideal world. There aren't enough IPv4 addresses to go around (and IPv6 still isn't universally implemented), so many players will be behind a Network Address Translator (NAT) so that they can share IPv4 addresses. Unfortunately that means that (a) it's no longer straightforward to find one's own externally visible IP address, and (b) knowing someone's IP address is no longer enough to be able to send them packets.</p>
-   <p>Roughly speaking, there are two ways around this problem, STUN and TURN, grouped together as ICE. Both involve a third party server known to both players. STUN is the preferred method, since the data packets do eventually travel directly between the players, without the STUN server seeing them. Sometimes that doesn't work, so YPilot can use TURN as a fallback. When TURN is used, the TURN server continues to relay data between the players even after the connection is set up. Note that the in-game data is still end-to-end encrypted by WebRTC.</p>
-   <p>YPilot's default ICE server list includes a TURN server hosted at the same domain as YPilot itself. By joining a game with this setting in place you agree not to use it to break the law (this is mentioned in the password for the TURN server). Also note that since the password is public, and this TURN server is not intended for high-throughput applications like audio/video streaming, it is severely throttled so that it will not be useful for such applications (which I would have to pay for the bandwidth for).</p>
-   <p>While playing a game, each player's browser simulates the whole game world. Only control inputs and certain other exogenous events are sent over the network. Players do still need to agree on the exact sequence of these events, including their timing relative to the game's clock ticks. So at all times, one player is designated the "hub", and all other players connect to that player in a star topology. The hub's job is to receive these events from all players, decide what order they happen in, and broadcast the sequence of events to all players.</p>
-   <p>In addition, the hub is responsible for deciding who may join the game. If Alice asks Bob to join the game Bob is playing, but Charlie is the current hub, Bob can't directly let Alice join. But Bob can "vouch" for Alice to Charlie, who will then decide whether to let Alice join. If Charlie allows Alice to join, Charlie then contacts Alice directly (not through Bob) to set up the new connection. Depending on the relevant players' policy settings, this can all happen automatically, or interactively.</p>
-   <h2>Security</h2>
-   <p>Your profile's cryptographic key pair is used to sign and verify messages sent over the signaling relay. YPilot follows a Trust On First Use (TOFU) policy with these keys, so you don't have to manually share your public key with each player you want to play with, or register it with a central authority. All it does is let you know that you're consistently communicating with the same player; nobody can impersonate someone you have met before. Someone could, of course, impersonate someone you haven't met yet, because you don't have their public key yet.</p>
-   <p>This key pair is <em>not</em> used to encrypt any messages, or sign/verify messages sent over the WebRTC peer connection after it is set up. WebRTC has its own mechanism for encrypting such messages, and the default signaling relay uses HTTPS so signaling messages are also encrypted (though not end-to-end). Still, you should avoid letting anyone else see the keys stored in your profile (whether in your browser's site data or in an exported file), because that would let them impersonate you to your friends.</p>
-   <p>It's important to note that for security purposes, you should rely on player IDs, not handles. Players can change their handles, and they can change their handles to be the same as another player. But IDs are generated randomly alongside the key pairs, and are long enough that it's extremely unlikely for the same ID to be generated for more than one player.</p>
-  </div>
- </div> <!-- end .tab-container -->
+   <div id="players">
+    <table>
+     <tr><th>ID</th><th>Handle(s)</th><th>If they ask your status</th><th>If they ask to join</th><th>Ask their status</th><th>Forget</th></tr>
+    </table>
+   </div>
+   <div id="new-game">
+    <table id="games">
+     <caption>Games you can start</caption>
+     <tr><th>Start</th><th>Title</th><th>Author</th><th>URL</th></tr>
+    </table>
+    <button id="add-from-url">Add</button>
+    <label>from URL: <input type="url" id="config-url"></label><br>
+    <label>Start from file (singleplayer only): <input type="file" id="config-file"></label>
+   </div>
+   <div id="join-game">
+    <button id="search-for-games">Look for games my friends are playing</button>
+    <table id="games-to-join">
+    <caption>Games you can join</caption>
+     <tr><th>Join</th><th>Title</th><th>Current players</th></tr>
+    </table>
+   </div>
+   <div id="network-settings">
+    <p>Only change these settings if you have set up your own relay server, or know some better ICE servers. The defaults should work OK for most people.</p>
+    <label>WebRTC signaling relay URL:<br>
+     <input type="url" id="signaling-relay-url" value="https://willdb.net/cgi-bin/relay.pl"><br>
+    </label>
+    <label>ICE (STUN/TURN) server list:<br>
+    <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
+ {"urls":"stun:stun.ekiga.net"},
+ {"urls":"stun:stun.l.google.com:19302"},
+ { "urls": "turns:willdb.net",
+   "username": "ypilot",
+   "credential": "I agree not to use this service to break the law."
+ }
+ ]</textarea><br></label>
+    <hr>
+    <button id="restore-default-network-settings">restore defaults</button>
+   </div>
+   <div id="help">
+    <h2>Welcome screen</h2>
+    <p>This is the welcome screen. It has several tabs you may select from:</p>
+    <dl>
+     <dt>Your profile
+      <dd>
+       <p>Here you can manage your identity and other things your browser will remember. This includes the contents of the two fields in this tab, as well as a cryptographic key pair (not displayed), and the contents of a few of the other tabs.</p>
+       <p>Your handle is the name that YPilot will display to other players in-game to identify you. You can change your handle when you want.</p>
+       <p>Your ID is a permanent, randomly generated number that (along with your crypto keys) helps to identify you consistently to other players you have met, before you agree to play together. Your ID is visualized in the small square drawing to the left, which should be easier to check at a glance (the color of this drawing is also used to help identify players in chat). You can only get a new ID by generating a new profile, but this will erase all the other profile info currently in your browser as well.</p>
+       <p>Normally these things will be saved in your browser's local storage for this website, but you can choose not to use that feature by unchecking the "Save profile in browser" checkbox. If your browser doesn't allow this site to use this feature for whatever reason, the checkbox will be unchecked (hint: check your browser's privacy settings). You can instead export your profile to a file on your computer, and then import it from that file when you come back to YPilot later. You can also use the export/import buttons to transfer your profile to another computer, or to a different browser on the same computer.</p>
+     <dt>Players you have met
+      <dd>
+       <p>Here you can see a list of the players you have met, and manage your policy regarding these players. You can also choose to forget a player, removing them from your profile.</p>
+     <dt>Start a new game
+      <dd>
+       <p>Here you can start a new game by loading a <code>.yp</code> file containing the game rules and map. In order to play with other people, the file should be available on the web in a way that this webpage can fetch it (i.e. http(s), CORS-enabled). Games you have played before are automatically added to this list, but you can add a new game by providing the URL to fetch it from. You can also start a single player game from a file on your computer.</p>
+     <dt>Join a game
+      <dd>
+       <p>Here you can look for games your friends are currently playing, and join them. When you click the button at the top, YPilot will ask for the status of each player that you have met and selected "when I search" under "Ask their status". If they are currently playing a game, and have chosen to give you their status (they selected "always give it" or "ask me" under "If they ask your status"), the title of the game, and the handle of each player, will be listed below (more information is available in tooltips, including the game author and player IDs). Click the "Join" button next to a game to ask to join it.</p>
+       <p>You can also ask for a specific player's status by going to the "Players you have met" tab and clicking the "Now" button under "Ask their status". Their current game will be added to the "Join a game" tab.</p>
+       <p>When a player invites to you a game, they will send you a link containing their player ID. The link will take you to this page, automatically ask their status, and switch to the "Join a game" tab. Then all you have to do is click the "Join" button (you may wish to first change your handle in the "Your profile" tab).</p>
+     <dt>Network settings
+      <dd>
+       <p>Here you can adjust some networking settings. The defaults should work OK for most people. See the Networking section below for more detail about how the networking actually works.</p>
+     <dt>Help
+      <dd>This tab.
+    </dl>
+    <h2>In-game controls</h2>
+    <table>
+     <tr><th>symbol</th><th>key name</th><th>on-screen button location</th><th>standard function</th></tr>
+     <tr><td>←</td><td>left arrow</td><td>right side (left)</td><td>turn left</td></tr>
+     <tr><td>→</td><td>right arrow</td><td>right side (right)</td><td>turn right</td></tr>
+     <tr><td>↑</td><td>up arrow</td><td>left side (bottom)</td><td>thrust (accelerate forward)</td></tr>
+     <tr><td>·</td><td>right control</td><td>left side (right)</td><td>primary fire/use</td></tr>
+     <tr><td>×</td><td>right shift</td><td>left side (left)</td><td>secondary fire/use</td></tr>
+     <tr><td>1-9, 0</td><td>numbers</td><td>top</td><td>weapon/tool select</td></tr>
+     <tr><td>≡</td><td>backquote</td><td>top left</td><td>toggle menu</td></tr>
+     <tr><td>Chat</td><td>m</td><td>bottom</td><td>open chat input box</td></tr>
+     <tr><td>N/A</td><td>escape</td><td>N/A</td><td>cancel chat message/close menu</td></tr>
+     <tr><td>N/A</td><td>enter</td><td>N/A</td><td>send chat message</td></tr>
+    </table>
+    <p>Note that you can hover the mouse over any of the on-screen buttons to see a tooltip with its corresponding key and what it does.</p>
+    <h2>In-game menu options</h2>
+    <dl>
+     <dt>close menu
+      <dd><p>Closes the menu (same as escape).</p>
+     <dt>display invite
+      <dd><p>Displays an invitation for other players to join your game. This is a URL they can go to in order to ask you to let them join the game. The URL is displayed both as text and as a QR code they can scan with any QR code reading app.</p>
+     <dt>toggle on-screen controls
+      <dd><p>Toggles whether the buttons on the screen are displayed (including the menu button!). Keyboard controls will still work either way. The key to display the menu is the backquote key <code>`</code>, which is usually above the tab key and to the left of the 1 key.</p>
+     <dt>leave game
+      <dd><p>Leaves the game you had joined, and returns to the welcome screen.</p>
+    </dl>
+    <h2>Networking</h2>
+    <p>YPilot uses the WebRTC API to set up peer-to-peer connections between the browsers of the players of a game. RTC stands for Real Time Communication, and WebRTC is normally used for audio/video telephony applications, but it can also be used to communicate other kinds of data in real time between web browsers.</p>
+    <p>The web server's involvement in this communication is minimal by design. In many situations, it is only used for "signaling", letting the two browsers communicate about how they can set up the connection between them. After the connection is set up, they communicate directly over the network, without the web server. YPilot's signaling relay is a small CGI program on the web server that simply relays short messages from a sender who knows a key to a receiver who listens on that key. You can set up your own copy of this CGI program on another server, but players using different signaling relays will not be able to connect to each other.</p>
+    <p>In an ideal world, players would just send each other their network addresses (IP addresses) and be able to send data packets directly using those addresses. We do not live in an ideal world. There aren't enough IPv4 addresses to go around (and IPv6 still isn't universally implemented), so many players will be behind a Network Address Translator (NAT) so that they can share IPv4 addresses. Unfortunately that means that (a) it's no longer straightforward to find one's own externally visible IP address, and (b) knowing someone's IP address is no longer enough to be able to send them packets.</p>
+    <p>Roughly speaking, there are two ways around this problem, STUN and TURN, grouped together as ICE. Both involve a third party server known to both players. STUN is the preferred method, since the data packets do eventually travel directly between the players, without the STUN server seeing them. Sometimes that doesn't work, so YPilot can use TURN as a fallback. When TURN is used, the TURN server continues to relay data between the players even after the connection is set up. Note that the in-game data is still end-to-end encrypted by WebRTC.</p>
+    <p>YPilot's default ICE server list includes a TURN server hosted at the same domain as YPilot itself. By joining a game with this setting in place you agree not to use it to break the law (this is mentioned in the password for the TURN server). Also note that since the password is public, and this TURN server is not intended for high-throughput applications like audio/video streaming, it is severely throttled so that it will not be useful for such applications (which I would have to pay for the bandwidth for).</p>
+    <p>While playing a game, each player's browser simulates the whole game world. Only control inputs and certain other exogenous events are sent over the network. Players do still need to agree on the exact sequence of these events, including their timing relative to the game's clock ticks. So at all times, one player is designated the "hub", and all other players connect to that player in a star topology. The hub's job is to receive these events from all players, decide what order they happen in, and broadcast the sequence of events to all players.</p>
+    <p>In addition, the hub is responsible for deciding who may join the game. If Alice asks Bob to join the game Bob is playing, but Charlie is the current hub, Bob can't directly let Alice join. But Bob can "vouch" for Alice to Charlie, who will then decide whether to let Alice join. If Charlie allows Alice to join, Charlie then contacts Alice directly (not through Bob) to set up the new connection. Depending on the relevant players' policy settings, this can all happen automatically, or interactively.</p>
+    <h2>Security</h2>
+    <p>Your profile's cryptographic key pair is used to sign and verify messages sent over the signaling relay. YPilot follows a Trust On First Use (TOFU) policy with these keys, so you don't have to manually share your public key with each player you want to play with, or register it with a central authority. All it does is let you know that you're consistently communicating with the same player; nobody can impersonate someone you have met before. Someone could, of course, impersonate someone you haven't met yet, because you don't have their public key yet.</p>
+    <p>This key pair is <em>not</em> used to encrypt any messages, or sign/verify messages sent over the WebRTC peer connection after it is set up. WebRTC has its own mechanism for encrypting such messages, and the default signaling relay uses HTTPS so signaling messages are also encrypted (though not end-to-end). Still, you should avoid letting anyone else see the keys stored in your profile (whether in your browser's site data or in an exported file), because that would let them impersonate you to your friends.</p>
+    <p>It's important to note that for security purposes, you should rely on player IDs, not handles. Players can change their handles, and they can change their handles to be the same as another player. But IDs are generated randomly alongside the key pairs, and are long enough that it's extremely unlikely for the same ID to be generated for more than one player.</p>
+   </div>
+  </div> <!-- end .tab-container -->
  </div> <!-- end .tabs -->
 </div> <!-- end #welcome -->
 <div id="menu">
