@@ -254,17 +254,22 @@ h1 {
   text-decoration: none;
 }
 
-.tabs > div {
-  display: none;
-}
-
-.tabs > div.selected {
+.tab-container {
   display: block;
   padding: 1em;
   overflow: auto;
+  max-height: calc(84% - 2em + 1px);
   background-color: #ddd;
   color: black;
   border-bottom: 1px solid black;
+}
+
+.tab-container > div {
+  display: none;
+}
+
+.tab-container > div.selected {
+  display: block;
 }
 
 table {
@@ -336,4 +341,8 @@ td.E {
 
 .dangerous > p {
   margin-top: 0;
+}
+
+dt {
+  font-weight: bold;
 }
