@@ -198,7 +198,7 @@ function vouch(msg) {
 function receiveVoucher(msg) {
   // as hub, check ifAllowed join, then accept
   window.profile.know(msg.vouchee); // FIXME should we really just blindly accept the vouchee's credentials from the 3rd-party vouch-er?
-  window.profile.ifAllowed(msg.vouchee.id, 'join').
+  window.profile.ifAllowed(msg.vouchee.id, 'join'). // TODO pass msg.sender too, so that that information can be displayed in the ask?
   then(() => {
     this.accept(msg.vouchee.id, msg.replyTo);
   }).

@@ -70,7 +70,7 @@ html, body, svg {
   right: 0;
 }
 
-#controls button {
+.controls button {
   pointer-events: auto;
   background-color: #fe3a27;
   border: 1px solid white;
@@ -89,18 +89,18 @@ html, body, svg {
 
 /* use large buttons on touchscreen */
 @media (-moz-touch-enabled: 1), (pointer: coarse) {
-  #controls button {
+  .controls button {
     font-size: xx-large;
     min-width: 0.6in;
     min-height: 0.6in;
   }
 }
 
-#controls button > * {
+.controls button > * {
   filter: drop-shadow(2px 2px black);
 }
 
-#controls button:active {
+.controls button:active {
   background-color: black;
 }
 
@@ -182,7 +182,7 @@ html, body, svg {
   margin: 1em;
 }
 
-#id-svg {
+.id-svg {
   width: 64px;
   height: 64px;
   float: left;
@@ -345,4 +345,23 @@ td.E {
 
 dt {
   font-weight: bold;
+}
+
+#asks {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 33%;
+  height: 33%;
+  overflow-y: scroll;
+}
+
+.ask {
+  padding: 1ex;
+  margin: 1ex;
+  border: 1px solid white;
+  color: white;
+  font-style: italic;
+  font-size: small;
+  text-align: center;
 }

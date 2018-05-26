@@ -1,6 +1,7 @@
 const deepEqual = require('deep-equal');
 const uuidv4 = require('uuid/v4');
 const base64js = require('base64-js');
+const ask = require('./ask.js');
 const UserNames = require('./user-names.js');
 const Game = require('./game.js');
 const defineMethods = require('./define-methods.js');
@@ -170,11 +171,8 @@ function know(player) {
     this.knownPlayers[player.id] = Object.assign(
       {
 	oldHandles: [],
-	/*statusResponsePolicy: 'askMe',
-	joinPolicy: 'askMe',*/
-	// DEBUG
-	statusResponsePolicy: 'alwaysGive',
-	joinPolicy: 'alwaysAllowOrVouch',
+	statusResponsePolicy: 'askMe',
+	joinPolicy: 'askMe',
 	statusRequestPolicy: 'onlyOnRequest'
       }, player);
     this.onKnownPlayersChange();
@@ -190,8 +188,16 @@ function ifAllowed(playerID, op) {
       case 'askStatus':
 	switch (this.knownPlayers[playerID].statusResponsePolicy) {
 	  case 'askMe':
-	    // TODO ask the local user somehow
-	    throw new Error('player ' + playerID + ' is not allowed to askStatus');
+	    ask(playerID, this.knownPlayers[playerID].handle, "wants to know what you're playing with whom.", ['Tell', 'Ignore']).then(({ answer, always }) => {
+	      if (always) {
+		this.knownPlayers[playerID].statusResponsePolicy = 'always' +
+		  ((answer == 'Tell') ? 'Give' : 'Ignore');
+	      }
+	      if (answer == 'Tell') {
+		resolve();
+	      }
+	    });
+	    break;
 	  case 'alwaysGive':
 	    resolve();
 	    break;
@@ -204,8 +210,16 @@ function ifAllowed(playerID, op) {
       case 'join':
 	switch (this.knownPlayers[playerID].joinPolicy) {
 	  case 'askMe':
-	    // TODO ask the local user somehow
-	    throw new Error('player ' + playerID + ' is not allowed to join');
+	    ask(playerID, this.knownPlayers[playerID].handle, "wants to join the game.", ['Allow', 'Ignore']).then(({ answer, always }) => {
+	      if (always) {
+		this.knownPlayers[playerID].joinPolicy = 'always' +
+		  ((answer == 'Allow') ? 'AllowOrVouch' : 'IgnoreOrReject');
+	      }
+	      if (answer == 'Allow') {
+		resolve();
+	      }
+	    });
+	    break;
 	  case 'alwaysAllowOrVouch':
 	    resolve();
 	    break;

@@ -209,12 +209,13 @@ function updateJoinGamesTable() {
   // clear the join games table
   $('#games-to-join tr').has('td').remove();
   // search for games to join among players we know and policy says we should
-  window.profile.knownPlayers.forEach(p => {
+  for (var id in window.profile.knownPlayers) {
+    var p = window.profile.knownPlayers[id];
     if (p.statusRequestPolicy == 'onSearch') {
-      askStatus(remoteID).
+      askStatus(id).
       catch(err => console.error(err));
     }
-  });
+  }
 }
 
 function newProfile() {
