@@ -20,7 +20,7 @@ function ask(playerID, handle, text, options) {
     text + '<br>' +
     '<label><input type="checkbox"> Always</label><br>'
   );
-  div.children('span').text(handle);
+  div.children('span:empty').text(handle);
   return new Promise((resolve, reject) => {
     options.forEach(o => {
       var button = document.createElement('button');

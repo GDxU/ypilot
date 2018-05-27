@@ -87,7 +87,7 @@ function updatePlayersTable() {
       '<td><select id="' + id + '-join-policy">' +
         '<option value="askMe">ask me</option>' +
 	'<option value="alwaysAllowOrVouch">always allow/vouch</option>' +
-	'<option value="alwaysIgnoreOrReject">always ignore/reject</option>' +
+	'<option value="alwaysIgnore">always ignore</option>' +
       '</select></td>' +
       '<td>' +
         '<button id="' + id + '-status-request-button">Now</button> ' +

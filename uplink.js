@@ -133,6 +133,7 @@ function receiveInitialMessage(relay, signedMsg) {
 	    this.client.sendID = msg.replyTo;
 	    // wrap the relay as a PeerConnection in place
 	    var remoteID = msg.sender.id;
+	    this.connections[remoteID] = relay; // in case this handshake is from a hub that isn't the player we initially asked to join (they vouched for us)
 	    this.connect(remoteID);
 	    // initiate creating the data channel since we're the client
 	    this.connections[remoteID].createDataChannel();
@@ -155,7 +156,10 @@ function getPlayerList() {
   var players = [];
   for (var id in this.players) {
     if (id == this.id) {
-      players.push({
+      // NOTE: we use unshift instead of push to put ourself first, because
+      // someone asking our status will then use the first player (us) to join
+      // the game, so we can vouch for them
+      players.unshift({
 	id: id,
 	handle: window.profile.handle,
 	/* publicKey: TODO? client doesn't actually need this, and it's an async call */
@@ -195,10 +199,10 @@ function vouch(msg) {
   send({ op: 'vouch', vouchee: msg.sender, replyTo: msg.replyTo });
 },
 
-function receiveVoucher(msg) {
+function receiveVoucher(senderID, msg) {
   // as hub, check ifAllowed join, then accept
   window.profile.know(msg.vouchee); // FIXME should we really just blindly accept the vouchee's credentials from the 3rd-party vouch-er?
-  window.profile.ifAllowed(msg.vouchee.id, 'join'). // TODO pass msg.sender too, so that that information can be displayed in the ask?
+  window.profile.ifAllowed(msg.vouchee.id, 'join', senderID).
   then(() => {
     this.accept(msg.vouchee.id, msg.replyTo);
   }).
@@ -251,16 +255,16 @@ function connect(remoteID) {
 
 function receivePeerMessage(senderID, msg) {
   if (this.id == this.hubID) {
-    this.receivePeerMessageAsHub(msg);
+    this.receivePeerMessageAsHub(senderID, msg);
   } else {
     this.receivePeerMessageAsNonHub(msg);
   }
 },
 
-function receivePeerMessageAsHub(msg) {
+function receivePeerMessageAsHub(senderID, msg) {
   switch (msg.op) {
     case 'vouch':
-      this.receiveVoucher(msg);
+      this.receiveVoucher(senderID, msg);
       break;
     case 'press':
     case 'release':
@@ -320,7 +324,8 @@ function dispatchPeerMessageAsNonHub(msg) {
       msg.players.forEach(player => {
 	if ((player.id != this.hubID) && // no need to check hub's public key again, since we've already verified their messages (also they don't send their public key in their player description because it would be another async call)
 	    (player.id in window.profile.knownPlayers) &&
-	    !deepEqual(player.publicKey, window.profile.knownPlayers.publicKey)
+	    !deepEqual(player.publicKey,
+	               window.profile.knownPlayers[player.id].publicKey)
 	   ) {
 	  throw new Error("public key of player in setState doesn't match those in previous messages from the same sender");
 	  // FIXME if the mismatched player is already a part of the game, this
@@ -403,7 +408,7 @@ function sendChatMessage() {
   var msg = { op: 'chat', player: player, text: Chat.inputVal() };
   this.hideChatInput();
   if (this.id == this.hubID) {
-    this.receivePeerMessageAsHub(msg);
+    this.receivePeerMessageAsHub(this.id, msg);
   } else {
     this.connections[this.hubID].send(msg);
   }
@@ -440,7 +445,7 @@ function localInput(op, player, code) {
     default: // ship controls (general case)
       var msg = { op: op, player: player, code: code };
       if (this.id == this.hubID) {
-	this.receivePeerMessageAsHub(msg);
+	this.receivePeerMessageAsHub(this.id, msg);
       } else {
 	this.connections[this.hubID].send(msg);
       }

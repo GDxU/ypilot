@@ -1,6 +1,8 @@
+const $ = require('jquery');
 const deepEqual = require('deep-equal');
 const uuidv4 = require('uuid/v4');
 const base64js = require('base64-js');
+const id2color = require('./id2svg.js').id2color;
 const ask = require('./ask.js');
 const UserNames = require('./user-names.js');
 const Game = require('./game.js');
@@ -182,15 +184,17 @@ function know(player) {
 // return a Promise resolved if the identified remote player is allowed to do
 // initial message operation op, possibly after consulting the local player
 // assumes the remote player is already known
-function ifAllowed(playerID, op) {
+function ifAllowed(playerID, op, voucherSenderID) {
   return new Promise((resolve, reject) => {
     switch (op) {
       case 'askStatus':
 	switch (this.knownPlayers[playerID].statusResponsePolicy) {
 	  case 'askMe':
+	    // TODO? add "Friend" option that sets both statusResponsePolicy and joinPolicy to always give/allow (and maybe statusRequestPolcy to onSearch)
 	    ask(playerID, this.knownPlayers[playerID].handle, "wants to know what you're playing with whom.", ['Tell', 'Ignore']).then(({ answer, always }) => {
 	      if (always) {
 		this.knownPlayers[playerID].statusResponsePolicy = 'always' +
+		  // FIXME? Tell vs. Give
 		  ((answer == 'Tell') ? 'Give' : 'Ignore');
 	      }
 	      if (answer == 'Tell') {
@@ -210,12 +214,21 @@ function ifAllowed(playerID, op) {
       case 'join':
 	switch (this.knownPlayers[playerID].joinPolicy) {
 	  case 'askMe':
-	    ask(playerID, this.knownPlayers[playerID].handle, "wants to join the game.", ['Allow', 'Ignore']).then(({ answer, always }) => {
+	    var askText = 'wants to join the game.';
+	    if (voucherSenderID !== undefined) {
+	      var vsSpan = $(document.createElement('span'))
+	      vsSpan.addClass('speaker');
+	      vsSpan.attr('style', 'color: ' + id2color(voucherSenderID))
+	      vsSpan.text(this.knownPlayers[voucherSenderID].handle);
+	      askText += ' ' + vsSpan[0].outerHTML + ' vouches for them.';
+	    }
+	    var yes = ((this.id == router.uplink.hubID) ? 'Allow' : 'Vouch');
+	    ask(playerID, this.knownPlayers[playerID].handle, askText, [yes, 'Ignore']).then(({ answer, always }) => {
 	      if (always) {
 		this.knownPlayers[playerID].joinPolicy = 'always' +
-		  ((answer == 'Allow') ? 'AllowOrVouch' : 'IgnoreOrReject');
+		  ((answer == yes) ? 'AllowOrVouch' : 'Ignore');
 	      }
-	      if (answer == 'Allow') {
+	      if (answer == yes) {
 		resolve();
 	      }
 	    });
@@ -223,7 +236,7 @@ function ifAllowed(playerID, op) {
 	  case 'alwaysAllowOrVouch':
 	    resolve();
 	    break;
-	  case 'alwaysIgnoreOrReject':
+	  case 'alwaysIgnore':
 	    throw new Error('player ' + playerID + ' is not allowed to join');
 	  default:
 	    throw new Error('bogus joinPolicy!?');
@@ -263,7 +276,12 @@ Profile.generateRandom = function() {
 	     useLocalStorage: true,
 	     keyPair: keyPair,
 	     knownPlayers: {},
-	     games: []
+	     games: [
+	       // include a default game
+	       { url: 'https://willdb.net/ypilot/blobs.yp',
+	         title: 'Blobs', author: 'Will112358'
+	       }
+	     ]
 	   });
 	 });
 };
