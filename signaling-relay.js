@@ -8,6 +8,15 @@ function SignalingRelay(url, sendID, recvID) {
   this.writeBuffer = [];
   this.isOpen = true;
   this.receive();
+  // FIXME I hate that I have to use this beforeunload mechanism, but I have to
+  // buy time for the write(null) to happen (it doesn't if the tab closes
+  // immediately)
+  this.boundClose = (evt) => {
+    this.close();
+    evt.returnValue = 'sorry, I have to do this in order to close the signaling relay';
+    return evt.returnValue;
+  };
+  window.addEventListener('beforeunload', this.boundClose);
 }
 
 defineMethods(SignalingRelay, [
@@ -71,6 +80,10 @@ defineMethods(SignalingRelay, [
   function close() {
     this.isOpen = false;
     this.receiveXHR.abort();
+    // give receiving relay.pl something to let it finish
+    this.sendID = this.recvID;
+    this.write(null);
+    window.removeEventListener('beforeunload', this.boundClose);
   }
 
 ]);
