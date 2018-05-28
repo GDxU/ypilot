@@ -96,21 +96,27 @@ function maybeAddNewPlayer() {
 		      this.router.getState());
       this.connections[player.id].send(setState);
     }
-    console.log('sending addPlayer for ' + player.id);
-    var addPlayer = { op: 'addPlayer', player: player };
-    // NOTE: player is only fully added when 'addPlayer' is *dispatched* at
-    // the next clock tick, but we must add something to this.players here so
-    // that broadcast will send 'addPlayer' and all subsequent messages to
-    // the new player
-    this.players[player.id] = {};
-    this.broadcast(addPlayer);
+    if (!(player.id in this.players)) { // not a rejoin after hub change
+      console.log('sending addPlayer for ' + player.id);
+      var addPlayer = { op: 'addPlayer', player: player };
+      // NOTE: player is only fully added when 'addPlayer' is *dispatched* at
+      // the next clock tick, but we must add something to this.players here so
+      // that broadcast will send 'addPlayer' and all subsequent messages to
+      // the new player
+      this.players[player.id] = {};
+      this.broadcast(addPlayer);
+    }
   }
 },
 
 function receiveInitialMessage(relay, signedMsg) {
   window.profile.verifyTOFU(signedMsg).
   then(msg => {
-    return window.profile.ifAllowed(msg.sender.id, msg.op).then(() => msg);
+    if (msg.op == 'join' && msg.sender.id in this.players) {
+      return msg; // skip ifAllowed for rejoin after hub disconnect
+    } else {
+      return window.profile.ifAllowed(msg.sender.id, msg.op).then(() => msg);
+    }
   }).
   then(msg => {
     switch (msg.op) {
@@ -251,6 +257,8 @@ function connect(remoteID) {
   this.connections[remoteID] = new PeerConnection(relay);
   this.connections[remoteID].onmessage =
     this.receivePeerMessage.bind(this, remoteID);
+  this.connections[remoteID].onclose =
+    this.onPeerConnectionClose.bind(this, remoteID);
 },
 
 function receivePeerMessage(senderID, msg) {
@@ -269,6 +277,7 @@ function receivePeerMessageAsHub(senderID, msg) {
     case 'press':
     case 'release':
     case 'chat':
+    case 'removePlayer':
       this.broadcast(msg);
       break;
     // TODO? more ops
@@ -363,7 +372,9 @@ function dispatchPeerMessageAsNonHub(msg) {
       Chat.appendToHistory(playerID, playerName, '/me just joined the game');
       break;
     case 'removePlayer':
-      // TODO
+      this.router.remove(msg.player.thing);
+      delete this.players[msg.player.id];
+      delete this.connections[msg.player.id]; // in case we're the hub
       break;
     case 'press':
     case 'release':
@@ -391,6 +402,55 @@ function dispatchPeerMessageAsNonHub(msg) {
     default:
       throw new Error('WTF');
   }
+},
+
+// return the next hub ID: the ID of the non-hub player with the smallest thing
+// number
+function nextHubID() {
+  var minThing = router.nextThing;
+  var minThingPlayerID = undefined;
+  for (var id in this.players) {
+    if (id != this.hubID && this.players[id].thing < minThing) {
+      minThing = this.players[id].thing;
+      minThingPlayerID = id;
+    }
+  }
+  return minThingPlayerID;
+},
+
+function onPeerConnectionClose(remoteID) {
+  // replace the closed connection with a dummy whose send() does nothing,
+  // instead of throwing an error
+  this.connections[remoteID] = { send: function() {} };
+  if (remoteID == this.hubID) { // we're not the hub, the hub disconn'd
+    this.hubID = this.nextHubID();
+    if (this.id == this.hubID) { // become the new hub
+      // all we have to do for now is start our own clock; other players will
+      // contact us to rejoin in their own time
+      // TODO what if they never do? should have a timeout
+      Clock.start(this.clockTick.bind(this));
+    } else { // reconnect to the new hub
+      this.join(this.hubID);
+    }
+  }
+  if (this.id == this.hubID) {
+    // either we were the hub, and a non-hub player disconnected, or we are now
+    // the hub, and the hub disconnected; either way:
+    // make a removePlayer message
+    var p = window.profile.knownPlayers[remoteID];
+    this.receivePeerMessageAsHub(remoteID,
+      { op: 'removePlayer',
+	player: {
+	  id: remoteID,
+	  handle: p.handle,
+	  publicKey: p.publicKey,
+	  thing: this.players[remoteID].thing
+	}
+      }
+    );
+  }
+  // else we're not the hub; if we disconnected from another non-hub player,
+  // that's fine, we weren't supposed to be connected anyway
 },
 
 function showChatInput() {
@@ -456,7 +516,7 @@ function localInput(op, player, code) {
 function broadcast(msg) {
   // send to everyone else
   for (var playerID in this.players) {
-    if (playerID in this.connections && // should always be true, but whatever
+    if (playerID in this.connections &&
         this.connections[playerID].isOpen) {
       this.connections[playerID].send(msg);
     }

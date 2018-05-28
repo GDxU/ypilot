@@ -16,7 +16,7 @@ function PeerConnection(relay) {
   this.rtcpc.onicecandidate = this.onicecandidate.bind(this);
   this.rtcpc.onnegotiationneeded = this.onnegotiationneeded.bind(this);
   this.rtcpc.ondatachannel = this.ondatachannel.bind(this);
-  this.rtcpc.onconnectionstatechange =
+  this.rtcpc.oniceconnectionstatechange =
     this.oniceconnectionstatechange.bind(this);
 }
 
@@ -102,13 +102,10 @@ defineMethods(PeerConnection, [
   },
 
   function oniceconnectionstatechange(e) {
-    if (this.rtcpc.iceConnectionState == 'failure') {
-      this.onFailure();
+    console.log('iceconnectionstate = ' + this.rtcpc.iceConnectionState);
+    if (this.rtcpc.iceConnectionState == 'disconnected' && this.isOpen) {
+      this.close();
     }
-  },
-
-  function onFailure() {
-    // TODO?
   },
 
   function onicecandidate(e) {
@@ -160,10 +157,25 @@ defineMethods(PeerConnection, [
     var that = this;
     this.dataChannel.onclose = function() {
       that.isOpen = false;
-      that.onclose();
+      if (that.relay) {
+	that.relay.close();
+	delete that.relay;
+      }
+      if (that.rtcpc) {
+	that.rtcpc.close();
+	delete that.rtcpc;
+      }
+      if (that.dataChannel) {
+	delete that.dataChannel;
+      }
+      if ('function' == typeof that.onclose) {
+        that.onclose();
+      }
     };
     this.isOpen = true;
-    this.onopen();
+    if ('function' == typeof this.onopen) {
+      this.onopen();
+    }
   },
 
   function onDataChannelMessage(e) {
