@@ -99,13 +99,10 @@ If <var>Bob</var> wishes to, he can then send a <code>status</code> initial mess
 {
   "op": "status",
   "configURL": "<var>config-URL</var>"
-  "players": {
-    "<var>player-ID-1</var>": <var>player-desc-1</var>,
-    "<var>player-ID-2</var>": <var>player-desc-2</var>
-  }
+  "players": [<var>player-desc-1</var>, <var>player-desc-2</var>, ...]
 }
 </pre></code>
-The <var>config-URL</var> is the URL to load the <code><a href="README-yp.html">.yp</a></code> file describing the game from.
+The <var>config-URL</var> is the URL to load the <code><a href="README-yp.html">.yp</a></code> file describing the game from. <var>Bob</var> should be included in the <code>"players"</code> list, as the first player (<var>player-desc-1</var>).
 <dt><code>"join"</code>
 <dd>If <var>Alice</var> wants to join the game that <var>Bob</var> is playing (whether or not <var>Bob</var> is the hub), she can send a <code>join</code> initial message to <var>Bob</var>'s player ID via the signaling relay:
 <code><pre>
@@ -114,7 +111,7 @@ The <var>config-URL</var> is the URL to load the <code><a href="README-yp.html">
   "replyTo": "<var>recvID</var>"
 }
 </pre></code>
-If <var>Bob</var> wishes to let <var>Alice</var> join the game, and <var>Bob</var> is the hub, he can start setting up a peer connection with <var>Alice</var> by sending a <code>handshake</code> WebRTC setup message to <var>recvID</var> via the signaling relay. If <var>Bob</var> isn't the hub, he can instead send a <code>vouch</code> peer message to the hub.
+If <var>Bob</var> wishes to let <var>Alice</var> join the game, and <var>Bob</var> is the hub, he can start setting up a peer connection with <var>Alice</var> by sending a <code>handshake</code> initial message to <var>recvID</var>. If <var>Bob</var> isn't the hub, he can instead send a <code>vouch</code> peer message to the hub.
 <dt><code>"handshake"</code>
 <dd>The <code>handshake</code> message moves the signaling relay into a mode where it can be used to facilitate setting up a peer connection with WebRTC. Continuing the above example, <var>Bob</var> already has a <var>recvID</var> for sending messages back to <var>Alice</var> via the signaling relay. By sending a <code>handshake</code> to <var>recvID</var>, he also creates a <var>sendID</var> for <var>Alice</var> to send messages back to <var>Bob</var>:
 <code><pre>
@@ -129,7 +126,7 @@ Now the signaling relay is bidirectional, and specific to the new connection bet
 <em class="TODO">direct text messages?</em>
 
 <h3>WebRTC setup messages</h3>
-<p>A <dfn>setup message</dfn> is a message sent over a bidirectional signaling relay connecting the hub player of a game to a new player trying to join the game. These messages are used by the WebRTC protocol to set up a peer connection between the two players, so that they can stop using the relay and communicate more directly.</p>
+<p>A <dfn>setup message</dfn> is a message sent over a bidirectional signaling relay connecting the hub player of a game to a new player trying to join the game. These messages are used by the WebRTC protocol to set up a peer connection between the two players, so that they can stop using the relay and communicate more directly (using a data channel associated with the peer connection).</p>
 
 <p>Unlike initial messages, setup messages are not signed and do not include a <code>sender</code>. The connection is already private because it's over HTTPS and uses relay IDs (<var>sendID</var> and <var>recvID</var>) known only to the two connected players (and the relay itself), and the players are already authenticated to each other because they signed the <code>join</code> and <code>handshake</code> initial messages that set up the bidirectional signaling relay.</p>
 
@@ -176,6 +173,7 @@ When either message type is received, the receiver should set their remote descr
 <code><pre>
 {
   "op": "setState",
+  "players": [<var>player-desc-1</var>, <var>player-desc-2</var>, ...],
   "nextThing": <var>next-thing</var>,
   "adjectives": {
     "<var>Adj-1</var>": {
@@ -194,7 +192,7 @@ When either message type is received, the receiver should set their remote descr
   }
 }
 </pre></code>
-This includes the thing numbers of the <var>next-thing</var> and all the things like <var>thing-1</var> currently described by adjectives like <var>Adj-1</var> and <var>Adj-2</var>, and their corresponding properties. It also includes the current state of each player's keyboard. Note that in this message, players are identified by their thing numbers, not their IDs.
+This includes the current list of players (which may have changed since a previous <code>"status"</code> initial message, but does not yet include the joining player), the thing numbers of the <var>next-thing</var> and all the things like <var>thing-1</var> currently described by adjectives like <var>Adj-1</var> and <var>Adj-2</var>, and their corresponding properties. It also includes the current state of each player's keyboard. Note that in this message, players are mostly identified by their thing numbers, not their IDs.
 <dt><code>"addPlayer"</code>
 <dd>After sending <code>setState</code> to a new player, the hub should broadcast an <code>addPlayer</code> message to all players (including the new player).
 <code><pre>
@@ -222,7 +220,14 @@ This includes the thing numbers of the <var>next-thing</var> and all the things 
 </pre></code>
 Note that the player is identified here by their thing number, not their player ID or a full description.
 <dt><code>"clockTick"</code>
-<dd>When the hub starts simulating a frame (including processing all the input events since the previous frame), it broadcasts a <code>clockTick</code> message. This message has no properties besides <code>op</code>. When a non-hub player receives a <code>clockTick</code> message, it processes all the input event messages it has received from the hub since the last <code>clockTick</code> message, and then runs one tick of the simulation (by emitting a <code>clockTick</code> event from the <code>Router</code>). The hub also does this after it sends the <code>clockTick</code> message.
+<dd>When the hub starts simulating a frame (including processing all the input events since the previous frame), it broadcasts a <code>clockTick</code> message:
+<code><pre>
+{
+  "op": "clockTick",
+  "numTicks": <var>num-ticks</var>
+}
+</pre></code>
+where <var>num-ticks</var> is the number of ticks that have happened since the beginning of the game, excluding this one. When a non-hub player receives a <code>clockTick</code> message, it processes all the input event messages it has received from the hub since the last <code>clockTick</code> message, and then runs one tick of the simulation (by emitting a <code>clockTick</code> event from the <code>Router</code>). The hub also does this after it sends the <code>clockTick</code> message.
 </dl>
 <em class="TODO">new messages/extensions to existing messages for managing hub switches/succession order (maybe remaining player with lowest thing ID gets to be the hub?)</em>
 </body>
