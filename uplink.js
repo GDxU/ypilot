@@ -347,6 +347,8 @@ function dispatchPeerMessageAsNonHub(msg) {
       });
       this.router.setState(msg);
       hideWelcome();
+      console.log('setState complete; players:');
+      console.log(players);
       break;
     case 'addPlayer':
       var playerID = msg.player.id;
@@ -410,27 +412,35 @@ function nextHubID() {
   var minThing = router.nextThing;
   var minThingPlayerID = undefined;
   for (var id in this.players) {
+    console.log({ id: id, thing: this.players[id].thing });
     if (id != this.hubID && this.players[id].thing < minThing) {
       minThing = this.players[id].thing;
       minThingPlayerID = id;
     }
   }
+  console.log('next hub will be ' + minThingPlayerID);
   return minThingPlayerID;
 },
 
 function onPeerConnectionClose(remoteID) {
+  console.log('onPeerConnectionClose(' + remoteID + ')');
   // replace the closed connection with a dummy whose send() does nothing,
   // instead of throwing an error
   this.connections[remoteID] = { send: function() {} };
   if (remoteID == this.hubID) { // we're not the hub, the hub disconn'd
+    console.log('we were not the hub');
     this.hubID = this.nextHubID();
     if (this.id == this.hubID) { // become the new hub
+      console.log('...but now we are');
       // all we have to do for now is start our own clock; other players will
       // contact us to rejoin in their own time
       // TODO what if they never do? should have a timeout
       Clock.start(this.clockTick.bind(this));
+      console.log('...started the clock');
     } else { // reconnect to the new hub
+      console.log('...and we still are not the hub');
       this.join(this.hubID);
+      console.log('...asked to rejoin ' + this.hubID);
     }
   }
   if (this.id == this.hubID) {
@@ -438,6 +448,7 @@ function onPeerConnectionClose(remoteID) {
     // the hub, and the hub disconnected; either way:
     // make a removePlayer message
     var p = window.profile.knownPlayers[remoteID];
+    console.log('we are the hub, now sending removePlayer');
     this.receivePeerMessageAsHub(remoteID,
       { op: 'removePlayer',
 	player: {
@@ -517,6 +528,7 @@ function broadcast(msg) {
   // send to everyone else
   for (var playerID in this.players) {
     if (playerID in this.connections &&
+        this.connections[playerID].constructor === PeerConnection &&
         this.connections[playerID].isOpen) {
       this.connections[playerID].send(msg);
     }
