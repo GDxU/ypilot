@@ -45,7 +45,12 @@ describe('penetrate', function() {
   it('should handle ship penetrating wall from below', function(done) {
     router.become(ship, 'Located', { position: new Vec2(16, 46) }); //below wall
     router.become(ship, 'Mobile', { velocity: new Vec2(0, -2) }); // upward
-    router.on('penetrate', function(penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity) {
+    setImmediate(function() {
+      logAdjectiveState();
+      var locatedWallShape = space.getShape(wall);
+      var penetration = space.penetrate(ship, [new Vec2(16, 31)], 0, wall, locatedWallShape);
+      assert.equal(typeof penetration, 'object');
+      var { penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity } = penetration;
       assert.equal(penetrator, ship);
       assert.deepEqual(point, new Vec2(16, 31));
       assert.equal(penetrated, wall);
@@ -55,21 +60,18 @@ describe('penetrate', function() {
       assert.deepEqual(relativeVelocity, new Vec2(0, -2));
       done();
     });
-    router.on('hit', function(x, y) {
-      assert.fail("got a hit event instead of a penetrate event");
-    });
-    setImmediate(function() {
-      logAdjectiveState();
-      var locatedWallShape = space.getShape(wall);
-      space.penetrate(ship, new Vec2(16, 31), wall, locatedWallShape);
-    });
   });
 
   it('should handle ship penetrating wall from above', function(done) {
     router.become(ship, 'Oriented', { orientation: Math.PI/2 }); // point down
     router.become(ship, 'Located', { position: new Vec2(16, -14) });//above wall
     router.become(ship, 'Mobile', { velocity: new Vec2(0, 2) }); // downward
-    router.on('penetrate', function(penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity) {
+    setImmediate(function() {
+      logAdjectiveState();
+      var locatedWallShape = space.getShape(wall);
+      var penetration = space.penetrate(ship, [new Vec2(16, 1)], 0, wall, locatedWallShape);
+      assert.equal(typeof penetration, 'object');
+      var { penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity } = penetration;
       assert.equal(penetrator, ship);
       assert.deepEqual(point, new Vec2(16, 1));
       assert.equal(penetrated, wall);
@@ -79,21 +81,18 @@ describe('penetrate', function() {
       assert.deepEqual(relativeVelocity, new Vec2(0, 2));
       done();
     });
-    router.on('hit', function(x, y) {
-      assert.fail("got a hit event instead of a penetrate event");
-    });
-    setImmediate(function() {
-      logAdjectiveState();
-      var locatedWallShape = space.getShape(wall);
-      space.penetrate(ship, new Vec2(16, 1), wall, locatedWallShape);
-    });
   });
 
   it('should handle ship penetrating wall from left', function(done) {
     router.become(ship, 'Oriented', { orientation: 0 }); // point right
     router.become(ship, 'Located', { position: new Vec2(-14, 16) });//leftofwall
     router.become(ship, 'Mobile', { velocity: new Vec2(2, 0) }); // rightward
-    router.on('penetrate', function(penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity) {
+    setImmediate(function() {
+      logAdjectiveState();
+      var locatedWallShape = space.getShape(wall);
+      var penetration = space.penetrate(ship, [new Vec2(1, 16)], 0, wall, locatedWallShape);
+      assert.equal(typeof penetration, 'object');
+      var { penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity } = penetration;
       assert.equal(penetrator, ship);
       assert.deepEqual(point, new Vec2(1, 16));
       assert.equal(penetrated, wall);
@@ -103,21 +102,18 @@ describe('penetrate', function() {
       assert.deepEqual(relativeVelocity, new Vec2(2, 0));
       done();
     });
-    router.on('hit', function(x, y) {
-      assert.fail("got a hit event instead of a penetrate event");
-    });
-    setImmediate(function() {
-      logAdjectiveState();
-      var locatedWallShape = space.getShape(wall);
-      space.penetrate(ship, new Vec2(1, 16), wall, locatedWallShape);
-    });
   });
 
   it('should handle ship penetrating wall from right', function(done) {
     router.become(ship, 'Oriented', { orientation: Math.PI }); // point left
     router.become(ship, 'Located', { position: new Vec2(46, 16) });//riteofwall
     router.become(ship, 'Mobile', { velocity: new Vec2(-2, 0) }); // leftward
-    router.on('penetrate', function(penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity) {
+    setImmediate(function() {
+      logAdjectiveState();
+      var locatedWallShape = space.getShape(wall);
+      var penetration = space.penetrate(ship, [new Vec2(31, 16)], 0, wall, locatedWallShape);
+      assert.equal(typeof penetration, 'object');
+      var { penetrator, point, penetrated, edgeFrom, edgeTo, ticksAgo, relativeVelocity } = penetration;
       assert.equal(penetrator, ship);
       assert.deepEqual(point, new Vec2(31, 16));
       assert.equal(penetrated, wall);
@@ -126,14 +122,6 @@ describe('penetrate', function() {
       assert.equal(ticksAgo, 0.5);
       assert.deepEqual(relativeVelocity, new Vec2(-2, 0));
       done();
-    });
-    router.on('hit', function(x, y) {
-      assert.fail("got a hit event instead of a penetrate event");
-    });
-    setImmediate(function() {
-      logAdjectiveState();
-      var locatedWallShape = space.getShape(wall);
-      space.penetrate(ship, new Vec2(31, 16), wall, locatedWallShape);
     });
   });
 });
