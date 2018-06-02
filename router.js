@@ -11,8 +11,7 @@ function Router() {
   this.onceListeners = {};
   this.numPendingListeners = 0;
   this.playerKeysDown = {};
-  this.on('press',   (player,code) => this.playerKeyState(player, code, true));
-  this.on('release', (player,code) => this.playerKeyState(player, code, false));
+  this.listenForKeyState();
   this.eventLog = [];
   this.eventLogEnabled = false;
 }
@@ -182,6 +181,10 @@ function readMap(mapThing) {
 //
 // key state tracking
 //
+function listenForKeyState() {
+  this.on('press',   (player,code) => this.playerKeyState(player, code, true));
+  this.on('release', (player,code) => this.playerKeyState(player, code, false));
+},
 
 function playerKeyState(player, code, state) {
   if (!(player in this.playerKeysDown)) {
@@ -311,6 +314,14 @@ function startNewGame() {
 // join an existing game being played by the ID'd player
 function joinGame(remoteID) {
   this.uplink = Uplink.joinGame(remoteID);
+},
+
+// emit a 'finish' event and then reset event listeners
+function finishGame() {
+  this.emit('finish');
+  this.listeners = {};
+  this.onceListeners = {};
+  this.listenForKeyState();
 }
 
 ]);

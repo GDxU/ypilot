@@ -93,8 +93,8 @@ function sign(msg) {
     });
   }).
   then(({ msgStr, signature }) => {
-    console.log(signature);
-    console.log(base64js.fromByteArray(new Uint8Array(signature)));
+    /*console.log(signature);
+    console.log(base64js.fromByteArray(new Uint8Array(signature)));*/
     // put the string and base64 signature together
     return {
       msg: msgStr,

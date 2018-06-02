@@ -45,6 +45,11 @@ function Interface(player) {
       on('touchstart', this.touchstart.bind(this)).
       on('touchend', this.touchend.bind(this));
     // TODO mouse enter/leave etc.?
+    router.on('finish', () => {
+      delete document.body.onkeydown;
+      delete document.body.onkeyup;
+      $('.key').off();
+    });
     if (this.player in this.piloting) {
   //    console.log('interface found player ' + this.player + ' piloting on creation');
       this.becomePiloting(this.player, this.piloting[this.player], null);
