@@ -7,6 +7,8 @@ const Clock = require('./clock.js');
 const Game = require('./game.js');
 const Chat = require('./chat.js');
 
+const debug = false;
+
 function Uplink(hubID) {
   this.id = window.profile.id;
   this.router = window.router;
@@ -90,15 +92,15 @@ function maybeAddNewPlayer() {
   if (this.newPlayerQueue.length > 0) {
     var player = this.newPlayerQueue.shift();
     if (this.id != player.id) { // this is some other player, not us
-      console.log('sending setState to ' + player.id);
+      if (debug) console.log('sending setState to ' + player.id);
       var setState =
 	Object.assign({ op: 'setState', players: this.getPlayerList() },
 		      this.router.getState());
       this.connections[player.id].send(setState);
-      console.log('sent setState');
+      if (debug) console.log('sent setState');
     }
     if (!(player.id in this.players)) { // not a rejoin after hub change
-      console.log('sending addPlayer for ' + player.id);
+      if (debug) console.log('sending addPlayer for ' + player.id);
       var addPlayer = { op: 'addPlayer', player: player };
       // NOTE: player is only fully added when 'addPlayer' is *dispatched* at
       // the next clock tick, but we must add something to this.players here so
@@ -114,7 +116,7 @@ function receiveInitialMessage(relay, signedMsg) {
   window.profile.verifyTOFU(signedMsg).
   then(msg => {
     if (msg.op == 'join' && msg.sender.id in this.players) {
-      console.log('received rejoin initial message from ' + msg.sender.id);
+      if (debug) console.log('received rejoin initial message from ' + msg.sender.id);
       return msg; // skip ifAllowed for rejoin after hub disconnect
     } else {
       return window.profile.ifAllowed(msg.sender.id, msg.op).then(() => msg);
@@ -219,7 +221,7 @@ function receiveVoucher(senderID, msg) {
 
 // set up remote player to join the game we're the hub of
 function accept(remoteID, sendID) {
-  console.log('accepting new player ' + remoteID);
+  if (debug) console.log('accepting new player ' + remoteID);
   // make sure the relay is set up properly
   if (!(remoteID in this.connections)) {
     this.connections[remoteID] =
@@ -239,7 +241,7 @@ function accept(remoteID, sendID) {
   // open a PeerConnection to the new player
   this.connect(remoteID);
   this.connections[remoteID].onopen = () => {
-    console.log('channel open from ' + remoteID);
+    if (debug) console.log('channel open from ' + remoteID);
     try {
       // add the new player to the queue of players to be added on subsequent
       // clock ticks
@@ -266,7 +268,7 @@ function connect(remoteID) {
 },
 
 function receivePeerMessage(senderID, msg) {
-  //console.log('received peer message, op = ' + msg.op);
+  //if (debug) console.log('received peer message, op = ' + msg.op);
   if (this.id == this.hubID) {
     this.receivePeerMessageAsHub(senderID, msg);
   } else {
@@ -307,7 +309,7 @@ function maybeFlushOneTick() {
       // shift all the messages for this tick out of the input buffer
       // (including the clockTick message itself)
       var thisTickMsgs = this.inputBuffer.splice(0, clockTickIndex+1);
-      if (thisTickMsgs.length > 1) {
+      if (debug && thisTickMsgs.length > 1) {
 	console.log('dispatching msgs for one tick:');
 	console.log(thisTickMsgs.map(x => x.op));
       }
@@ -315,6 +317,7 @@ function maybeFlushOneTick() {
       thisTickMsgs.forEach(this.dispatchPeerMessageAsNonHub.bind(this));
       // try this function again after the all the effects of those messages
       // settle out
+      // FIXME this is tied to a single SpatialIndex
       this.router.once('noMoreHits', this.maybeFlushOneTick.bind(this));
     } else { // no more clockTicks in inputBuffer
       this.allTicksFlushed = true;
@@ -336,7 +339,7 @@ function maybeFlushOneTick() {
 function dispatchPeerMessageAsNonHub(msg) {
   switch (msg.op) {
     case 'setState':
-      console.log('received setState');
+      if (debug) console.log('received setState');
       // reinitialize players and connections (in case this is a rejoin)
       this.players = [];
       var hubConnection = this.connections[this.hubID];
@@ -361,12 +364,14 @@ function dispatchPeerMessageAsNonHub(msg) {
       });
       this.router.setState(msg);
       hideWelcome();
-      console.log('setState complete; players:');
-      console.log(this.players);
+      if (debug) {
+	console.log('setState complete; players:');
+	console.log(this.players);
+      }
       break;
     case 'addPlayer':
       var playerID = msg.player.id;
-      console.log('received addPlayer ' + playerID);
+      if (debug) console.log('received addPlayer ' + playerID);
       var playerThing = this.router.newThing();
       var playerName = 'Anonymous';
       if (playerID == this.id) { // we just got added
@@ -426,33 +431,33 @@ function nextHubID() {
   var minThing = router.nextThing;
   var minThingPlayerID = undefined;
   for (var id in this.players) {
-    console.log({ id: id, thing: this.players[id].thing });
+    if (debug) console.log({ id: id, thing: this.players[id].thing });
     if (id != this.hubID && this.players[id].thing < minThing) {
       minThing = this.players[id].thing;
       minThingPlayerID = id;
     }
   }
-  console.log('next hub will be ' + minThingPlayerID);
+  if (debug) console.log('next hub will be ' + minThingPlayerID);
   return minThingPlayerID;
 },
 
 function onPeerConnectionClose(remoteID) {
-  console.log('onPeerConnectionClose(' + remoteID + ')');
+  if (debug) console.log('onPeerConnectionClose(' + remoteID + ')');
   // replace the closed connection with a dummy whose send() does nothing,
   // instead of throwing an error
   this.connections[remoteID] = { send: function() {} };
   if (remoteID == this.hubID) { // we're not the hub, the hub disconn'd
-    console.log('we were not the hub');
+    if (debug) console.log('we were not the hub');
     this.hubID = this.nextHubID();
     if (this.id == this.hubID) { // become the new hub
-      console.log('...but now we are');
+      if (debug) console.log('...but now we are');
       // all we have to do for now is start our own clock; other players will
       // contact us to rejoin in their own time
       // TODO what if they never do? should have a timeout
       Clock.start(this.clockTick.bind(this));
-      console.log('...started the clock');
+      if (debug) console.log('...started the clock');
     } else { // reconnect to the new hub
-      console.log('...and we still are not the hub');
+      if (debug) console.log('...and we still are not the hub');
       // we'll get a new setState, so get rid of old listeners attached to old
       // state objects before rejoining
       router.finishGame();
@@ -466,7 +471,7 @@ function onPeerConnectionClose(remoteID) {
       setTimeout(
         () => {
 	  this.join(this.hubID);
-          console.log('...asked to rejoin ' + this.hubID);
+          if (debug) console.log('...asked to rejoin ' + this.hubID);
 	},
 	5000
       );
@@ -477,7 +482,7 @@ function onPeerConnectionClose(remoteID) {
     // the hub, and the hub disconnected; either way:
     // make a removePlayer message
     var p = window.profile.knownPlayers[remoteID];
-    console.log('we are the hub, now sending removePlayer');
+    if (debug) console.log('we are the hub, now sending removePlayer');
     this.receivePeerMessageAsHub(remoteID,
       { op: 'removePlayer',
 	player: {
@@ -556,9 +561,14 @@ function localInput(op, player, code) {
 function broadcast(msg) {
   // send to everyone else
   for (var playerID in this.players) {
-    if (playerID in this.connections &&
-        this.connections[playerID].constructor === PeerConnection &&
-        this.connections[playerID].isOpen) {
+    if (
+         // we have an open PeerConnection to this player
+         playerID in this.connections &&
+         this.connections[playerID].constructor === PeerConnection &&
+         this.connections[playerID].isOpen &&
+	 // the player is not currently waiting to be (re)added to the game
+	 !this.newPlayerQueue.some(x => (x.id == playerID))
+       ) {
       this.connections[playerID].send(msg);
     }
   }
