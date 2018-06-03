@@ -17,6 +17,7 @@ function Uplink(hubID) {
   this.hubID = null; // player ID of the hub
   this.players = {}; // map IDs to player descriptions
   this.connections = {}; // map IDs to SignalingRelays or PeerConnections
+  this.rejoinBuffer = []; // 'join' init. msgs. recvd. b4 becoming the new hub
   this.inputBuffer = []; // hub->nonhub messages since the last clockTick
   this.newPlayerQueue = []; // (hub only) new players to be added next tick
   this.numTicks = 0;
@@ -129,6 +130,12 @@ function receiveInitialMessage(relay, signedMsg) {
       case 'join':
 	if (this.id == this.hubID) {
 	  this.accept(msg.sender.id, msg.replyTo);
+	} else if (msg.sender.id in this.players) {
+	  // the sender is trying to rejoin the game after losing a connection
+	  // to the hub, but we haven't noticed losing our connection to the
+	  // hub yet, so store the message and accept it later when we become
+	  // hub
+	  this.rejoinBuffer.push(msg);
 	} else {
 	  this.vouch(msg);
 	}
@@ -455,6 +462,10 @@ function onPeerConnectionClose(remoteID) {
       // contact us to rejoin in their own time
       // TODO what if they never do? should have a timeout
       Clock.start(this.clockTick.bind(this));
+      // some other players may have already tried to rejoin, so accept them
+      // right away
+      this.rejoinBuffer.forEach(msg => this.accept(msg.sender.id, msg.replyTo));
+      this.rejoinBuffer.length = 0;
       if (debug) console.log('...started the clock');
     } else { // reconnect to the new hub
       if (debug) console.log('...and we still are not the hub');
@@ -465,16 +476,8 @@ function onPeerConnectionClose(remoteID) {
       this.inputBuffer = [];
       this.newPlayerQueue = [];
       this.allTicksFlushed = true;
-      // wait a bit before asking to rejoin, to allow the new hub time to
-      // also notice that the old hub is gone
-      // FIXME this still depends on timing and network conditions
-      setTimeout(
-        () => {
-	  this.join(this.hubID);
-          if (debug) console.log('...asked to rejoin ' + this.hubID);
-	},
-	5000
-      );
+      this.join(this.hubID);
+      if (debug) console.log('...asked to rejoin ' + this.hubID);
     }
   }
   if (this.id == this.hubID) {
