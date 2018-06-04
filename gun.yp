@@ -62,6 +62,6 @@ then
     Fleeting with timeToLive ?ttl
     Located with space ?space and position ?bulletPos
     Mobile with velocity ?bulletVel
-    Solid with shape [Vec2[-0.5,-0.5], Vec2[0.5,-0.5], Vec2[0.5,0.5], Vec2[-0.5,0.5]]
+    Tangible with shape [Vec2[-0.5,-0.5], Vec2[0.5,-0.5], Vec2[0.5,0.5], Vec2[-0.5,0.5]]
     Visible with graphics [<circle r="0.5" fill="white" />]
 

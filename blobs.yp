@@ -11,7 +11,7 @@ use "standard:gun.yp"
 
 a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
-an Item is Fleeting and Mobile and Solid and Visible
+an Item is Fleeting and Mobile and Tangible and Visible
 
 when the game starts
 then
@@ -92,7 +92,7 @@ then
     Located with space ?space and position ?spawnPos
     Respawnable with spawnPoint ?spawnPoint
     Oriented with orientation (-π/2)
-    Solid with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
+    Tangible with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
     Bouncy with coefficientOfRestitution 0.2
     Visible with graphics [<polygon points="15,0 -9,8 -9,-8" stroke="white" />]
     Holding with slots [?slot1, ?slot2] # TODO 3-10

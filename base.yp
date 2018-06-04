@@ -32,8 +32,8 @@ when ?x becomes Located with space ?sp and position ?p and
 then
   ?x becomes Located with position ((?p + ?sz) % ?sz)
 
-# solid things participate in collisions
-a Solid thing is Located and has
+# tangible things participate in collisions
+a Tangible thing is Located and has
   a shape which is an Array of Vec2 objects
 
 a Mapped thing is Located and has
@@ -73,7 +73,7 @@ an Audible thing has # is Located and?
   some audioSources which are AudioScheduledSourceNode objects
 
 # this is the only requirement for a ship in the JS core, but you probably want
-# to add other things like Solid and Motile and Visible in a subtype
+# to add other things like Tangible and Motile and Visible in a subtype
 a BasicShip is Located
 a Piloting thing has
   a ship which is a BasicShip

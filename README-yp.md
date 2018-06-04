@@ -84,14 +84,14 @@ This event happens for each character of a `Map` as it is read. `?map` is the ma
 
     ?x hits ?y
 
-This event happens twice for every collision between `Solid` things, once for each ordering of `?x` and `?y`.
+This event happens twice for every collision between `Tangible` things, once for each ordering of `?x` and `?y`.
 
     ?penetrator point ?point
     penetrates ?penetrated edge from ?from to ?to
     ?ticks ticks ago with velocity ?velocity
 
 (line breaks not required but included here for ease of reading)
-This event happens once for every collision between `Solid` things, and gives more detailed information than the `?x hits ?y` event does. When two `Solid` things collide, a point (`Vec2` object) `?point` from the `shape` of one of the things, the `?penetrator`, penetrates inside the `shape` of the other thing, the `?penetrated`. The individual line segment, or edge, that that point passed through is given by its endpoints, `?from` and `?to`. All three points are given relative to the `Space`, not the `Solid`s they belong to. The time at which the point passed through the edge is given as a fractional number of ticks ago, `?ticks`, which will always be in the interval `[0, 1)`. And the current relative velocity of the two things is given in `?velocity` (if something isn't `Mobile` its velocity is considered to be `Vec2[0,0]`).
+This event happens once for every collision between `Tangible` things, and gives more detailed information than the `?x hits ?y` event does. When two `Tangible` things collide, a point (`Vec2` object) `?point` from the `shape` of one of the things, the `?penetrator`, penetrates inside the `shape` of the other thing, the `?penetrated`. The individual line segment, or edge, that that point passed through is given by its endpoints, `?from` and `?to`. All three points are given relative to the `Space`, not the `Tangible`s they belong to. The time at which the point passed through the edge is given as a fractional number of ticks ago, `?ticks`, which will always be in the interval `[0, 1)`. And the current relative velocity of the two things is given in `?velocity` (if something isn't `Mobile` its velocity is considered to be `Vec2[0,0]`).
 
     ?player presses "ControlLeft"
 
@@ -277,13 +277,13 @@ Describes things that have a non-trivial orientation. Used by the `SpatialIndex`
 
 Describes players that are currently controlling a `BasicShip`. Used by the players' `Interface` objects.
 
-    Solid
-
-Describes things that participate in collision detection (whether they bounce, blow up, or something else). Used by the `SpatialIndex` object.
-
     Spatial
 
 Describes spaces in which collisions may be detected. Has a `SpatialIndex` object. For convenience the noun `Space` is also defined in base.yp, as `a Space is Spatial`, but `Space` isn't used in the JS code, only `Spatial`.
+
+    Tangible
+
+Describes things that participate in collision detection (whether they bounce, blow up, or something else). Used by the `SpatialIndex` object.
 
     Toroidal
 

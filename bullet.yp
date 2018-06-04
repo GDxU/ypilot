@@ -1,7 +1,7 @@
 use "standard:fleeting.yp"
 use "standard:mortal.yp"
 
-a Bullet is Damaging and Fleeting and Mobile and Solid and Visible
+a Bullet is Damaging and Fleeting and Mobile and Tangible and Visible
 
 when ?b hits ?a and
   ?b is a Bullet

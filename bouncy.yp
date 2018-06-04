@@ -1,6 +1,6 @@
 use "standard:inertial.yp"
 
-a Bouncy thing is Solid and has
+a Bouncy thing is Tangible and has
   # 0 = perfectly inelastic collisions
   # 1 = perfectly elastic collisions
   # >1 = flubber

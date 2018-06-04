@@ -42,7 +42,7 @@ function SpatialIndex(thingID) {
   this.located = router.getAdjectivePropertiesMap('Located');
   router.on('becomeLocated', this.becomeLocated.bind(this));
   router.on('unbecomeLocated', this.unbecomeLocated.bind(this));
-  this.solid = router.getAdjectivePropertiesMap('Solid');
+  this.tangible = router.getAdjectivePropertiesMap('Tangible');
   this.oriented = router.getAdjectivePropertiesMap('Oriented');
   this.mobile = router.getAdjectivePropertiesMap('Mobile');
   router.on('idle', this.idle.bind(this));
@@ -131,16 +131,16 @@ defineMethods(SpatialIndex, [
 
   // get the shape of thing expressed in the coordinates of the space (not the
   // local coordinates of the thing). Assumes the thing is located in this
-  // space and is solid.
+  // space and is tangible.
   function getShape(thing) {
     var position = this.located[thing].position;
     if (thing in this.oriented) {
       var orientation = this.oriented[thing].orientation;
-      return this.solid[thing].shape.map(point =>
+      return this.tangible[thing].shape.map(point =>
 	position.add(point.rotate(orientation))
       );
     } else { // not oriented
-      return this.solid[thing].shape.map(point => position.add(point))
+      return this.tangible[thing].shape.map(point => position.add(point))
     }
   },
 
@@ -227,14 +227,14 @@ defineMethods(SpatialIndex, [
     // point in the same penetrated thing, which is the clockwise angle from
     // the relativeVelocity to the edge of the penetrator shape following the
     // point. If all penetrator shapes are clockwise-wound, this means that
-    // each point sticking out of the surface of a solid tesselated into
-    // separate things "belongs to" exactly one of those things, in the sense
-    // that things penetrated by that point will only ever see the penetration
-    // event with the point's owner as the penetrator, not its neighbors.
-    // (You could still have a point owned by different things if it belongs to
-    // more than one outer surface, e.g. a shape like this: >< . But such
-    // points can only really penetrate other things with at most one of those
-    // surfaces, the convex one, e.g. the bottom of this shape: \V/ .)
+    // each point sticking out of the surface of a tangible thing tesselated
+    // into separate things "belongs to" exactly one of those things, in the
+    // sense that things penetrated by that point will only ever see the
+    // penetration event with the point's owner as the penetrator, not its
+    // neighbors. (You could still have a point owned by different things if it
+    // belongs to more than one outer surface, e.g. a shape like this: >< . But
+    // such points can only really penetrate other things with at most one of
+    // those surfaces, the convex one, e.g. the bottom of this shape: \V/ .)
     var nextPoint = penetratorShape[(pointIndex + 1) % penetratorShape.length];
     var rvUnit = relativeVelocity.normalize();
     var edgeUnit = nextPoint.subtract(point).normalize();
@@ -302,12 +302,12 @@ defineMethods(SpatialIndex, [
       // FIXME for mobile things, their points should be extended to line segments according to relativeVelocity and checked against each edge of the other shape, instead of merely checking whether the point is inside the shape, since the point may have entirely moved through the shape
       // ...but in order to do that, we need to save the time of the last bounce so we don't find it again by mistake
       firstThings.forEach((first, firstIndex) => {
-	if (first in this.solid) {
+	if (first in this.tangible) {
 	  var firstShape = this.getShape(first);
 	  secondThingses.forEach((secondThings, secondThingsIndex) => {
 	    secondThings.forEach((second, secondIndex) => {
 	      if ((secondThingsIndex > 0 || firstIndex < secondIndex) &&
-		  (second in this.solid) &&
+		  (second in this.tangible) &&
 		  // don't check collisions between two immobile things
 		  ((first in this.mobile) || (second in this.mobile))) {
 		var secondShape = this.getShape(second);
