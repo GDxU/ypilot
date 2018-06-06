@@ -1,4 +1,5 @@
 const $ = require('jquery');
+const Game = require('./game.js');
 
 $(function() {
 
@@ -17,7 +18,9 @@ $('#toggle-controls').on('click', evt => {
 });
 
 $('#leave-game').on('click', evt => {
-  // TODO disconnect from hub/uplink, show #welcome
+  router.leaveGame();
+  Game.unload();
+  $('#welcome').show();
   $('#menu').hide();
 });
 

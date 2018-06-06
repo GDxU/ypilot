@@ -322,6 +322,11 @@ function finishGame() {
   this.listeners = {};
   this.onceListeners = {};
   this.listenForKeyState();
+},
+
+function leaveGame() {
+  this.uplink.disconnect();
+  this.finishGame();
 }
 
 ]);

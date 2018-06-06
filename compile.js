@@ -8,6 +8,8 @@ var nounDefaultAdjectives = {};
 var nounSupertypes = {};
 var usedUrls = {};
 var variableInitialized = {}; // contains "foo: true" if we've already compiled something that initializes foo in a rule
+// list of things to delete from window in order to unload the game
+window.deleteToUnload = [];
 
 function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
   nounSupertypes[noun] = supertypes;
@@ -83,7 +85,8 @@ function compileOp(ast) {
 	ast.name + '.dependencies = [' +
 	  ast.dependencies.map(x => ('"' + x + '"')).join(', ') +
 	"];\n" +
-	"router.declareAdjective('" + ast.name + "');\n";
+	"router.declareAdjective('" + ast.name + "');\n" +
+	"deleteToUnload.push('" + ast.name + "');\n";
     case 'defineNoun':
       var supertypes =
         ast.supertypes.filter(t => (t[0] == 'noun')).map(t => t[1]);
@@ -131,7 +134,8 @@ function compileOp(ast) {
 	   // finally, add the thing to the router with its adjectives
 	"  router.add(thing, adjectives);\n" +
 	"  return thing;\n" +
-        "}\n";
+        "}\n" +
+	"deleteToUnload.push('" + ast.name + "', 'add" + ast.name + "');\n";
     case 'rule':
       variableInitialized = {};
       var eventName = ast.trigger.op;

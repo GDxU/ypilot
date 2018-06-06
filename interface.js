@@ -49,6 +49,7 @@ function Interface(player) {
       delete document.body.onkeydown;
       delete document.body.onkeyup;
       $('.key').off();
+      this.svg.innerHTML = '';
     });
     if (this.player in this.piloting) {
   //    console.log('interface found player ' + this.player + ' piloting on creation');

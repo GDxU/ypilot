@@ -1,6 +1,14 @@
 const $ = require('jquery');
 const id2color = require('./id2svg.js').id2color;
 
+// remove all chat messages, but keep the welcome message at the beginning
+function clearHistory() {
+  var history = $('#chat-history');
+  var welcomeMsg = history.children('div:first')[0];
+  $('div.chat-message').remove();
+  history.append(welcomeMsg);
+}
+
 function appendToHistory(speakerID, speakerName, text) {
   var chat = $(document.createElement('div'));
   chat.addClass('chat-message');
@@ -42,6 +50,7 @@ function inputVal() {
 }
 
 module.exports = {
+  clearHistory: clearHistory,
   appendToHistory: appendToHistory,
   showInput: showInput,
   hideInput: hideInput,

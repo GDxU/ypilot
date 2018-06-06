@@ -22,7 +22,8 @@ function loadFromAST(ast, sourceURL) {
       jsText += "\n//# sourceURL=" + sourceURL + "\n";
     }
     var script = document.createElement('script');
-    script.setAttribute("type", "text/javascript");
+    script.setAttribute('id', 'game-script');
+    script.setAttribute('type', 'text/javascript');
     script.text = jsText;
     $('head').append(script);
     router.configURL = sourceURL;
@@ -52,9 +53,16 @@ function loadFromProfile(gameIndex) {
   });
 }
 
+function unload() {
+  deleteToUnload.forEach(x => { delete window[x]; });
+  deleteToUnload.length = 0;
+  $('#game-script').remove();
+}
+
 module.exports = {
   tryToParseString: tryToParseString,
   loadFromAST: loadFromAST,
   loadFromString: loadFromString,
-  loadFromProfile: loadFromProfile
+  loadFromProfile: loadFromProfile,
+  unload: unload
 };

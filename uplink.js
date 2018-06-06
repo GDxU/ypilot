@@ -274,6 +274,20 @@ function connect(remoteID) {
     this.onPeerConnectionClose.bind(this, remoteID);
 },
 
+// close all connections (including server) and stop the clock if it was
+// running (also clear chat)
+function disconnect() {
+  this.server.close();
+  for (var remoteID in this.connections) {
+    delete this.connections[remoteID].onclose; // don't try to reconnect
+    this.connections[remoteID].close();
+  }
+  if (this.id == this.hubID) {
+    Clock.stop();
+  }
+  Chat.clearHistory();
+},
+
 function receivePeerMessage(senderID, msg) {
   //if (debug) console.log('received peer message, op = ' + msg.op);
   if (this.id == this.hubID) {
@@ -469,8 +483,13 @@ function onPeerConnectionClose(remoteID) {
       if (debug) console.log('...started the clock');
     } else { // reconnect to the new hub
       if (debug) console.log('...and we still are not the hub');
-      // we'll get a new setState, so get rid of old listeners attached to old
-      // state objects before rejoining
+      // we'll get new handshake and setState, so get rid of old listeners
+      // attached to old state objects before rejoining (and thus reloading the
+      // game and its state, adding new listeners)
+      // FIXME would be nice if we didn't have to reload the whole game, but
+      // then we'd somehow have to preserve the listeners that were added by
+      // loading the game, as opposed to those added by instantiating certain
+      // objects within a game
       router.finishGame();
       // also reset buffers in uplink
       this.inputBuffer = [];
