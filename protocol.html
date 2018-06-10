@@ -32,7 +32,7 @@
 <h2>Hub</h2>
 <p>At any point during a game, exactly one player is designated the <dfn>hub</dfn>. All non-hub players maintain peer connections with the hub. All players (including the hub) simulate the game world in parallel. All input events must travel through the hub to be sequenced and rebroadcast before any players (including the hub) may incorporate them into the simulation.</p>
 
-<p>Which player is the hub may change during the game, and must change if the hub leaves a game that still has other players. <em class="TODO">how to do this deterministically and fairly, even when the hub is forcibly disconnected?</em></p>
+<p>Which player is the hub may change during the game, and must change if the hub leaves a game that still has other players. The next hub is the remaining player with the lowest thing number. Other players connect to the new hub as if connecting to the game anew, except that they keep their thing numbers (and thus their place in the game) and no <code>addPlayer</code> messages are sent.</p>
 
 <h2>Messages</h2>
 <p>All messages exchanged by YPilot players are <a href="https://json.org/">JSON</a> objects. Most have a common property named <code>op</code> (short for "operation") which is a string identifying the type of message.</p>
@@ -229,7 +229,6 @@ Note that the player is identified here by their thing number, not their player 
 </pre></code>
 where <var>num-ticks</var> is the number of ticks that have happened since the beginning of the game, excluding this one. When a non-hub player receives a <code>clockTick</code> message, it processes all the input event messages it has received from the hub since the last <code>clockTick</code> message, and then runs one tick of the simulation (by emitting a <code>clockTick</code> event from the <code>Router</code>). The hub also does this after it sends the <code>clockTick</code> message.
 </dl>
-<em class="TODO">new messages/extensions to existing messages for managing hub switches/succession order (maybe remaining player with lowest thing ID gets to be the hub?)</em>
 </body>
 </html>
 
