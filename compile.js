@@ -9,7 +9,11 @@ var nounSupertypes = {};
 var usedUrls = {};
 var variableInitialized = {}; // contains "foo: true" if we've already compiled something that initializes foo in a rule
 // list of things to delete from window in order to unload the game
-window.deleteToUnload = [];
+if ('undefined' == typeof window) { // node.js
+  global.deleteToUnload = [];
+} else { // browser
+  window.deleteToUnload = [];
+}
 
 function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
   nounSupertypes[noun] = supertypes;
@@ -87,6 +91,9 @@ function compileOp(ast) {
 	"];\n" +
 	"router.declareAdjective('" + ast.name + "');\n" +
 	"deleteToUnload.push('" + ast.name + "');\n";
+    case 'defineEvent':
+      // TODO save definition so we can check uses against it later
+      break;
     case 'defineNoun':
       var supertypes =
         ast.supertypes.filter(t => (t[0] == 'noun')).map(t => t[1]);
@@ -139,27 +146,36 @@ function compileOp(ast) {
     case 'rule':
       variableInitialized = {};
       var eventName = ast.trigger.op;
-      var eventParams =
-        ['thing', 'player',
-	 'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity',
-	 'map', 'position'].
-	filter(k => (k in ast.trigger)).
-	map(k => ast.trigger[k].name);
+      var eventParams = [];
+      var eventNamedParams = [];
       var conditions = [].concat(ast.conditions);
-      if ('key' in ast.trigger) {
-	if (('object' == typeof ast.trigger.key) && ('op' in ast.trigger.key) &&
-	    ast.trigger.key.op == 'var') {
-	  // key is a variable, just use it directly
-	  eventParams.push(ast.trigger.key.name);
-	} else {
-	  // key is a value, make a key parameter and prepend a condition
-	  // checking its value
-	  eventParams.push('key');
-	  conditions.unshift({
-	    op: '==',
-	    l: ast.trigger.key,
-	    r: { op: 'var', name: 'key' }
-	  });
+      if (eventName == 'event') {
+	// TODO check against previous definition (and that the def exists!)
+	eventName = ast.trigger.verb;
+	eventParams = ast.trigger.positionalArgs.map(compile);
+	eventNamedParams = ast.trigger.namedArgs;
+      } else {
+	eventParams =
+	  ['thing', 'player',
+	   'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity',
+	   'map', 'position'].
+	  filter(k => (k in ast.trigger)).
+	  map(k => ast.trigger[k].name);
+	if ('key' in ast.trigger) {
+	  if (('object' == typeof ast.trigger.key) && ('op' in ast.trigger.key) &&
+	      ast.trigger.key.op == 'var') {
+	    // key is a variable, just use it directly
+	    eventParams.push(ast.trigger.key.name);
+	  } else {
+	    // key is a value, make a key parameter and prepend a condition
+	    // checking its value
+	    eventParams.push('key');
+	    conditions.unshift({
+	      op: '==',
+	      l: ast.trigger.key,
+	      r: { op: 'var', name: 'key' }
+	    });
+	  }
 	}
       }
       eventParams.forEach(p => { variableInitialized[p] = true; });
@@ -170,28 +186,7 @@ function compileOp(ast) {
 	  // TODO? allow unbecome (and become?) to capture old property values
 	} else {
 	  eventName = 'become' + adjective.name;
-	  eventParams.push('{ ' + adjective.properties.map(p => {
-	    if (('object' == typeof p[1]) && p[1] !== null &&
-	        p[1].op == 'var') {
-	      // property value is a variable, destructure it into that var
-	      return p[0] + ': ' + p[1].name;
-	    } else {
-	      // property value is not a variable, just use a mangled version
-	      // of the property name as the variable name, and prepend a
-	      // condition to check its value (we mangle it to prevent
-	      // conflicts)
-	      var mangledName = p[0] + '$';
-	      conditions.unshift({
-		op: '==',
-		l: { op: 'var', name: mangledName },
-		r: p[1]
-	      });
-	      return p[0] + ': ' + mangledName;
-	    }
-	  }).join(', ') + ' }');
-	  adjective.properties.forEach(p => {
-	    variableInitialized[p[1].name] = true;
-	  });
+	  eventNamedParams = adjective.properties;
 	}
       } else if (eventName == 'read') {
 	eventName += ast.trigger.character;
@@ -200,6 +195,30 @@ function compileOp(ast) {
 	ast.trigger.args.forEach(a => {
 	  eventParams.push(a.name);
 	  variableInitialized[a.name] = true;
+	});
+      }
+      if (eventNamedParams.length > 0) {
+	eventParams.push('{ ' + eventNamedParams.map(p => {
+	  if (('object' == typeof p[1]) && p[1] !== null &&
+	      p[1].op == 'var') {
+	    // property value is a variable, destructure it into that var
+	    return p[0] + ': ' + p[1].name;
+	  } else {
+	    // property value is not a variable, just use a mangled version
+	    // of the property name as the variable name, and prepend a
+	    // condition to check its value (we mangle it to prevent
+	    // conflicts)
+	    var mangledName = p[0] + '$';
+	    conditions.unshift({
+	      op: '==',
+	      l: { op: 'var', name: mangledName },
+	      r: p[1]
+	    });
+	    return p[0] + ': ' + mangledName;
+	  }
+	}).join(', ') + ' }');
+	eventNamedParams.forEach(p => {
+	  variableInitialized[p[1].name] = true;
 	});
       }
       var vars = getVars(conditions);
@@ -225,7 +244,8 @@ function compileOp(ast) {
     case 'clockTick':
     case 'hit':
     case 'press':
-    case 'release':*/
+    case 'release':
+    case 'event':*/
     // effects (these can also be events, but if they are they're handled in
     // the 'rule' case)
     case 'add':
@@ -286,6 +306,14 @@ function compileOp(ast) {
       }
     case 'debug':
       return '    console.log(' + compile(ast.value) + ");\n";
+    case 'emitEvent':
+      // TODO check against previous definition (and that the def exists!)
+      return '    router.emit("' + ast.verb + '"' +
+	       ast.positionalArgs.map(x => (', ' + compile(x))).join('') +
+	       (ast.namedArgs.length == 0 ? '' :
+	         ', { ' + ast.namedArgs.map(x => (x[0] + ': ' + compile(x[1]))).
+			  join(', ') + ' }') +
+	     ");\n";
     // conditions
     case 'isa':
       return '((' + ast.l.name + ' in router.adjectives.Typed) &&' +

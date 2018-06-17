@@ -20,6 +20,7 @@ config
 statement
   = s:( use
       / adjective_def
+      / event_def
       / noun_def
       / rule
       / metadata
@@ -83,6 +84,7 @@ event
     { return { op: 'press', player: player, key: key }; }
   / player:variable 'releases' sp key:value_expr
     { return { op: 'release', player: player, key: key }; }
+  / custom_event
 
 effect
   = a 'new' sp type:type_name thing:variable 'is' sp 'added' sp 'which' sp 'is' sp adjectives:adjective_inst+
@@ -97,10 +99,20 @@ effect
   / l:let { l.isCondition = false; return l; }
   / 'debug' sp value:value_expr
     { return { op: 'debug', value: value }; }
+  / event:custom_event { return Object.assign({}, event, { op: 'emitEvent' }); }
 
 let
   = 'let' sp variable:variable 'be' sp value:value_expr
     { return { op: 'let', variable: variable, value: value }; }
+
+custom_event
+  = subj:variable verb:type_name obj:value_expr? preps:preposition* props:property_list?
+    { return {
+	op: 'event',
+	verb: verb,
+	positionalArgs: [subj, ...(obj ? [obj] : [])],
+	namedArgs: [...preps, ...(props ? props : [])]
+    }; }
 
 condition
   = parens
@@ -139,13 +151,19 @@ condition
       return ast;
     }
 
-adjective_inst
-  = name:type_name
-    'with' sp first_prop:property_name sp first_val:value_expr
+property_list
+  = 'with' sp first_prop:property_name sp first_val:value_expr
     rest:( 'and' sp rest_prop:property_name sp rest_val:value_expr
            { return [rest_prop, rest_val]; }
          )*
-    { return { op: 'adjective', name: name, properties: [[first_prop, first_val], ...rest] }; }
+    { return [[first_prop, first_val], ...rest]; }
+
+preposition
+  = prop:property_name sp val:value_expr { return [prop, val]; }
+
+adjective_inst
+  = name:type_name properties:property_list
+    { return { op: 'adjective', name: name, properties: properties }; }
   / 'not' sp name:type_name { return { op: 'unadjective', name: name }; }
   / name:type_name { return { op: 'adjective', name: name, properties: [] }; }
 
@@ -286,6 +304,21 @@ property_decl_without_default
     return [name, ['Array', eltype]];
   }
 
+event_def
+  = 'the' sp 'event' sp event:custom_event 'can' sp 'happen' 
+    { return Object.assign({}, event, { op: 'defineEvent' }); }
+  / 'in' sp 'the' sp 'event' sp event:custom_event 'then' sp
+    parameters:parameter_decl+
+    { return Object.assign({}, event,
+		 { op: 'defineEvent', parameters: parameters });
+    }
+
+parameter_decl
+  = name:variable 'is' sp a type:singular_type sp
+    { return [name, type]; }
+  / name:variable 'are' sp eltype:plural_type sp
+    { return [name, ['Array', eltype]]; }
+
 defalt
   = '(' sp 'default' sp v:value_expr ')' sp { return v; }
 
@@ -332,7 +365,7 @@ a
 reserved_word
   = ( 'true' / 'false'
     / 'added' / 'removed' / 'becomes'
-    / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there' / 'let'
+    / 'can' / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there' / 'let'
     / 'which' / 'with' / 'when' / 'then' / 'of' / 'new' / 'use'
     / ('thing' / 'object' / 'flag' / 'boolean' / 'number' / 'string') 's'?
     / 'the' / 'clock' / 'ticks' / 'hits' / 'penetrates'

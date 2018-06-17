@@ -5,38 +5,6 @@ a Repeating thing has
   a period which is a number # number of ticks between firing
   a timeLeft which is a number (default 0) # number of ticks until next firing
 
-a Firing thing has
-  a ship which is a BasicShip
-
-# Firing is only for one tick
-when ?x becomes Firing
-then ?x becomes not Firing
-
-# when a repeating thing with no time left becomes active
-when ?x becomes Active with ship ?s and
-  ?x is Repeating with period ?p and timeLeft ?t
-  (?t == 0)
-then
-  ?x becomes
-    Firing with ship ?s
-    Repeating with timeLeft ?p
-
-# when an active thing runs out of time left
-when ?x becomes Repeating with period ?p and timeLeft ?t and
-  (?t == 0)
-  ?x is Active with ship ?s
-then
-  ?x becomes
-    Firing with ship ?s
-    Repeating with timeLeft ?p
-
-# time left ticks down to 0 (even when not active)
-when the clock ticks and
-  there is a thing ?r which is Repeating with timeLeft ?t
-  (?t > 0)
-then
-  ?r becomes Repeating with timeLeft (?t - 1)
-
 a Shooty thing has
   # really a speed, but "velocity" is conventional for this
   a muzzleVelocity which is a number (default 1)
@@ -45,7 +13,34 @@ a Shooty thing has
 
 a Gun is Repeating and Shooty
 
-when ?gun becomes Firing with ship ?ship and
+in the event ?gun Fires from ?ship then
+  ?gun is a Shooty thing
+  ?ship is a Located thing
+
+# when a repeating thing with no time left becomes active
+when ?x becomes Active with ship ?s and
+  ?x is Repeating with period ?p and timeLeft ?t
+  (?t == 0)
+then
+  ?x becomes Repeating with timeLeft ?p
+  ?x Fires from ?s
+
+# when an active thing runs out of time left
+when ?x becomes Repeating with period ?p and timeLeft ?t and
+  (?t == 0)
+  ?x is Active with ship ?s
+then
+  ?x becomes Repeating with timeLeft ?p
+  ?x Fires from ?s
+
+# time left ticks down to 0 (even when not active)
+when the clock ticks and
+  there is a thing ?r which is Repeating with timeLeft ?t
+  (?t > 0)
+then
+  ?r becomes Repeating with timeLeft (?t - 1)
+
+when ?gun Fires from ?ship and
   ?gun is Shooty with
     muzzleVelocity ?bulletSpeed and
     bulletHP ?hp and

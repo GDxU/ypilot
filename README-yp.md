@@ -1,6 +1,6 @@
 # YPilot Language
 
-YPilot's game rules and maps are described in a simple English-like language, described in this document. Files written in this language normally have the extension `.yp`. A `.yp` file contains a sequence of statements. Statements can be adjective definitions, noun definitions, rules, or uses of other `.yp` files. A `.yp` file may also contain comments anywhere (including within statements). Comments start with a `#` character and continue until the end of the line. Comments are treated as whitespace. For the most part, any amount of whitespace is treated the same as a single space character, but there are a few situations where line breaks are significant.
+YPilot's game rules and maps are described in a simple English-like language, described in this document. Files written in this language normally have the extension `.yp`. A `.yp` file contains a sequence of statements. Statements can be adjective definitions, event definitions, noun definitions, rules, or uses of other `.yp` files. A `.yp` file may also contain comments anywhere (including within statements). Comments start with a `#` character and continue until the end of the line. Comments are treated as whitespace. For the most part, any amount of whitespace is treated the same as a single space character, but there are a few situations where line breaks are significant.
 
 TODO metadata
 
@@ -31,6 +31,48 @@ The following is a list of ways to define properties with different types. In th
         # (any pluralized type can go here, including another "Arrays of ...")
     some foo which are Bar things         # shorthand for the previous one
 
+## Event definitions
+
+An event definition gives the form of a custom event type, and optionally a list of types for the variables it uses. A custom event must have at least a subject variable and a verb. The verb serves as the name of the event type. It must be capitalized, and it should be in 3rd person present tense (e.g. `Takes`, not `Take`, `Taking`, `Taken`, or `Took`). The event may also have a single object variable after the verb, a list of preposition/variable pairs, and/or adjective-like property/variable pairs following `with`. Prepositions and properties are interchangeable, they just allow for more natural reading.
+
+Event definitions may take one of two forms, depending on whether a type list is included. Without a type list, the event goes between `the event` and `can happen`:
+
+    # simplest
+    the event ?subject Verbs can happen
+    # most complex
+    the event
+      ?subject
+      Verbs
+      ?object
+      prep1 ?val1 prep2 ?val2
+      with prop3 ?val3 and prop4 ?val4
+    can happen
+
+With a type list, the event goes between `in the event` and `then`, and the type list comes after `then`:
+
+    in the event ?subject Verbs then
+      ?subject is a Verbing thing
+
+The types are similar to those used for adjective properties, except that the shorthand forms for `flag`s and `number`s are not allowed, and the `a foo` or `some foo` part at the beginning (identifying the property the type applies to) is replaced with the variable that the type applies to.
+
+An event defined in this way may be used as an effect to emit the event, and it may be used as the triggering event of a rule.
+
+A real example of a custom event type may be seen in `gun.yp`:
+
+    # event definition for "Fires"
+    in the event ?gun Fires from ?ship then
+      ?gun is a Shooty thing
+      ?ship is a Located thing
+    ...
+    # rule that uses the "Fires" event as an effect
+    when ... then ...
+      ?x Fires from ?s
+    ...
+    # rule that uses the "Fires" event as a trigger
+    when ?gun Fires from ?ship and ... then ...
+
+Note that this format applies to custom events. Built-in events may deviate from it. In particular, built-in verbs are not capitalized.
+
 ## Noun definitions
 
 A noun definition gives a name for a noun, and a list of other nouns and adjectives it implies. Like adjectives, nouns must start with a capital letter. Here's an example of a noun definition:
@@ -53,7 +95,7 @@ Here, `?x` and `?y` are variables, and `?x hits ?y` is the triggering event. `?x
 
 ### Events
 
-There are only a few types of events, all built-in for now. The variable names used here are not part of the syntax of the events; you may use different names if you like.
+There are a few types of built-in events. The variable names used here are not part of the syntax of the events; you may use different names if you like.
 
     the game starts
 
