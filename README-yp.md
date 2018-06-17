@@ -19,16 +19,17 @@ Note that adjectives always start with a capital letter, and properties always s
 
 The following is a list of ways to define properties with different types. In this list, `foo` stands in for the property name, and `Bar` is a noun or object type name. Each line has a comment after it describing its meaning.
 
-    a foo			# no type, anything can go in foo
-    a foo which is a Bar thing	# Bar is an adjective describing the thing foo
-    a foo which is a Bar object	# foo instanceof Bar in JavaScript
-    a foo which is a boolean	# foo is either true or false
-    a foo flag			# shorthand for the previous one
-    a foo which is a number	# foo is a number, like 1, 2.3, or PI
-    a foo which is a string	# foo is a text string, like "hello, world!"
-    a foo which is an Array of Bar things	# foo is an array whose elements are of the type "Bar thing"
-	# (any pluralized type can go here, including another "Arrays of ...")
-    some foo which are Bar things		# shorthand for the previous one
+    a foo                       # no type, anything can go in foo
+    a foo which is a Bar thing  # Bar is an adjective describing the thing foo
+    a foo which is a Bar object # foo instanceof Bar in JavaScript
+    a foo which is a boolean    # foo is either true or false
+    a foo flag                  # shorthand for the previous one
+    a foo which is a number     # foo is a number, like 1, 2.3, or PI
+    a number of foo             # shorthand for the previous one
+    a foo which is a string     # foo is a text string, like "hello, world!"
+    a foo which is an Array of Bar things # foo is an array whose elements are of the type "Bar thing"
+        # (any pluralized type can go here, including another "Arrays of ...")
+    some foo which are Bar things         # shorthand for the previous one
 
 ## Noun definitions
 
@@ -232,7 +233,7 @@ For example, someone might host a file like this at `http://www.example.com/ypil
 
     a Fish is Mortal
 
-Which uses the standard library called `mortal`, which defines the adjectives `Mortal` and `Respawning` (among others things). Then you could write another file like this to use that file:
+Which uses the standard library called `mortal`, which defines the adjectives `Mortal` and `Respawning` (among other things). Then you could write another file like this to use that file:
 
     use "standard:mortal.yp"
     use "http://www.example.com/ypilot/fish.yp"
