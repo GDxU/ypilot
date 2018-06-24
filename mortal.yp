@@ -6,14 +6,25 @@ a Mortal thing has
 a Damaging thing has
   a number of hitPoints (default 1)
 
+in the event ?a Damages ?b by ?damage then
+  ?a is a Damaging thing
+  ?b is a Mortal thing
+  ?damage is a number
+
 # Damaging things deduct hitPoints from Mortal things when they collide
 when ?a hits ?b and
   ?a is Damaging with hitPoints ?damage
+  ?b is Mortal
+then
+  ?a Damages ?b by ?damage
+
+when ?a Damages ?b by ?damage and
   ?b is Mortal with hitPoints ?hp
 then
   ?b becomes
     Mortal with hitPoints (?hp - ?damage)
 
+# TODO turn this into a "dies" event
 # Dead mostly just marks things that have died, but adjectives are required to
 # have properties, so we might as well include a death point
 a Dead thing has

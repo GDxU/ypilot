@@ -1,5 +1,6 @@
 use "standard:bullet.yp"
 use "standard:controls.yp" # for Active
+use "standard:owned.yp"
 
 a Repeating thing has
   a period which is a number # number of ticks between firing
@@ -48,6 +49,7 @@ when ?gun Fires from ?ship and
   ?ship is Located with space ?space and position ?shipPos
   ?ship is Oriented with orientation ?shipAngle
   ?ship is Mobile with velocity ?shipVel # TODO angularVelocity?
+  ?ship is Owned with owner ?owner
 then
   let ?forward be Vec2[cos(?shipAngle), sin(?shipAngle)]
   let ?bulletPos be (?shipPos + ?forward * 16) # FIXME depends on ship size
@@ -59,4 +61,5 @@ then
     Mobile with velocity ?bulletVel
     Tangible with shape [Vec2[-0.5,-0.5], Vec2[0.5,-0.5], Vec2[0.5,0.5], Vec2[-0.5,0.5]]
     Visible with graphics [<circle r="0.5" fill="white" />]
+    Owned with owner ?owner
 

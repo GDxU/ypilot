@@ -1,6 +1,6 @@
 # YPilot Language
 
-YPilot's game rules and maps are described in a simple English-like language, described in this document. Files written in this language normally have the extension `.yp`. A `.yp` file contains a sequence of statements. Statements can be adjective definitions, event definitions, noun definitions, rules, or uses of other `.yp` files. A `.yp` file may also contain comments anywhere (including within statements). Comments start with a `#` character and continue until the end of the line. Comments are treated as whitespace. For the most part, any amount of whitespace is treated the same as a single space character, but there are a few situations where line breaks are significant.
+YPilot's game rules and maps are described in a simple English-like language, described in this document. Files written in this language normally have the extension `.yp`. A `.yp` file contains a sequence of statements. Statements can be adjective definitions, event definitions, permission condition declarations, noun definitions, rules, or uses of other `.yp` files. A `.yp` file may also contain comments anywhere (including within statements). Comments start with a `#` character and continue until the end of the line. Comments are treated as whitespace. For the most part, any amount of whitespace is treated the same as a single space character, but there are a few situations where line breaks are significant.
 
 TODO metadata
 
@@ -72,6 +72,24 @@ A real example of a custom event type may be seen in `gun.yp`:
     when ?gun Fires from ?ship and ... then ...
 
 Note that this format applies to custom events. Built-in events may deviate from it. In particular, built-in verbs are not capitalized.
+
+## Permission conditions
+
+Custom events may have permission conditions applied to them (built-in events may not). When a custom event is used as an effect, before it happens, its permission conditions are checked. If the event isn't allowed, it doesn't actually happen.
+
+There are three types of permission condition declarations, shown here with our example custom event from before:
+
+    allow the event ?gun Fires from ?ship when ...
+    disallow the event ?gun Fires from ?ship when ...
+    only allow the event ?gun Fires from ?ship when ...
+
+The part after `when` is a list of conditions of the same kind as can be used after `then` in a rule (see below). For an individual permission condition declaration to be satisfied, all of the `when` conditions must be satisfied (same as for rules). For an event to be allowed:
+
+ - At least one of the `allow` declarations must be satisfied, if there are any;
+ - None of the `disallow` declarations must be satisfied; and
+ - All of the `only allow` declarations must be satisfied.
+
+Note that if no permission conditions were declared, custom events are always allowed by default.
 
 ## Noun definitions
 
@@ -350,6 +368,7 @@ Note that when a player joins the game, a `Player` is added to the game which is
 
 TODO
 
+    aligned.yp
     bouncy.yp
     bullet.yp
     controls.yp
@@ -359,5 +378,8 @@ TODO
     inertial.yp
     mortal.yp
     motile.yp
+    no-friendly-fire.yp
+    no-self-fire.yp
+    owned.yp
     wall.yp
 

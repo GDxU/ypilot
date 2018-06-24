@@ -33,6 +33,7 @@ SRCS = \
 	space.js \
 	svg.js \
 	stdlib.js \
+		aligned.yp \
 		base.yp \
 		bouncy.yp \
 		bullet.yp \
@@ -43,6 +44,9 @@ SRCS = \
 		inertial.yp \
 		mortal.yp \
 		motile.yp \
+		no-friendly-fire.yp \
+		no-self-fire.yp \
+		owned.yp \
 		wall.yp \
 	uplink.js \
 	user-names.js \

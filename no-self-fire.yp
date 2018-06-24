@@ -1,0 +1,3 @@
+use "standard:mortal.yp"
+
+disallow the event ?a Damages ?b when (?a == ?b)

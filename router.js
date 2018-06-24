@@ -9,6 +9,7 @@ function Router() {
   this.adjectives = {};
   this.listeners = {};
   this.onceListeners = {};
+  this.permissionConditions = {};
   this.numPendingListeners = 0;
   this.playerKeysDown = {};
   this.listenForKeyState();
@@ -49,6 +50,12 @@ function once(eventName, listener) {
 },
 
 function emit(eventName, ...args) {
+  if (!this.isAllowed(eventName, ...args)) {
+    if (this.eventLogEnabled) {
+      this.eventLog.push(JSON.stringify(['notAllowed', eventName, ...args]));
+    }
+    return;
+  }
   if (this.eventLogEnabled) {
     this.eventLog.push(JSON.stringify([eventName, ...args]));
   }
@@ -95,6 +102,23 @@ function isIdle() {
 
 function getEventLogURL() {
   return URL.createObjectURL(new Blob([this.eventLog.join("\n")]));
+},
+
+function addPermissionCondition(eventName, permType, conditionFn) {
+  if (!(eventName in this.permissionConditions)) {
+    this.permissionConditions[eventName] =
+      { allow: [], onlyAllow: [], disallow: [] };
+  }
+  this.permissionConditions[eventName][permType].push(conditionFn);
+},
+
+// return true iff the permissionConditions allow this event to happen
+function isAllowed(eventName, ...args) {
+  if (!(eventName in this.permissionConditions)) return true;
+  var { allow, onlyAllow, disallow } = this.permissionConditions[eventName];
+  return (allow.length == 0 ? true : allow.some(fn => fn(...args))) &&
+         onlyAllow.every(fn => fn(...args)) &&
+	 !disallow.some(fn => fn(...args));
 },
 
 //
@@ -321,6 +345,7 @@ function finishGame() {
   this.emit('finish');
   this.listeners = {};
   this.onceListeners = {};
+  this.permissionConditions = {};
   this.listenForKeyState();
 },
 

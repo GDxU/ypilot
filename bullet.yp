@@ -5,5 +5,11 @@ a Bullet is Damaging and Fleeting and Mobile and Tangible and Visible
 
 when ?b hits ?a and
   ?b is a Bullet
+  ?a is not Fleeting # FIXME want "not a Bullet" but language doesn't allow it
 then
   ?b is removed
+
+# bullets don't damage each other
+disallow the event ?b1 Damages ?b2 when
+  ?b1 is a Bullet
+  ?b2 is a Bullet

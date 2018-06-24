@@ -57,6 +57,97 @@ function getVars(ast) {
   }
 }
 
+function compileTrigger(trigger, origConditions) {
+  var eventName = trigger.op;
+  var eventParams = [];
+  var eventNamedParams = [];
+  var conditions = [].concat(origConditions);
+  if (eventName == 'event') {
+    // TODO check against previous definition (and that the def exists!)
+    eventName = trigger.verb;
+    eventParams = trigger.positionalArgs.map(compile);
+    eventNamedParams = trigger.namedArgs;
+  } else {
+    eventParams =
+      ['thing', 'player',
+       'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity',
+       'map', 'position'].
+      filter(k => (k in trigger)).
+      map(k => trigger[k].name);
+    if ('key' in trigger) {
+      if (('object' == typeof trigger.key) && ('op' in trigger.key) &&
+	  trigger.key.op == 'var') {
+	// key is a variable, just use it directly
+	eventParams.push(trigger.key.name);
+      } else {
+	// key is a value, make a key parameter and prepend a condition
+	// checking its value
+	eventParams.push('key');
+	conditions.unshift({
+	  op: '==',
+	  l: trigger.key,
+	  r: { op: 'var', name: 'key' }
+	});
+      }
+    }
+  }
+  eventParams.forEach(p => { variableInitialized[p] = true; });
+  if (eventName == 'become') {
+    var adjective = trigger.adjectives[0]
+    if (adjective.op == 'unadjective') {
+      eventName = 'unbecome' + adjective.name;
+      // TODO? allow unbecome (and become?) to capture old property values
+    } else {
+      eventName = 'become' + adjective.name;
+      eventNamedParams = adjective.properties;
+    }
+  } else if (eventName == 'read') {
+    eventName += trigger.character;
+  }
+  if ('args' in trigger) {
+    trigger.args.forEach(a => {
+      eventParams.push(a.name);
+      variableInitialized[a.name] = true;
+    });
+  }
+  if (eventNamedParams.length > 0) {
+    eventParams.push('{ ' + eventNamedParams.map(p => {
+      if (('object' == typeof p[1]) && p[1] !== null &&
+	  p[1].op == 'var') {
+	// property value is a variable, destructure it into that var
+	return p[0] + ': ' + p[1].name;
+      } else {
+	// property value is not a variable, just use a mangled version
+	// of the property name as the variable name, and prepend a
+	// condition to check its value (we mangle it to prevent
+	// conflicts)
+	var mangledName = p[0] + '$';
+	conditions.unshift({
+	  op: '==',
+	  l: { op: 'var', name: mangledName },
+	  r: p[1]
+	});
+	return p[0] + ': ' + mangledName;
+      }
+    }).join(', ') + ' }');
+    eventNamedParams.forEach(p => {
+      variableInitialized[p[1].name] = true;
+    });
+  }
+  var vars = getVars(conditions);
+  for (var v in variableInitialized) { delete vars[v]; }
+  vars = Object.keys(vars);
+  // count the 'there is' conditions so we can balance them at the end
+  var numExists = conditions.filter(c => (c.op == 'exists')).length;
+  return {
+    eventName: eventName,
+    eventParams: eventParams,
+    conditions: conditions,
+    vars: vars,
+    numExists: numExists
+  };
+}
+
 function compileOp(ast) {
   switch (ast.op) {
     // top-level statements
@@ -145,87 +236,13 @@ function compileOp(ast) {
 	"deleteToUnload.push('" + ast.name + "', 'add" + ast.name + "');\n";
     case 'rule':
       variableInitialized = {};
-      var eventName = ast.trigger.op;
-      var eventParams = [];
-      var eventNamedParams = [];
-      var conditions = [].concat(ast.conditions);
-      if (eventName == 'event') {
-	// TODO check against previous definition (and that the def exists!)
-	eventName = ast.trigger.verb;
-	eventParams = ast.trigger.positionalArgs.map(compile);
-	eventNamedParams = ast.trigger.namedArgs;
-      } else {
-	eventParams =
-	  ['thing', 'player',
-	   'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity',
-	   'map', 'position'].
-	  filter(k => (k in ast.trigger)).
-	  map(k => ast.trigger[k].name);
-	if ('key' in ast.trigger) {
-	  if (('object' == typeof ast.trigger.key) && ('op' in ast.trigger.key) &&
-	      ast.trigger.key.op == 'var') {
-	    // key is a variable, just use it directly
-	    eventParams.push(ast.trigger.key.name);
-	  } else {
-	    // key is a value, make a key parameter and prepend a condition
-	    // checking its value
-	    eventParams.push('key');
-	    conditions.unshift({
-	      op: '==',
-	      l: ast.trigger.key,
-	      r: { op: 'var', name: 'key' }
-	    });
-	  }
-	}
-      }
-      eventParams.forEach(p => { variableInitialized[p] = true; });
-      if (eventName == 'become') {
-	var adjective = ast.trigger.adjectives[0]
-	if (adjective.op == 'unadjective') {
-	  eventName = 'unbecome' + adjective.name;
-	  // TODO? allow unbecome (and become?) to capture old property values
-	} else {
-	  eventName = 'become' + adjective.name;
-	  eventNamedParams = adjective.properties;
-	}
-      } else if (eventName == 'read') {
-	eventName += ast.trigger.character;
-      }
-      if ('args' in ast.trigger) {
-	ast.trigger.args.forEach(a => {
-	  eventParams.push(a.name);
-	  variableInitialized[a.name] = true;
-	});
-      }
-      if (eventNamedParams.length > 0) {
-	eventParams.push('{ ' + eventNamedParams.map(p => {
-	  if (('object' == typeof p[1]) && p[1] !== null &&
-	      p[1].op == 'var') {
-	    // property value is a variable, destructure it into that var
-	    return p[0] + ': ' + p[1].name;
-	  } else {
-	    // property value is not a variable, just use a mangled version
-	    // of the property name as the variable name, and prepend a
-	    // condition to check its value (we mangle it to prevent
-	    // conflicts)
-	    var mangledName = p[0] + '$';
-	    conditions.unshift({
-	      op: '==',
-	      l: { op: 'var', name: mangledName },
-	      r: p[1]
-	    });
-	    return p[0] + ': ' + mangledName;
-	  }
-	}).join(', ') + ' }');
-	eventNamedParams.forEach(p => {
-	  variableInitialized[p[1].name] = true;
-	});
-      }
-      var vars = getVars(conditions);
-      for (var v in variableInitialized) { delete vars[v]; }
-      vars = Object.keys(vars);
-      // count the 'there is' conditions so we can balance them at the end
-      var numExists = conditions.filter(c => (c.op == 'exists')).length;
+      var {
+	eventName,
+	eventParams,
+	conditions,
+	vars,
+	numExists
+      } = compileTrigger(ast.trigger, ast.conditions);
       return "router.on('" + eventName + "', function(" +
 	  eventParams.join(', ') +
 	") {try {\n" +
@@ -246,6 +263,35 @@ function compileOp(ast) {
     case 'press':
     case 'release':
     case 'event':*/
+    // permission conditions:
+    case 'allow':
+    case 'onlyAllow':
+    case 'disallow':
+      variableInitialized = {};
+      var {
+	eventName,
+	eventParams,
+	conditions,
+	vars,
+	numExists
+      } = compileTrigger(ast.trigger, ast.conditions);
+      return "router.addPermissionCondition(" +
+	"'" + eventName + "', '" + ast.op + "', " +
+	"function(" +
+	  eventParams.join(', ') +
+	") {try {\n" +
+	((vars.length > 0) ? '  var ' + vars.join(', ') + ";\n" : '') +
+	"  if (" +
+	  conditions.map(compile).join(" &&\n      ") +
+	") {\n" +
+	"    return true;\n" +
+	// balance 'there is' conditions
+	new Array(numExists).fill("}}\n").join('') +
+	"  }\n" +
+	"  return false;\n" +
+	"} catch (e) { console.error(e.message + \" while executing this permission condition:\\n\" + " + JSON.stringify(ast.text) + "); }\n" +
+	// FIXME return value when an error happens?
+	"});\n";
     // effects (these can also be events, but if they are they're handled in
     // the 'rule' case)
     case 'add':
@@ -334,6 +380,7 @@ function compileOp(ast) {
 	        p[1].op == 'var' && !(p[1].name in variableInitialized)) {
 	      // p[1] is an uninitialized variable, assign to it, but make sure
 	      // the condition is true regardless of the value we assign
+	      variableInitialized[p[1].name] = true;
 	      return ' && ((' + p[1].name + ' = ' + rhs + ') || true)';
 	    } else {
 	      // p[1] is an initialized variable or some other kind of value,

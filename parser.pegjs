@@ -21,6 +21,7 @@ statement
   = s:( use
       / adjective_def
       / event_def
+      / permission
       / noun_def
       / rule
       / metadata
@@ -304,10 +305,18 @@ property_decl_without_default
     return [name, ['Array', eltype]];
   }
 
+event_ref
+  = 'the' sp 'event' sp event:custom_event { return event; }
+
+permission
+  = op:('allow' / 'disallow' / 'only' sp 'allow' { return 'onlyAllow'; }) sp
+    trigger:event_ref 'when' sp conditions:condition+
+    { return { op: op, trigger: trigger, conditions: conditions }; }
+
 event_def
-  = 'the' sp 'event' sp event:custom_event 'can' sp 'happen' 
+  = event:event_ref 'can' sp 'happen' 
     { return Object.assign({}, event, { op: 'defineEvent' }); }
-  / 'in' sp 'the' sp 'event' sp event:custom_event 'then' sp
+  / 'in' sp event:event_ref 'then' sp
     parameters:parameter_decl+
     { return Object.assign({}, event,
 		 { op: 'defineEvent', parameters: parameters });
@@ -369,6 +378,7 @@ reserved_word
   = ( 'true' / 'false'
     / 'added' / 'removed' / 'becomes'
     / 'can' / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there' / 'let'
+    / 'only' / 'allow' / 'disallow'
     / 'which' / 'with' / 'when' / 'then' / 'of' / 'new' / 'use'
     / ('thing' / 'object' / 'flag' / 'boolean' / 'number' / 'string') 's'?
     / 'the' / 'clock' / 'ticks' / 'hits' / 'penetrates'

@@ -7,7 +7,9 @@ use "standard:motile.yp"
 use "standard:bullet.yp"
 use "standard:holding.yp"
 use "standard:controls.yp"
+use "standard:owned.yp"
 use "standard:gun.yp"
+use "standard:no-friendly-fire.yp"
 
 a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
@@ -97,4 +99,50 @@ then
     Visible with graphics [<polygon points="15,0 -9,8 -9,-8" stroke="white" />]
     Holding with slots [?slot1, ?slot2] # TODO 3-10
     Selective
+    Owned with owner ?player
   ?player becomes Piloting with ship ?ship
+
+# make two teams and track their sizes
+
+a Sized thing has a size which is a number (default 0)
+a Team is Named and Sized
+
+when the game starts
+then
+  a new Team ?team1 is added which is Named with name "Team 1"
+  a new Team ?team2 is added which is Named with name "Team 2"
+
+when ?player is removed and
+  ?player is Aligned with team ?team
+  ?team is Sized with size ?oldSize
+then
+  ?team becomes Sized with size (?oldSize - 1)
+
+# add new players to the smaller team (or team 1 if there's a tie)
+
+when ?player is added and
+  ?player is a Player
+  there is a thing ?team1 which is
+    Named with name "Team 1"
+    Sized with size ?team1size
+  there is a thing ?team2 which is
+    Named with name "Team 2"
+    Sized with size ?team2size
+  (?team1size <= ?team2size)
+then
+  ?player becomes Aligned with team ?team1
+  ?team1 becomes Sized with size (?team1size + 1)
+
+when ?player is added and
+  ?player is a Player
+  ?player is not Aligned # prevent both rules from firing
+  there is a thing ?team1 which is
+    Named with name "Team 1"
+    Sized with size ?team1size
+  there is a thing ?team2 which is
+    Named with name "Team 2"
+    Sized with size ?team2size
+  (?team1size > ?team2size)
+then
+  ?player becomes Aligned with team ?team2
+  ?team2 becomes Sized with size (?team2size + 1)
