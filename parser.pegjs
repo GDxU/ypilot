@@ -353,7 +353,10 @@ variable
 constant
   = ('PI' / 'π') !id_char sp { return { op: 'var', name: 'Math.PI' }; }
   / ('E' / 'e') !id_char sp { return { op: 'var', name: 'Math.E' }; }
-  / ('INFINITY' / '∞') !id_char sp { return { op: 'var', name: 'Infinity' }; }
+  / ('INFINITY' / '∞') !id_char sp { return { op: 'var', name: 'Number.MAX_VALUE' }; }
+// NOTE: JavaScript does have an Infinity constant that would be more
+// appropriate than Number.MAX_VALUE, but it doesn't survive the trip to and
+// from JSON (it becomes null)
 
 id_char
   = '_' / [0-9] / [a-z]i
