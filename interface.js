@@ -187,8 +187,12 @@ function unbecomeVisible(thing, {graphics}) {
 function becomeLocated(thing, {space, position}, oldLocated) {
   if (!(thing in this.visible)) return;
   if (this.playerShipLocated && space == this.playerShipLocated.space) {
-    this.setThingTransform(this.visible[thing].graphics,
-      position, this.getThingOrientation(thing));
+    if ((!oldLocated) || oldLocated.space != space) {
+      this.becomeVisible(thing, this.visible[thing], null);
+    } else {
+      this.setThingTransform(this.visible[thing].graphics,
+	position, this.getThingOrientation(thing));
+    }
     if ((this.player in this.piloting) &&
         thing == this.piloting[this.player].ship) { // just moved player's ship
       this.setViewBox();
