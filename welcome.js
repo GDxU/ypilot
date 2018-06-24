@@ -4,7 +4,7 @@ const UserNames = require('./user-names.js');
 const Profile = require('./profile.js');
 const Game = require('./game.js');
 const Uplink = require('./uplink.js');
-const convertFailToReject = require('./errors.js').convertFailToReject;
+const errors = require('./errors.js');
 const id2svg = require('./id2svg.js');
 
 if (!('function' == typeof assert)) {
@@ -37,7 +37,7 @@ function requestPlayerStatus(evt) {
   var targID = targ.prop('id');
   var playerID = targID.substring(0,36);
   askStatus(playerID).
-  catch(err => console.error(err));
+  catch(errors.reportError);
 }
 
 function forgetPlayer(evt) {
@@ -213,7 +213,7 @@ function updateJoinGamesTable() {
     var p = window.profile.knownPlayers[id];
     if (p.statusRequestPolicy == 'onSearch') {
       askStatus(id).
-      catch(err => console.error(err));
+      catch(err => errors.reportError(err, "while looking for games to join:\n"));
     }
   }
 }
@@ -239,34 +239,43 @@ window.addNewGameFromURL = function(url) {
   return new Promise((resolve, reject) => {
     $.get(url).
     done((data, textStatus, jqXHR) => {
-      var ast = Game.tryToParseString(jqXHR.responseText);
-      if (ast === null) return;
-      var title = 'Untitled';
-      var author = 'Anonymous';
-      ast.forEach(statement => {
-	if (statement.op == 'metadata') {
-	  switch (statement.key.toLowerCase()) {
-	    case 'title':
-	      title = statement.value;
-	      break;
-	    case 'author':
-	      author = statement.value;
-	      break;
-	    default:
-	      break;
-	  }
+      try {
+	var ast, title, author;
+	try {
+	  ast = Game.tryToParseString(jqXHR.responseText);
+	  title = 'Untitled';
+	  author = 'Anonymous';
+	  ast.forEach(statement => {
+	    if (statement.op == 'metadata') {
+	      switch (statement.key.toLowerCase()) {
+		case 'title':
+		  title = statement.value;
+		  break;
+		case 'author':
+		  author = statement.value;
+		  break;
+		default:
+		  break;
+	      }
+	    }
+	  });
+	} catch (e) {
+	  errors.rethrowError(e, "while getting metadata:\n");
 	}
-      });
-      // TODO sort? make table sortable by clicking headings?
-      var i = profile.games.length;
-      profile.games.push({ url: url, title: title, author: author });
-      changedProfile();
-      addNewGameRow(profile.games[i], i);
-      resolve({ i: i, ast: ast });
+	// TODO sort? make table sortable by clicking headings?
+	var i = profile.games.length;
+	profile.games.push({ url: url, title: title, author: author });
+	changedProfile();
+	addNewGameRow(profile.games[i], i);
+	resolve({ i: i, ast: ast });
+      } catch (e) {
+	reject(e);
+      }
     }).
     fail((jqXHR, textStatus, errorThrown) => {
-      $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
-      convertFailToReject(textStatus, errorThrown, reject);
+      // FIXME the error should be reported or not by whoever ends up with the promise; but see FIXME at the end of Uplink#receiveInitialMessage
+      errors.reportError(textStatus, "while fetching config file:\n");
+      errors.convertFailToReject(textStatus, errorThrown, reject);
     });
   });
 }
@@ -319,7 +328,7 @@ $('#export-profile').on('click', evt => {
     // for some reason jq's .click() doesn't work, while DOM's does
     $('#export-profile-link')[0].click();
   }).
-  catch(err => console.error(err));
+  catch(err => errors.reportError(err, "while exporting profile:\n"));
 });
 
 $('#new-profile').on('click', newProfile);
@@ -329,12 +338,16 @@ $('#config-file').on('change', function(evt) {
     var file = evt.target.files[0];
     var reader = new FileReader();
     reader.onload = function() {
-      Game.loadFromString(reader.result, encodeURI(file.name));
-      router.startNewGame();
+      try {
+	Game.loadFromString(reader.result, encodeURI(file.name));
+	router.startNewGame();
+      } catch (e) {
+	errors.reportError(e);
+      }
     };
     reader.readAsText(file);
   } catch (e) {
-    $('#welcome').append("<p>Error loading config file:</p><pre>" + e + "</pre>");
+    errors.reportError(e, "while loading config file:\n");
   }
 });
 
@@ -389,6 +402,6 @@ then(() => {
     return askStatus(remoteID);
   }
 }).
-catch(err => console.error(err));
+catch(err => errors.reportError(err, "while processing fragment ID:\n"));
 
 });

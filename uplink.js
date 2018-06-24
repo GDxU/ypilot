@@ -165,6 +165,7 @@ function receiveInitialMessage(relay, signedMsg) {
 	throw new Error('WTF');
     }
   }).
+  // FIXME some errors warrant a popup (e.g. the local player is trying to connect, but it fails) while others don't (e.g. a remote player is trying to connect, but it fails (perhaps deliberately))
   catch(err => console.error(err));
 },
 

@@ -2,16 +2,13 @@ const parse = require('./parser.js').parse;
 const compile = require('./compile.js');
 const $ = require('jquery');
 const Clock = require('./clock.js');
-const convertFailToReject = require('./errors.js').convertFailToReject;
+const errors = require('./errors.js');
 
 function tryToParseString(ypText) {
   try {
     return parse(ypText);
   } catch (e) {
-    $('#welcome').
-      append("<p>Error parsing config file:</p><pre>" + e.message + "</pre>").
-      append("<p>At line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + "</p>");
-    return null;
+    errors.rethrowError(e, "while parsing config file, at line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + ":\n");
   }
 }
 
@@ -28,13 +25,12 @@ function loadFromAST(ast, sourceURL) {
     $('head').append(script);
     router.configURL = sourceURL;
   } catch (e) {
-    $('#welcome').append("<p>Error compiling config file:</p><pre>" + e + "</pre>");
+    errors.rethrowError(e, "while compiling config file:\n");
   }
 }
 
 function loadFromString(ypText, sourceURL) {
   var ast = tryToParseString(ypText);
-  if (ast === null) return;
   loadFromAST(ast, sourceURL);
 }
 
@@ -43,12 +39,16 @@ function loadFromProfile(gameIndex) {
     var url = profile.games[gameIndex].url;
     $.get(url).
     done((data, textStatus, jqXHR) => {
-      loadFromString(jqXHR.responseText, url);
+      try {
+        loadFromString(jqXHR.responseText, url);
+      } catch (e) {
+	reject(e);
+      }
       resolve(null);
     }).
     fail((jqXHR, textStatus, errorThrown) => {
-      $('#welcome').append("<p>Error fetching config file:</p><pre>" + textStatus + "</pre>");
-      convertFailToReject(textStatus, errorThrown, reject);
+      errors.reportError(textStatus, "while fetching config file:\n");
+      errors.convertFailToReject(textStatus, errorThrown, reject);
     });
   });
 }

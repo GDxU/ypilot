@@ -182,6 +182,23 @@ html, body, svg {
   margin: 1em;
 }
 
+#error-popup {
+  display: none;
+  position: absolute;
+  width: calc(80% - 4ex);
+  top: 10%;
+  left: 10%;
+  right: 10%;
+  background-color: yellow;
+  color: black;
+  padding: 1ex;
+  border: 1ex dashed red;
+}
+
+#error-messages {
+  overflow: auto;
+}
+
 .id-svg {
   width: 64px;
   height: 64px;
