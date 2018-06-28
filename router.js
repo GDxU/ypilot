@@ -136,6 +136,28 @@ function getAdjectivePropertiesMap(adjective) {
   return this.adjectives[adjective];
 },
 
+// return the value found by following the space-separated path of alternating
+// adjectives and properties from the given thing; return '' if the path
+// couldn't be completely followed
+function evaluatePath(thing, pathStr) {
+  var path = pathStr.trim().split(/\s+/);
+  if (path.length % 2 != 0)
+    throw new Error("expected even-length path, but got " + pathStr);
+  var val = thing;
+  while (path.length > 0) {
+    var adj = path.shift();
+    var prop = path.shift();
+    var thing2props = this.getAdjectivePropertiesMap(adj);
+    if (!(val in thing2props))
+      return '';
+    var props = thing2props[val];
+    if (!(prop in props))
+      throw new Error(prop + " isn't a property of adjective " + adj);
+    val = props[prop];
+  }
+  return val;
+},
+
 function become(thing, adjective, properties) {
   this.declareAdjective(adjective); // make sure it exists first
   var oldProperties = null;

@@ -102,15 +102,41 @@ then
     Owned with owner ?player
   ?player becomes Piloting with ship ?ship
 
-# make two teams and track their sizes
+# keep score
+
+a Scored thing has a score which is a number (default 0)
+
+in the event ?x Scores ?n then
+  ?x is a Scored thing
+  ?n is a number
+
+when ?x Scores ?n and
+  ?x is Scored with score ?oldScore
+then
+  ?x becomes Scored with score (?oldScore + ?n)
 
 a Sized thing has a size which is a number (default 0)
-a Team is Named and Sized
+a Team is Named and Sized and Scored
 
-when the game starts
+# make two teams and track their sizes, and make a scoreboard
+
+when the game starts and
+  there is a thing ?playerType which is Named with name "Player"
+  there is a thing ?teamType which is Named with name "Team"
 then
   a new Team ?team1 is added which is Named with name "Team 1"
   a new Team ?team2 is added which is Named with name "Team 2"
+  a new Column ?c1 is added which is
+    Named with name "score"
+    Columnar with cellPath "Scored score" and reverseSort true
+  a new Column ?c2 is added which is
+    Named with name "name"
+    Columnar with cellPath "Named name"
+  a new Board ?b is added which is
+    BoardLike with
+      columns [?c1, ?c2] and
+      rowTypes [?playerType, ?teamType] and
+      sortedColumns [?c1, ?c2]
 
 when ?player is removed and
   ?player is Aligned with team ?team

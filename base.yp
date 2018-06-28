@@ -82,3 +82,16 @@ an Interfaced thing has
   an interface which is an Interface object
 
 a Player is Named and Interfaced
+
+a Columnar thing is Named and has
+  a cellPath which is a string
+  a reverseSort flag (default false)
+
+a Column is Columnar
+
+a BoardLike thing has
+  some columns which are Columnar things
+  some rowTypes which are Typing things
+  some sortedColumns which are Columnar things (default [])
+
+a Board is BoardLike

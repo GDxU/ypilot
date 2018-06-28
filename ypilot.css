@@ -382,3 +382,45 @@ dt {
   font-size: small;
   text-align: center;
 }
+
+#board-container {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 25%;
+  height: 33%;
+  overflow: auto;
+  background-color: #4e7cfe;
+}
+
+#board {
+  border-collapse: collapse;
+  border: none;
+  filter: drop-shadow(2px 2px black);
+}
+
+#board td, #board th {
+  color: white;
+  font-family: monospace;
+  font-variant: small-caps;
+}
+
+#board td {
+  border: none;
+}
+
+#board th {
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid white;
+}
+
+td.number {
+  text-align: right;
+}
+
+tr.spacer {
+  height: 1ex;
+}

@@ -310,6 +310,14 @@ These adjectives are defined in the YPilot language, but since the core JavaScri
 
 Describes things that can be heard. Used by `Interface` objects (or will be, when I implement it).
 
+    BoardLike
+
+Describes things like scoreboards, which appear as a table in the lower left corner. Used by `Interface` objects. The noun `Board` is also defined as a convenience. There should only be one board in a game at any given time. The columns of the table are their own special things (see below) and may be used to sort the rows, but the rows represent anything in the game of a particular type or types. 
+
+    Columnar
+
+Describes columns in the Board. Used by `Interface` objects. The noun `Column` is also defined as a convenience. The value in a cell of a `Board` table is obtained by following a path of adjectives and their properties from the row thing.
+
     Interfaced
 
 Describes players who are playing through a user interface (not NPCs), and thus have an `Interface` object. This includes both local and remote players.

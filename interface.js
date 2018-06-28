@@ -36,6 +36,12 @@ function Interface(player) {
     router.on('unbecomeOriented', this.unbecomeOriented.bind(this));
     this.toroidal = router.getAdjectivePropertiesMap('Toroidal');
     // TODO support dynamically changing Toroidal status of a space?
+    this.boardLike = router.getAdjectivePropertiesMap('BoardLike');
+    router.on('becomeBoardLike', this.becomeBoardLike.bind(this));
+    router.on('unbecomeBoardLike', this.unbecomeBoardLike.bind(this));
+    this.columnar = router.getAdjectivePropertiesMap('Columnar');
+    this.named = router.getAdjectivePropertiesMap('Named');
+    this.typed = router.getAdjectivePropertiesMap('Typed');
     this.svg = $('#svg-container svg')[0];
     document.body.onkeydown = this.keydown.bind(this);
     document.body.onkeyup = this.keyup.bind(this);
@@ -54,6 +60,11 @@ function Interface(player) {
     if (this.player in this.piloting) {
   //    console.log('interface found player ' + this.player + ' piloting on creation');
       this.becomePiloting(this.player, this.piloting[this.player], null);
+    }
+    for (var thing in this.boardLike) {
+      this.startBoard(this.boardLike[thing]);
+      $('#board-container').show();
+      break; // there can be only one
     }
   }
 }
@@ -230,6 +241,99 @@ function unbecomeOriented(thing, {orientation}) {
   if (this.thingIsShown(thing)) {
     this.setThingTransform(this.visible[thing].graphics,
       this.located[thing].position, 0);
+  }
+},
+
+function startBoard(board) {
+  this.board = board;
+  this.updateBoard();
+  $('#board-container').show();
+},
+
+function updateBoard() {
+  var {columns, rowTypes, sortedColumns} = this.board;
+  var table = $('#board');
+  table.empty();
+  // make headings
+  var headingRow = $(document.createElement('tr'));
+  var column2index = {};
+  var i = 0;
+  columns.forEach(column => {
+    column2index[column] = i;
+    i++;
+    var heading = $(document.createElement('th'));
+    heading.text(this.named[column].name);
+    headingRow.append(heading);
+  });
+  table.append(headingRow);
+  // make data rows for each type of row separately
+  rowTypes.forEach(rowType => {
+    // get the data
+    var data = [];
+    for (var thing in this.typed) {
+      if (this.typed[thing].type == rowType) {
+	var row = [];
+	columns.forEach(column => {
+	  row.push(router.evaluatePath(thing, this.columnar[column].cellPath));
+	});
+	data.push(row);
+      }
+    }
+    // sort the data
+    if (sortedColumns.length) {
+      data.sort((rowA, rowB) => {
+	for (var i = 0; i < sortedColumns.length; i++) {
+	  var column = sortedColumns[i];
+	  var reverse = (this.columnar[column].reverseSort ? -1 : 1);
+	  var j = column2index[column];
+	  var cellA = rowA[j];
+	  var cellB = rowB[j];
+	  if (cellA < cellB) return -1 * reverse;
+	  if (cellA > cellB) return  1 * reverse;
+	}
+	return 0;
+      });
+    }
+    // make the rows
+    data.forEach(row => {
+      var tr = $(document.createElement('tr'));
+      row.forEach(cell => {
+	var td = $(document.createElement('td'));
+	td.addClass(typeof cell);
+	td.text('' + cell);
+	tr.append(td);
+      });
+      table.append(tr);
+    });
+    // make a spacer row to separate from the next rowType
+    var spacerTR = $(document.createElement('tr'));
+    spacerTR.addClass('spacer');
+    var spacerTD = $(document.createElement('td'));
+    spacerTD.attr('colspan', '' + columns.length);
+    spacerTR.append(spacerTD);
+    table.append(spacerTR);
+  });
+  // update again in 1 second
+  this.boardTimeout = window.setTimeout(this.updateBoard.bind(this), 1000);
+},
+
+function stopBoard() {
+  window.clearTimeout(this.boardTimeout);
+  delete this.board;
+  delete this.boardTimeout;
+  $('#board-container').hide();
+},
+
+function becomeBoardLike(thing, boardLike, oldBoardLike) {
+  if (!this.boardTimeout) {
+    console.log('got board ' + boardLike);
+    this.startBoard(boardLike);
+  }
+},
+
+function unbecomeBoardLike(thing, boardLike) {
+  if (this.board === boardLike) {
+    this.stopBoard();
   }
 },
 
