@@ -353,7 +353,7 @@ $('#config-file').on('change', function(evt) {
 
 $('#add-from-url').on('click', function(evt) {
   var url = $('#config-url').val();
-  addNewGameFromURL(url);
+  addNewGameFromURL(url).catch(errors.reportError);
 });
 
 $('#search-for-games').on('click', updateJoinGamesTable);
