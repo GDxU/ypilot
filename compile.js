@@ -131,7 +131,10 @@ function compileTrigger(trigger, origConditions) {
       }
     }).join(', ') + ' }');
     eventNamedParams.forEach(p => {
-      variableInitialized[p[1].name] = true;
+      if (('object' == typeof p[1]) && p[1] !== null &&
+	  p[1].op == 'var') {
+	variableInitialized[p[1].name] = true;
+      } // TODO? do the same for the mangled prop name variable? prob. unnecc.
     });
   }
   var vars = getVars(conditions);

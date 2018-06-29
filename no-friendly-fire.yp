@@ -3,9 +3,9 @@ use "standard:owned.yp"
 use "standard:mortal.yp"
 
 disallow the event ?a Damages ?b when
-  (?a != ?b)
   ?a is Owned with owner ?aOwner
   ?aOwner is Aligned with team ?aTeam
   ?b is Owned with owner ?bOwner
   ?bOwner is Aligned with team ?aTeam
+  (?aOwner != ?bOwner)
 

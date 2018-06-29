@@ -106,6 +106,9 @@ then
 
 a Scored thing has a score which is a number (default 0)
 
+when ?player is added and ?player is a Player
+then ?player becomes Scored with score 0 # FIXME default not working
+
 in the event ?x Scores ?n then
   ?x is a Scored thing
   ?n is a number
@@ -114,6 +117,17 @@ when ?x Scores ?n and
   ?x is Scored with score ?oldScore
 then
   ?x becomes Scored with score (?oldScore + ?n)
+
+when ?x Scores ?n and
+  ?x is Aligned with team ?t
+  ?t is Scored with score ?oldScore
+then ?t becomes Scored with score (?oldScore + ?n)
+
+when ?a Kills ?b
+then ?a Scores 1
+
+when ?a Dies and ?a is Owned with owner ?aOwner
+then ?aOwner Scores (-1)
 
 a Sized thing has a size which is a number (default 0)
 a Team is Named and Sized and Scored
@@ -138,11 +152,23 @@ then
       rowTypes [?playerType, ?teamType] and
       sortedColumns [?c1, ?c2]
 
-when ?player is removed and
-  ?player is Aligned with team ?team
+the event ?player Joins ?team can happen
+the event ?player Leaves ?team can happen
+
+when ?player Joins ?team and
   ?team is Sized with size ?oldSize
 then
+  ?player becomes Aligned with team ?team
+  ?team becomes Sized with size (?oldSize + 1)
+
+when ?player Leaves ?team and
+  ?team is Sized with size ?oldSize
+then
+  # ?player becomes not Aligned
   ?team becomes Sized with size (?oldSize - 1)
+
+when ?player is removed and ?player is Aligned with team ?team
+then ?player Leaves ?team
 
 # add new players to the smaller team (or team 1 if there's a tie)
 
@@ -155,9 +181,7 @@ when ?player is added and
     Named with name "Team 2"
     Sized with size ?team2size
   (?team1size <= ?team2size)
-then
-  ?player becomes Aligned with team ?team1
-  ?team1 becomes Sized with size (?team1size + 1)
+then ?player Joins ?team1
 
 when ?player is added and
   ?player is a Player
@@ -169,6 +193,4 @@ when ?player is added and
     Named with name "Team 2"
     Sized with size ?team2size
   (?team1size > ?team2size)
-then
-  ?player becomes Aligned with team ?team2
-  ?team2 becomes Sized with size (?team2size + 1)
+then ?player Joins ?team2

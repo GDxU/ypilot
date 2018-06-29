@@ -314,7 +314,7 @@ permission
     { return { op: op, trigger: trigger, conditions: conditions }; }
 
 event_def
-  = event:event_ref 'can' sp 'happen' 
+  = event:event_ref 'can' sp 'happen' sp
     { return Object.assign({}, event, { op: 'defineEvent' }); }
   / 'in' sp event:event_ref 'then' sp
     parameters:parameter_decl+

@@ -1,1 +1,19 @@
 an Owned thing has an owner which is a Player
+
+the event ?a Gains ?b can happen
+only allow the event ?a Gains ?b when ?b is not Owned
+when ?a Gains ?b then ?b becomes Owned with owner ?a
+
+in the event ?a Loses ?b then ?b is an Owned thing
+only allow the event ?a Loses ?b when ?b is Owned with owner ?a
+when ?a Loses ?b then ?b becomes not Owned
+
+in the event ?a Gives ?b to ?c then ?b is an Owned thing
+when ?a Gives ?b to ?c then
+# FIXME this would be nicer, but doesn't actually work, because the permission
+# check for Gains happens before the Loses listener that causes ?b to become
+# not Owned happens, so the check fails
+#  ?a Loses ?b
+#  ?c Gains ?b
+# instead, just do becomes
+  ?b becomes Owned with owner ?c

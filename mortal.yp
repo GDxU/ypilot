@@ -1,6 +1,7 @@
 # can be damaged and killed
 a Mortal thing has
   a number of hitPoints (default 1)
+  a lastDamageOwner (default nothing)
 
 # can damage other things
 a Damaging thing has
@@ -20,11 +21,33 @@ then
 
 when ?a Damages ?b by ?damage and
   ?b is Mortal with hitPoints ?hp
+  ?a is Owned with owner ?owner
 then
   ?b becomes
-    Mortal with hitPoints (?hp - ?damage)
+    Mortal with hitPoints (?hp - ?damage) and lastDamageOwner ?owner
 
-# TODO turn this into a "dies" event
+when ?a Damages ?b by ?damage and
+  ?b is Mortal with hitPoints ?hp
+  ?a is not Owned
+then
+  ?b becomes
+    Mortal with hitPoints (?hp - ?damage) and lastDamageOwner nothing
+
+# basics of death and killing
+in the event ?a Dies then ?a is a Mortal thing
+in the event ?a Kills ?b then ?b is a Mortal thing
+when ?a Kills ?b then ?b Dies
+when ?b Dies then ?b becomes not Mortal
+
+when ?b becomes Mortal with hitPoints ?hp and lastDamageOwner ?a and
+  (?hp <= 0)
+  (?a != nothing)
+then ?a Kills ?b
+
+when ?b becomes Mortal with hitPoints ?hp and lastDamageOwner nothing and
+  (?hp <= 0)
+then ?b Dies
+
 # Dead mostly just marks things that have died, but adjectives are required to
 # have properties, so we might as well include a death point
 a Dead thing has
@@ -32,16 +55,13 @@ a Dead thing has
 
 # just in case someone wants something that is Mortal but not Located, whose
 # hitPoints would be deducted by something other than Damaging hits
-when ?a becomes Mortal with hitPoints ?hp and
-  (?hp <= 0)
-  ?a is not Located
+when ?a Dies and ?a is not Located
 then ?a becomes Dead
 
 # when you have no more hitPoints, you become Dead at your current location,
 # but you temporarily go to a private space (to avoid becoming not Located at
 # all, which isn't allowed for e.g. player ships)
-when ?a becomes Mortal with hitPoints ?hp and
-  (?hp <= 0)
+when ?a Dies and
   ?a is Located with space ?s and position ?p
 then
   a new Point ?dp is added which is
@@ -50,10 +70,6 @@ then
   ?a becomes
     Located with space ?purgatory
     Dead with deathPoint ?dp
-
-# no matter how you become Dead, you're not Mortal anymore (until respawn)
-when ?a becomes Dead
-then ?a becomes not Mortal
 
 # returns to a spawn point after being killed, after a delay
 a Respawnable thing is Mortal and has
@@ -66,8 +82,13 @@ a Respawnable thing is Mortal and has
 a Respawning thing is Dead and has
   a timeToRespawn which is a number
 
+in the event ?a Respawns at ?sp with hitPoints ?hp then
+  ?a is a Respawning thing
+  ?sp is a Vec2 object
+  ?hp is a number
+
 # when you die and have lives left, decrement lives and start respawning
-when ?a becomes Dead and
+when ?a Dies and
   ?a is Respawnable with spawnDelay ?d and lives ?l
   (?l > 0)
 then
@@ -84,6 +105,9 @@ then ?a becomes Respawning with timeToRespawn (?t - 1)
 # respawn now
 when ?a becomes Respawning with timeToRespawn 0 and
   ?a is Respawnable with spawnPoint ?sp and initialHitPoints ?hp
+then ?a Respawns at ?sp with hitPoints ?hp
+
+when ?a Respawns at ?sp with hitPoints ?hp and
   ?a is Located with space ?purgatory
   ?sp is Located with space ?s and position ?p
 then
@@ -95,8 +119,9 @@ then
 
 # reset velocity and orientation when we finish respawning (but only if
 # Mobile/Oriented to begin with)
-when ?a becomes not Respawning and ?a is Mobile
+when ?a Respawns and ?a is Mobile
 then ?a becomes Mobile with velocity Vec2[0,0]
 
-when ?a becomes not Respawning and ?a is Oriented
+when ?a Respawns and ?a is Oriented
 then ?a becomes Oriented with orientation (-π/2) # FIXME should be a property of the spawn point and/or Respawnable?
+# TODO decide whether omitting later arguments of a custom event used as a when trigger is OK or not (it happens to work, but...)

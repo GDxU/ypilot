@@ -6,6 +6,16 @@ a Bouncy thing is Tangible and has
   # >1 = flubber
   a coefficientOfRestitution which is a number (default 1)
 
+in the event ?a Bounces off ?b to ?newPos with velocity ?newVel then
+  ?a is a Bouncy thing
+  ?b is a Solid thing
+  ?newPos is a Vec2 object
+  ?newVel is a Vec2 object
+
+when ?a Bounces off ?b to ?newPos with velocity ?newVel then
+  ?a becomes Mobile with velocity ?newVel
+  ?a becomes Located with position ?newPos
+
 # mobile penetrator
 when ?penetrator point ?point penetrates
      ?penetrated edge from ?from to ?to
@@ -23,8 +33,8 @@ then
   let ?reflRV be (?edge * (2 * (?rv · ?edge) / (?edge · ?edge)) - ?rv)
   # replace the ?rv part of ?v with proportion ?r of ?reflRV
   let ?newV be (?v - ?rv + (?reflRV * ?r))
-  ?penetrator becomes Mobile with velocity ?newV
-  ?penetrator becomes Located with position (?pos + (?newV - ?rv) * ?t)
+  ?penetrator Bounces off ?penetrated
+    to (?pos + (?newV - ?rv) * ?t) with velocity ?newV
 
 # mobile penetrated
 when ?penetrator point ?point penetrates
@@ -44,9 +54,8 @@ then
   let ?reflRV be (?edge * (2 * (?rv · ?edge) / (?edge · ?edge)) - ?rv)
   # replace the ?rv part of ?v with proportion ?r of ?reflRV
   let ?newV be (?v - ?rv + (?reflRV * ?r))
-  ?penetrated becomes Mobile with velocity ?newV
   let ?newPos be (?pos + (?newV - ?rv) * ?t)
-  ?penetrated becomes Located with position ?newPos
+  ?penetrated Bounces off ?penetrator to ?newPos with velocity ?newV
 
 # mobile penetrator and penetrated
 when ?penetrator point ?point penetrates
@@ -70,10 +79,10 @@ then
   let ?newV1 be (?v1 - ?rv + (?reflRV * (1.0 / ?rm)))
   # likewise replace the -?rv part of ?v2 with proportion ?rm of -?reflRV
   let ?newV2 be (?v2 + ?rv - (?reflRV * ?rm))
-  ?penetrator becomes Mobile with velocity ?newV1
-  ?penetrator becomes Located with position (?p1 + (?newV1 - ?rv) * ?t)
-  ?penetrated becomes Mobile with velocity ?newV2
-  ?penetrated becomes Located with position (?p2 + (?newV2 + ?rv) * ?t)
+  ?penetrator Bounces off ?penetrated
+    to (?p1 + (?newV1 - ?rv) * ?t) with velocity ?newV1
+  ?penetrated Bounces off ?penetrator
+    to (?p2 + (?newV2 + ?rv) * ?t) with velocity ?newV2
 
 # FIXME the above doesn't handle multiple collisions in the same frame well
 # in particular, it's possible for a single frame to cause two penetrate events leading to two parallel(ish) becomeLocated events, which is a problem when both becomeLocated events moves the thing to a new bin, because the second becomeLocated event has already saved the old location, so it will try to remove the thing from the old bin again

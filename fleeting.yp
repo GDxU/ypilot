@@ -2,6 +2,10 @@
 a Fleeting thing has
   a timeToLive which is a number (default 30) # 30 ticks, i.e. 1 second
 
+in the event ?f Expires then ?f is a Fleeting thing
+
+when ?f Expires then ?f is removed
+
 when the clock ticks and
   there is a thing ?f which is Fleeting with timeToLive ?t
   (?t > 0)
@@ -9,4 +13,4 @@ then
   ?f becomes Fleeting with timeToLive (?t - 1)
 
 when ?f becomes Fleeting with timeToLive 0
-then ?f is removed
+then ?f Expires

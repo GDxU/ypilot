@@ -1,5 +1,7 @@
 use "standard:motile.yp"
 
+# TODO? convert "then ... becomes ..." herein to custom events
+
 # movement controls
 
 when ?player presses "ArrowUp" and
@@ -51,22 +53,7 @@ a Selective thing has
   a secondaryIndex which is a number (default 0)
   a secondarySecondary flag (default true)
 
-# TODO language extensions:
-# # array subscripting: ?slots[?i]
-# # Capacious line:
-#  # allow let in conditions
-#  . make == act like let in conditions when LHS is not yet declared
-#  . allow more than just variables to the left of 'is' in conditions
-# # pressing/releasing/holding one/all of a set of keys:
-#  # ?x is holding down ?y which is one of [...]
-#  # ?x is not holding down any of [...]
-#  X ?x presses/releases ?y which is one of [...]
-#   # ?x presses/releases ?y and ?y is in [...]
-#  # ?x is (not) holding down all of [...]
-# # somehow convert digits to indices
-#  # "Digit3"[5] == "5" == 5 (no additional new language feature necessary)
-# # boolean logic operators as words (and or not), parens required to disambiguate with places where 'and' and 'not' occur elsewhere in the grammar
-# ? top-level let, and allow var after 'any/all/one of', so I can factor out digit list
+# TODO? might be nice to allow top-level let, and allow var after 'any/all/one of', so I can factor out digit list
 
 # primary fire key is right control
 when ?player presses "ControlRight" and

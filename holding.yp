@@ -3,8 +3,11 @@ a Capacious thing has
   a content (default nothing)
   a capacity which is a number (default 1)
   # restrictions on the type of thing this slot can hold; the arrays of types here are treated as unions; may use special types "Any" (top) or "No" (bottom)
+  # TODO: do these as permissions
   some allowedContentTypes which are Typing things (default [])
   some deniedContentTypes which are Typing things (default [])
+
+# TODO? Contains/Releases events (or going the other way, Enters/Leaves?)
 
 # can hold several different things in different slots
 a Holding thing has

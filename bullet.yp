@@ -7,7 +7,10 @@ when ?b hits ?a and
   ?b is a Bullet
   ?a is not Fleeting # FIXME want "not a Bullet" but language doesn't allow it
 then
-  ?b is removed
+  # this was erasing ownership too early
+  # ?b is removed
+  # this causes ?b to expire and be removed next tick
+  ?b becomes Fleeting with timeToLive 1
 
 # bullets don't damage each other
 disallow the event ?b1 Damages ?b2 when
