@@ -1,0 +1,15 @@
+use "standard:scored.yp"
+
+when the game starts
+then
+  a new Column ?scoreCol is added which is
+    Named with name "score"
+    Columnar with cellPath "Scored score" and reverseSort true
+  a new Column ?nameCol is added which is
+    Named with name "name"
+    Columnar with cellPath "Named name"
+  a new Board ?scoreboard is added which is
+    BoardLike with
+      columns [?scoreCol, ?nameCol] and
+      rowTypes [] and
+      sortedColumns [?scoreCol, ?nameCol]

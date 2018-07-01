@@ -15,6 +15,7 @@ INSTALLED_REQUIRES=$(REQUIRES:%=node_modules/%/package.json)
 MAIN=main.js
 SRCS = \
 	$(MAIN) \
+	arrays.js \
 	ask.js \
 	chat.js \
 	clock.js \
@@ -57,6 +58,10 @@ STDLIBS = \
 	no-friendly-fire.yp \
 	no-self-fire.yp \
 	owned.yp \
+	players-score-for-teams.yp \
+	score-players.yp \
+	score-teams.yp \
+	scoreboard.yp \
 	scored.yp \
 	scores-count-defeats.yp \
 	team.yp \

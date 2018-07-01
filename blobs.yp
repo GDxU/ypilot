@@ -14,8 +14,9 @@ use "standard:scored.yp"
 use "standard:team.yp"
 use "standard:join-smallest-team.yp"
 use "standard:deathmatch.yp"
-#use "standard:scores-count-defeats.yp"
-use "standard:elo-scoring.yp"
+use "standard:scores-count-defeats.yp"
+#use "standard:elo-scoring.yp"
+use "standard:players-score-for-teams.yp"
 
 a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
@@ -112,36 +113,7 @@ when ?player is removed and
   ?player is Piloting with ship ?ship
 then ?ship is removed
 
-# keep score
-
-when ?player is added and ?player is a Player
-then ?player becomes Scored with score 0 # FIXME default not working
-
-when ?x Scores ?n and
-  ?x is Aligned with team ?t
-  ?t is Scored with score ?oldScore
-then ?t becomes Scored with score (?oldScore + ?n)
-
-# make two teams and track their sizes, and make a scoreboard
-
-when the game starts and
-  there is a thing ?playerType which is Named with name "Player"
-  there is a thing ?teamType which is Named with name "Team"
+when the game starts
 then
-  a new Team ?team1 is added which is
-    Named with name "Team 1"
-    Scored
-  a new Team ?team2 is added which is
-    Named with name "Team 2"
-    Scored
-  a new Column ?c1 is added which is
-    Named with name "score"
-    Columnar with cellPath "Scored score" and reverseSort true
-  a new Column ?c2 is added which is
-    Named with name "name"
-    Columnar with cellPath "Named name"
-  a new Board ?b is added which is
-    BoardLike with
-      columns [?c1, ?c2] and
-      rowTypes [?playerType, ?teamType] and
-      sortedColumns [?c1, ?c2]
+  a new Team ?red is added which is Named with name "red"
+  a new Team ?blue is added which is Named with name "blue"

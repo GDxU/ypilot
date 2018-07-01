@@ -1,0 +1,17 @@
+use "standard:scoreboard.yp"
+use "standard:team.yp"
+
+when ?team is added and ?team is a Team
+then ?team becomes Scored with score 0 # FIXME default not working
+
+when ?board is added and
+  ?board is BoardLike with columns ?oldColumns and rowTypes ?oldTypes
+  there is a thing ?teamType which is Named with name "Team"
+  # ?teamType is a Type
+then
+  a new Column ?teamColumn is added which is
+    Named with name "team"
+    Columnar with cellPath "Aligned team Named name"
+  ?board becomes BoardLike with
+    columns (?oldColumns + ?teamColumn) and
+    rowTypes (?oldTypes + ?teamType)

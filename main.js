@@ -1,5 +1,6 @@
 // put certain things in window so that compiled configuration can use them
 require('setimmediate');
+require('./arrays.js');
 window.PeerConnection = require('./peer-connection.js');
 const Router = require('./router.js');
 window.router = new Router();
