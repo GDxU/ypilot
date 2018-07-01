@@ -1,0 +1,22 @@
+use "standard:defeats.yp"
+use "standard:scored.yp"
+
+# use Elo rating system to weight scores from defeats according to the previous
+# scores of the opponents, so that pros score less from beating up newbies than
+# from other pros
+# https://en.wikipedia.org/wiki/Elo_rating_system#Theory
+when ?a Defeats ?b and
+  ?a is Scored with score ?ra
+  ?b is Scored with score ?rb
+then
+  # compute probabilistically-expected scores for a contest of ?a vs. ?b
+  let ?ea be (1 / (1 + exp(log(10) * (?rb - ?ra) / 400)))
+  let ?eb be (1 / (1 + exp(log(10) * (?ra - ?rb) / 400)))
+  # actual scores for this contest
+  let ?sa be 1 # win
+  let ?sb be 0 # loss
+  # K factor, the maximum possible score adjustment per defeat event
+  let ?k be 32
+  # adjust the scores
+  ?a Scores (?k * (?sa - ?ea))
+  ?b Scores (?k * (?sb - ?eb))

@@ -1,0 +1,4 @@
+use "standard:defeats.yp"
+use "standard:mortal.yp"
+
+when ?a Kills ?b and ?b is Owned with owner ?bOwner then ?a Defeats ?bOwner

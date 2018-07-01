@@ -1,0 +1,8 @@
+use "standard:defeats.yp"
+use "standard:scored.yp"
+
+when ?a Defeats ?b and ?a is Scored
+then ?a Scores 1
+
+when ?a Defeats ?b and ?b is Scored
+then ?b Scores (-1)

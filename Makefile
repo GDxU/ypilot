@@ -38,6 +38,9 @@ SRCS = \
 		bouncy.yp \
 		bullet.yp \
 		controls.yp \
+		deathmatch.yp \
+		defeats.yp \
+		elo-scoring.yp \
 		fleeting.yp \
 		gun.yp \
 		holding.yp \
@@ -49,6 +52,7 @@ SRCS = \
 		no-self-fire.yp \
 		owned.yp \
 		scored.yp \
+		scores-count-defeats.yp \
 		team.yp \
 		wall.yp \
 	uplink.js \

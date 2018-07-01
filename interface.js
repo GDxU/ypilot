@@ -300,7 +300,11 @@ function updateBoard() {
       row.forEach(cell => {
 	var td = $(document.createElement('td'));
 	td.addClass(typeof cell);
-	td.text('' + cell);
+	if ('number' == typeof cell) {
+	  td.text(cell.toFixed(1));
+	} else {
+	  td.text('' + cell);
+	}
 	tr.append(td);
       });
       table.append(tr);

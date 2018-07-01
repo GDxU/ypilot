@@ -13,6 +13,9 @@ use "standard:no-friendly-fire.yp"
 use "standard:scored.yp"
 use "standard:team.yp"
 use "standard:join-smallest-team.yp"
+use "standard:deathmatch.yp"
+#use "standard:scores-count-defeats.yp"
+use "standard:elo-scoring.yp"
 
 a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
@@ -118,12 +121,6 @@ when ?x Scores ?n and
   ?x is Aligned with team ?t
   ?t is Scored with score ?oldScore
 then ?t becomes Scored with score (?oldScore + ?n)
-
-when ?a Kills ?b
-then ?a Scores 1
-
-when ?a Dies and ?a is Owned with owner ?aOwner
-then ?aOwner Scores (-1)
 
 # make two teams and track their sizes, and make a scoreboard
 
