@@ -1,0 +1,60 @@
+use "standard:team.yp"
+
+a Smallest thing is Multifarious and has
+  # this flag doesn't actually matter; adjectives just need to have properties
+  a smallest flag (default true)
+
+# make all teams Smallest when they're first added
+when ?team is added and ?team is a Team
+then ?team becomes Smallest
+# ... but immediately correct that if they're not actually smallest
+when ?team1 becomes Smallest and
+  there is a thing ?team2 which is Smallest
+  (?team1 != ?team2)
+  ?team1 is Multifarious with count ?count1
+  ?team2 is Multifarious with count ?count2
+  (?count1 >= ?count2)
+then ?team1 becomes not Smallest
+# ... or correct the previous smallest team otherwise
+when ?team1 becomes Smallest and
+  there is a thing ?team2 which is Smallest
+  (?team1 != ?team2)
+  ?team1 is Multifarious with count ?count1
+  ?team2 is Multifarious with count ?count2
+  (?count1 < ?count2)
+then ?team2 becomes not Smallest
+
+# a team becomes smallest when its count drops below the current smallest team
+when ?team1 becomes Multifarious with count ?count1 and
+  ?team1 is not Smallest
+  there is a thing ?team2 which is
+    Multifarious with count ?count2
+    Smallest
+  (?count1 < ?count2)
+then
+  ?team2 becomes not Smallest
+  ?team1 becomes Smallest
+
+# a team becomes not smallest when its count rises and there is now another
+# smaller team
+# NOTE: this may initially set more than one other team as Smallest, but that's
+# OK because the initial setup rules above will kick in and make all but the
+# actual smallest become not Smallest
+when ?team1 becomes Multifarious with count ?count1 and
+  ?team1 is Smallest
+  there is a thing ?team2 which is
+    Multifarious with count ?count2
+    not Smallest
+  (?count1 > ?count2)
+then
+  ?team1 becomes not Smallest
+  ?team2 becomes Smallest
+
+# TODO handle team removal?
+
+# new players join the smallest team
+when ?player is added and
+  ?player is a Player
+  there is a thing ?team which is Smallest
+  ?team is a Team
+then ?player Joins ?team

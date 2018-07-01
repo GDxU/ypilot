@@ -164,6 +164,8 @@ function compileOp(ast) {
 	} else if (name in stdlib) {
 	  usedUrls[name] = true;
 	  return compileStatements(parse(stdlib[name]));
+	} else {
+	  throw new Error("not found in standard library: " + name);
 	}
       } else {
 	console.log(JSON.stringify(ast));

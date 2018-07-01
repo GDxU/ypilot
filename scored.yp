@@ -1,0 +1,11 @@
+a Scored thing has a score which is a number (default 0)
+
+in the event ?x Scores ?n then
+  ?x is a Scored thing
+  ?n is a number
+
+when ?x Scores ?n and
+  ?x is Scored with score ?oldScore
+then
+  ?x becomes Scored with score (?oldScore + ?n)
+

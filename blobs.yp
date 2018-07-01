@@ -10,6 +10,9 @@ use "standard:controls.yp"
 use "standard:owned.yp"
 use "standard:gun.yp"
 use "standard:no-friendly-fire.yp"
+use "standard:scored.yp"
+use "standard:team.yp"
+use "standard:join-smallest-team.yp"
 
 a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
@@ -104,19 +107,8 @@ then
 
 # keep score
 
-a Scored thing has a score which is a number (default 0)
-
 when ?player is added and ?player is a Player
 then ?player becomes Scored with score 0 # FIXME default not working
-
-in the event ?x Scores ?n then
-  ?x is a Scored thing
-  ?n is a number
-
-when ?x Scores ?n and
-  ?x is Scored with score ?oldScore
-then
-  ?x becomes Scored with score (?oldScore + ?n)
 
 when ?x Scores ?n and
   ?x is Aligned with team ?t
@@ -129,17 +121,18 @@ then ?a Scores 1
 when ?a Dies and ?a is Owned with owner ?aOwner
 then ?aOwner Scores (-1)
 
-a Sized thing has a size which is a number (default 0)
-a Team is Named and Sized and Scored
-
 # make two teams and track their sizes, and make a scoreboard
 
 when the game starts and
   there is a thing ?playerType which is Named with name "Player"
   there is a thing ?teamType which is Named with name "Team"
 then
-  a new Team ?team1 is added which is Named with name "Team 1"
-  a new Team ?team2 is added which is Named with name "Team 2"
+  a new Team ?team1 is added which is
+    Named with name "Team 1"
+    Scored
+  a new Team ?team2 is added which is
+    Named with name "Team 2"
+    Scored
   a new Column ?c1 is added which is
     Named with name "score"
     Columnar with cellPath "Scored score" and reverseSort true
@@ -151,46 +144,3 @@ then
       columns [?c1, ?c2] and
       rowTypes [?playerType, ?teamType] and
       sortedColumns [?c1, ?c2]
-
-the event ?player Joins ?team can happen
-the event ?player Leaves ?team can happen
-
-when ?player Joins ?team and
-  ?team is Sized with size ?oldSize
-then
-  ?player becomes Aligned with team ?team
-  ?team becomes Sized with size (?oldSize + 1)
-
-when ?player Leaves ?team and
-  ?team is Sized with size ?oldSize
-then
-  # ?player becomes not Aligned
-  ?team becomes Sized with size (?oldSize - 1)
-
-when ?player is removed and ?player is Aligned with team ?team
-then ?player Leaves ?team
-
-# add new players to the smaller team (or team 1 if there's a tie)
-
-when ?player is added and
-  ?player is a Player
-  there is a thing ?team1 which is
-    Named with name "Team 1"
-    Sized with size ?team1size
-  there is a thing ?team2 which is
-    Named with name "Team 2"
-    Sized with size ?team2size
-  (?team1size <= ?team2size)
-then ?player Joins ?team1
-
-when ?player is added and
-  ?player is a Player
-  ?player is not Aligned # prevent both rules from firing
-  there is a thing ?team1 which is
-    Named with name "Team 1"
-    Sized with size ?team1size
-  there is a thing ?team2 which is
-    Named with name "Team 2"
-    Sized with size ?team2size
-  (?team1size > ?team2size)
-then ?player Joins ?team2

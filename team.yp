@@ -1,0 +1,27 @@
+use "standard:aligned.yp"
+
+a Multifarious thing has a count which is a number (default 0)
+
+a Team is Named and Multifarious
+
+in the event ?player Joins ?team then ?team is a Multifarious thing
+in the event ?player Leaves ?team then ?team is a Multifarious thing
+
+when ?player Joins ?team and
+  ?team is Multifarious with count ?oldCount
+then
+  ?team becomes Multifarious with count (?oldCount + 1)
+  ?player becomes Aligned with team ?team
+
+when ?player Leaves ?team and
+  ?team is Multifarious with count ?oldCount
+then ?team becomes Multifarious with count (?oldCount - 1)
+
+when ?player Leaves ?team and
+  # hasn't already joined another team, or left the game entirely
+  ?player is Aligned with team ?team
+then ?player becomes not Aligned
+
+# FIXME this doesn't work because ?player has no properties after being removed
+when ?player is removed and ?player is Aligned with team ?team
+then ?player Leaves ?team

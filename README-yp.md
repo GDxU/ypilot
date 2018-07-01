@@ -384,10 +384,13 @@ TODO
     gun.yp
     holding.yp
     inertial.yp
+    join-smallest-team.yp
     mortal.yp
     motile.yp
     no-friendly-fire.yp
     no-self-fire.yp
     owned.yp
+    scored.yp
+    team.yp
     wall.yp
 

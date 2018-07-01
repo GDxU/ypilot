@@ -202,7 +202,7 @@ function remove(thing) {
       this.unbecome(thing, adjective);
     }
   }
-  this.emit('remove', thing); // FIXME this event is pretty useless unless it comes before the unbecome events
+  this.emit('remove', thing); // FIXME this event is pretty useless unless it comes before the unbecome events... no, more than that, it needs to come before the adjective instances are removed. Maybe emit can return a promise that resolves after all listeners for that event have run?
 },
 
 //
