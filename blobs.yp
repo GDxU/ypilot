@@ -105,6 +105,10 @@ then
     Owned with owner ?player
   ?player becomes Piloting with ship ?ship
 
+when ?player is removed and
+  ?player is Piloting with ship ?ship
+then ?ship is removed
+
 # keep score
 
 when ?player is added and ?player is a Player

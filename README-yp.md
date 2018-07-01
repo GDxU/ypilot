@@ -125,11 +125,11 @@ This event happens once per animation frame, currently 20 times a second.
 
     ?thing is added
 
-This event happens when a new thing is added. It is best used with conditions that test what kind of thing `?thing` is and retrieve its properties.
+This event happens immediately after a new thing is added. It is best used with conditions that test what kind of thing `?thing` is and retrieve its properties.
 
     ?thing is removed
 
-This event happens when an existing thing is removed from the game.
+This event happens immediately before an existing thing is removed from the game. A rule triggered by this event will still have access to the thing's properties, but any further rules that might be triggered by that rule's effects will not.
 
     ?thing becomes Wiggly with frequency ?f and amplitude ?a
 

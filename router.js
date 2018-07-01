@@ -49,51 +49,59 @@ function once(eventName, listener) {
   this.on(eventName, listener);
 },
 
+// schedule the listeners on eventName to be called with ...args, and return a
+// promise that resolves after all listeners have been called, or rejects if
+// the event is not allowed
 function emit(eventName, ...args) {
-  if (!this.isAllowed(eventName, ...args)) {
-    if (this.eventLogEnabled) {
-      this.eventLog.push(JSON.stringify(['notAllowed', eventName, ...args]));
+  return new Promise((resolve, reject) => {
+    if (!this.isAllowed(eventName, ...args)) {
+      if (this.eventLogEnabled) {
+	this.eventLog.push(JSON.stringify(['notAllowed', eventName, ...args]));
+      }
+      reject();
+      return;
     }
-    return;
-  }
-  if (this.eventLogEnabled) {
-    this.eventLog.push(JSON.stringify([eventName, ...args]));
-  }
-  if (eventName in this.listeners) {
-    // call each listener via setImmediate so that no listener gets called in
-    // the middle of another listener and sees its effect only partly applied.
-    // Also (if this isn't already an 'idle' or 'noMoreHits' event) keep track
-    // of how many setImmediate calls are outstanding, and when that count
-    // drops to 0, emit an 'idle' event, which is used for e.g. detecting
-    // secondary collisions that happen when a primary collision causes
-    // something to move (bounce)
-    if (eventName == 'idle' || eventName == 'noMoreHits') {
-      this.listeners[eventName].forEach(listener => setImmediate(listener));
-    } else {
-      this.listeners[eventName].forEach(listener => {
-	this.numPendingListeners++;
-	setImmediate(() => {
-	  try {
-	    listener(...args);
-	  } finally {
-	    if ((--this.numPendingListeners) == 0) {
-	      this.emit('idle');
+    if (this.eventLogEnabled) {
+      this.eventLog.push(JSON.stringify([eventName, ...args]));
+    }
+    if (eventName in this.listeners) {
+      // call each listener via setImmediate so that no listener gets called in
+      // the middle of another listener and sees its effect only partly applied.
+      // Also (if this isn't already an 'idle' or 'noMoreHits' event) keep track
+      // of how many setImmediate calls are outstanding, and when that count
+      // drops to 0, emit an 'idle' event, which is used for e.g. detecting
+      // secondary collisions that happen when a primary collision causes
+      // something to move (bounce)
+      if (eventName == 'idle' || eventName == 'noMoreHits') {
+	this.listeners[eventName].forEach(listener => setImmediate(listener));
+      } else {
+	this.listeners[eventName].forEach(listener => {
+	  this.numPendingListeners++;
+	  setImmediate(() => {
+	    try {
+	      listener(...args);
+	    } finally {
+	      if ((--this.numPendingListeners) == 0) {
+		this.emit('idle');
+	      }
 	    }
+	  });
+	});
+      }
+      // remove any listeners that were added with once
+      if (eventName in this.onceListeners) {
+	this.onceListeners[eventName].forEach(l => {
+	  var i = this.listeners[eventName].indexOf(l);
+	  if (i != -1) {
+	    this.listeners[eventName].splice(i,1);
 	  }
 	});
-      });
+	this.onceListeners[eventName] = [];
+      }
     }
-    // remove any listeners that were added with once
-    if (eventName in this.onceListeners) {
-      this.onceListeners[eventName].forEach(l => {
-        var i = this.listeners[eventName].indexOf(l);
-	if (i != -1) {
-	  this.listeners[eventName].splice(i,1);
-	}
-      });
-      this.onceListeners[eventName] = [];
-    }
-  }
+    // schedule the promise to be resolved after all the other stuff scheduled
+    setImmediate(resolve);
+  });
 },
 
 function isIdle() {
@@ -176,6 +184,7 @@ function unbecome(thing, adjective) {
   this.declareAdjective(adjective); // make sure it exists first
   if (thing in this.adjectives[adjective]) {
     oldProperties = this.adjectives[adjective][thing];
+    // TODO? delete in a then() after emit, like remove does
     delete this.adjectives[adjective][thing];
     this.emit('unbecome' + adjective, thing, oldProperties);
   }
@@ -197,12 +206,14 @@ function add(thing, adjectives) {
 },
 
 function remove(thing) {
-  for (var adjective in this.adjectives) {
-    if (thing in this.adjectives[adjective]) {
-      this.unbecome(thing, adjective);
+  this.emit('remove', thing).then(() => {
+    for (var adjective in this.adjectives) {
+      if (thing in this.adjectives[adjective]) {
+	this.unbecome(thing, adjective);
+      }
     }
-  }
-  this.emit('remove', thing); // FIXME this event is pretty useless unless it comes before the unbecome events... no, more than that, it needs to come before the adjective instances are removed. Maybe emit can return a promise that resolves after all listeners for that event have run?
+    // TODO? replace any references to thing with nothing (null)
+  });
 },
 
 //

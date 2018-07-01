@@ -22,6 +22,5 @@ when ?player Leaves ?team and
   ?player is Aligned with team ?team
 then ?player becomes not Aligned
 
-# FIXME this doesn't work because ?player has no properties after being removed
 when ?player is removed and ?player is Aligned with team ?team
 then ?player Leaves ?team
