@@ -161,7 +161,7 @@ function compileOp(ast) {
 	var name = ast.url.substring(9);
 	if (name in usedUrls) {
 	  return '';
-	} else if (name in stdlib) {
+	} else if ((name in stdlib) && stdlib[name] !== undefined) {
 	  usedUrls[name] = true;
 	  return compileStatements(parse(stdlib[name]));
 	} else {

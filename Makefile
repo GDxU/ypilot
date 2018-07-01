@@ -33,37 +33,47 @@ SRCS = \
 	space.js \
 	svg.js \
 	stdlib.js \
-		aligned.yp \
-		base.yp \
-		bouncy.yp \
-		bullet.yp \
-		controls.yp \
-		deathmatch.yp \
-		defeats.yp \
-		elo-scoring.yp \
-		fleeting.yp \
-		gun.yp \
-		holding.yp \
-		inertial.yp \
-		join-smallest-team.yp \
-		mortal.yp \
-		motile.yp \
-		no-friendly-fire.yp \
-		no-self-fire.yp \
-		owned.yp \
-		scored.yp \
-		scores-count-defeats.yp \
-		team.yp \
-		wall.yp \
 	uplink.js \
 	user-names.js \
 	vec2.js \
 	welcome.js
 
+STDLIBS = \
+	aligned.yp \
+	base.yp \
+	bouncy.yp \
+	bullet.yp \
+	controls.yp \
+	deathmatch.yp \
+	defeats.yp \
+	elo-scoring.yp \
+	fleeting.yp \
+	gun.yp \
+	holding.yp \
+	inertial.yp \
+	join-smallest-team.yp \
+	mortal.yp \
+	motile.yp \
+	no-friendly-fire.yp \
+	no-self-fire.yp \
+	owned.yp \
+	scored.yp \
+	scores-count-defeats.yp \
+	team.yp \
+	wall.yp
+
 all:: ypilot.js
 
 node_modules/%/package.json:
 	$(NPM) install $*
+
+stdlib.js: $(STDLIBS)
+	( echo -e "const fs = require('fs');\nmodule.exports = {" && \
+	  for l in $^ ; do \
+	    echo "  '$$l':	fs.readFileSync(__dirname + '/$$l',	'utf8')," ; \
+	  done && \
+	  echo -e "  'not-a-library-dont-use-this': undefined\n};" \
+	) >$@
 
 ypilot.js: $(INSTALLED_REQUIRES) $(SRCS)
 	node_modules/browserify/bin/cmd.js -t brfs --debug $(MAIN) >$@
@@ -77,11 +87,20 @@ test:: $(INSTALLED_REQUIRES) $(SRCS) tests/*.js
 test-%:: $(INSTALLED_REQUIRES) $(SRCS) tests/%.js
 	cd tests && ../node_modules/mocha/bin/mocha $*.js
 
+docs: README.html README-yp.html stdlib.html
+
 %.html: md2html.rb %.md 
 	./$+ >$@
 
+stdlib.md: $(STDLIBS)
+	( echo -e "# YPilot Standard Libraries" && \
+	  for l in $^ ; do \
+	    echo " - [$$l]($$l)" ; \
+	  done \
+	) >$@
+
 clean::
-	rm -f ypilot.js parser.js README.html README-yp.html
+	rm -f ypilot.js parser.js stdlib.js stdlib.md README.html README-yp.html stdlib.html
 
 distclean:: clean
 	rm -rf node_modules

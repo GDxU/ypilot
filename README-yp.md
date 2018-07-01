@@ -374,27 +374,4 @@ Note that when a player joins the game, a `Player` is added to the game which is
 
 ## Standard libraries
 
-TODO
-
-    aligned.yp
-    bouncy.yp
-    bullet.yp
-    controls.yp
-    deathmatch.yp
-    defeats.yp
-    elo-scoring.yp
-    fleeting.yp
-    gun.yp
-    holding.yp
-    inertial.yp
-    join-smallest-team.yp
-    mortal.yp
-    motile.yp
-    no-friendly-fire.yp
-    no-self-fire.yp
-    owned.yp
-    scored.yp
-    scores-count-defeats.yp
-    team.yp
-    wall.yp
-
+See the index of standard library `.yp` files here: ([markdown](stdlib.md)) ([html](stdlib.html)).

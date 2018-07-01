@@ -3,4 +3,7 @@ README*.html
 old
 ypilot.js
 parser.js
+stdlib.js
+stdlib.md
+stdlib.html
 node_modules
