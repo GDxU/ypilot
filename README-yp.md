@@ -210,7 +210,7 @@ Usually keys and key lists will be literal values as above, but they may also be
 
     ?part is in ?whole
 
-This condition is true when `?part` is an element of the array `?whole`, or when `?part` is a substring of the string `?whole`. This can be particularly useful in combination with `presses`/`releases` events, e.g. a rule starting with `when ?player presses ?key and ?key is in ["ShiftLeft", "ShiftRight"] ...` will fire when a player presses either shift key.
+This condition is true when `?part` is an element of the array `?whole`, or when `?part` is a substring of the string `?whole`. This can be particularly useful in combination with `presses`/`releases` events, e.g. a rule starting with `when ?player presses ?key and ?key is in ["ShiftLeft", "ShiftRight"] ...` will fire when a player presses either shift key. `?part is not in ?whole` also works as you might expect.
 
     (?x <= ?y)
 
@@ -247,6 +247,10 @@ This effect causes `?map` to be read, which causes a `map reads` event for each 
     let ?x be (?y + 42)
 
 This effect assigns the value of the expression the right (`(?y + 42)` in this case) to the variable on the left (`?x`) for use in later effects in the same rule. `let` may also be used as a condition, in which case it is always true (regardless of the assigned value), and the variable may be used in later conditions and effects in the same rule.
+
+    chat (?name + " won!")
+
+This effect sends a system message in the chat box containing the value of the expression `(?name + " won!")`. System messages appear in italics and begin with two bold asterisks.
 
     debug (?y + 42)
 

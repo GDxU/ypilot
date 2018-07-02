@@ -17,6 +17,10 @@ use "standard:deathmatch.yp"
 use "standard:scores-count-defeats.yp"
 #use "standard:elo-scoring.yp"
 use "standard:players-score-for-teams.yp"
+use "standard:last-player-standing.yp"
+
+#use "standard:play-to-score-threshold.yp"
+#when ?round Begins then ?round becomes Thresholded with threshold 5
 
 a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
@@ -99,7 +103,7 @@ then
     Located with space ?space and position ?spawnPos
   a new Ship ?ship is added which is
     Located with space ?space and position ?spawnPos
-    Respawnable with spawnPoint ?spawnPoint
+    Respawnable with spawnPoint ?spawnPoint and lives 3
     Oriented with orientation (-π/2)
     Tangible with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
     Bouncy with coefficientOfRestitution 0.2
@@ -117,3 +121,14 @@ when the game starts
 then
   a new Team ?red is added which is Named with name "red"
   a new Team ?blue is added which is Named with name "blue"
+
+# everyone respawns with 3 lives when the round begins
+when ?round Begins and
+  there is a thing ?ship which is Respawnable
+then
+  ?ship becomes Respawnable with lives 3
+  # temporarily put ship in purgatory so that Respawning doesn't remove the
+  # main space
+  a new Space ?purgatory is added
+  ?ship becomes Located with space ?purgatory
+  ?ship becomes Respawning with timeToRespawn 0

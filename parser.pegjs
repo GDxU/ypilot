@@ -98,8 +98,8 @@ effect
     { return { op: 'become', thing: thing, adjectives: adjectives }; }
   / thing:variable 'is' sp 'read' sp { return { op: 'read', thing: thing }; }
   / l:let { l.isCondition = false; return l; }
-  / 'debug' sp value:value_expr
-    { return { op: 'debug', value: value }; }
+  / op:('debug' / 'chat') sp value:value_expr
+    { return { op: op, value: value }; }
   / event:custom_event { return Object.assign({}, event, { op: 'emitEvent' }); }
 
 let

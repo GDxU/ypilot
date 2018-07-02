@@ -357,6 +357,8 @@ function compileOp(ast) {
       }
     case 'debug':
       return '    console.log(' + compile(ast.value) + ");\n";
+    case 'chat':
+      return '    Chat.appendSysMsgToHistory(' + compile(ast.value) + ");\n";
     case 'emitEvent':
       // TODO check against previous definition (and that the def exists!)
       return '    router.emit("' + ast.verb + '"' +

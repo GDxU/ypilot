@@ -53,12 +53,15 @@ STDLIBS = \
 	holding.yp \
 	inertial.yp \
 	join-smallest-team.yp \
+	last-player-standing.yp \
 	mortal.yp \
 	motile.yp \
 	no-friendly-fire.yp \
 	no-self-fire.yp \
 	owned.yp \
+	play-to-score-threshold.yp \
 	players-score-for-teams.yp \
+	round.yp \
 	score-players.yp \
 	score-teams.yp \
 	scoreboard.yp \

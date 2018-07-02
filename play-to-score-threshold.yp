@@ -1,0 +1,19 @@
+use "standard:round.yp"
+use "standard:scored.yp"
+
+a Thresholded thing has a threshold which is a number
+
+# users of this library are expected to add a specific threshold to each round
+# as it begins, e.g.:
+# when ?round Begins then ?round becomes Thresholded with threshold 50
+
+# when something reaches the threshold, they win the round
+when ?x becomes Scored with score ?score and
+  ?x is Named with name ?name
+  there is a thing ?round which is Thresholded with threshold ?threshold
+  (?score >= ?threshold)
+then ?round Ends with outcome (?name + " won!")
+
+# reset all scores to 0 when a new round begins
+when ?round Begins and there is a thing ?scored which is Scored
+then ?scored becomes Scored with score 0

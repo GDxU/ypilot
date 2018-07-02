@@ -13,7 +13,7 @@ function appendToHistory(speakerID, speakerName, text) {
   var chat = $(document.createElement('div'));
   chat.addClass('chat-message');
   var text = text;
-  var prefix = speakerName
+  var prefix = speakerName;
   if (/^\/me /.test(text)) {
     text = text.slice(3);
     prefix = '* ' + prefix;
@@ -26,6 +26,22 @@ function appendToHistory(speakerID, speakerName, text) {
   speaker.addClass('speaker');
   speaker.attr('style', 'color: ' + id2color(speakerID));
   speaker.text(prefix);
+  chat.prepend(speaker);
+  var history = $('#chat-history');
+  history.append(chat);
+  // scroll to bottom
+  history.scrollTop(history[0].scrollHeight);
+}
+
+function appendSysMsgToHistory(text) {
+  var chat = $(document.createElement('div'));
+  chat.addClass('chat-message');
+  var prefix = '** ';
+  chat.attr('style', 'font-style: italic');
+  chat.text(text);
+  var speaker = $(document.createElement('span'));
+  speaker.addClass('speaker');
+  speaker.text(prefix)
   chat.prepend(speaker);
   var history = $('#chat-history');
   history.append(chat);
@@ -52,6 +68,7 @@ function inputVal() {
 module.exports = {
   clearHistory: clearHistory,
   appendToHistory: appendToHistory,
+  appendSysMsgToHistory: appendSysMsgToHistory,
   showInput: showInput,
   hideInput: hideInput,
   inputFocused: inputFocused,

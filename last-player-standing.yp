@@ -1,0 +1,65 @@
+use "standard:round.yp"
+use "standard:mortal.yp"
+
+# keep track of who is currently alive/respawning
+a SurvivorListing thing has
+  some survivors which are Interfaced things (default [])
+  a somebodyDied flag (default false)
+a SurvivorList is SurvivorListing
+when the game starts then a new SurvivorList ?sl is added
+
+# clear somebodyDied each round
+when ?round Begins and
+  there is a thing ?sl which is SurvivorListing
+then ?sl becomes SurvivorListing with somebodyDied false
+
+# when there's a Mortal ship being piloted by a player, and the player's not
+# yet listed as a survivor, list them
+when ?ship becomes Mortal and
+  ?ship is Owned with owner ?player
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+  there is a thing ?sl which is SurvivorListing with survivors ?survivors
+  ?player is not in ?survivors
+then
+  ?sl becomes SurvivorListing with survivors (?survivors + ?player)
+
+# when a non-respawnable ship piloted by a survivor dies, delist them
+when ?ship Dies and
+  ?ship is Owned with owner ?player
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+  ?ship is Respawnable with lives 0
+  there is a thing ?sl which is SurvivorListing with survivors ?survivors
+  ?player is in ?survivors
+then
+  ?sl becomes SurvivorListing with survivors (?survivors - ?player) and somebodyDied true
+
+# when a respawnable ship piloted by a survivor runs out of lives, delist them
+when ?ship Dies and
+  ?ship is Owned with owner ?player
+  ?player is a Player
+  ?player is Piloting with ship ?ship
+  ?ship is Respawnable with lives 0
+  there is a thing ?sl which is SurvivorListing with survivors ?survivors
+  ?player is in ?survivors
+then
+  ?sl becomes SurvivorListing with survivors (?survivors - ?player) and somebodyDied true
+
+# when there is exactly one survivor left, and somebody died this round, the
+# round ends with them winning (if nobody died, the player is just waiting for
+# someone else to join the game, so we should avoid an infinite loop of new
+# rounds)
+when ?sl becomes SurvivorListing with survivors ?survivors and somebodyDied true and
+  (?survivors["length"] == 1)
+  there is a thing ?round which is Roundy
+  let ?winner be ?survivors[0]
+  ?winner is Named with name ?name
+then ?round Ends with outcome (?name + " won by being the last player standing!")
+
+# when there are no survivors left, the round ends in a draw
+when ?sl becomes SurvivorListing with survivors ?survivors and somebodyDied true and
+  (?survivors["length"] == 0)
+  there is a thing ?round which is Roundy
+then ?round Ends with outcome "Draw! Nobody survived."
+

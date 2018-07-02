@@ -1,0 +1,16 @@
+a Roundy thing has a roundy flag (default true) # FIXME BS adj+prop
+a Round is Roundy
+
+the event ?round Begins can happen
+
+in the event ?round Ends with outcome ?outcome then ?outcome is a string
+
+when the game starts then a new Round ?round is added
+
+when ?round is added and ?round is a Round then ?round Begins
+
+when ?oldRound Ends with outcome ?outcome
+then
+  chat ("Round ended. " + ?outcome)
+  ?oldRound is removed
+  a new Round ?newRound is added
