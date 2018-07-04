@@ -67,6 +67,12 @@ then
 a Visible thing is Located and has
   some graphics which are SVGGeometryElement objects
 
+# by default Visible's graphics are the same as Tangible's shape, in white
+when ?thing becomes Visible with graphics nothing and
+  ?thing is Tangible with shape ?shape
+then ?thing becomes
+  Visible with graphics [<polygon points="?shape" stroke="white" />]
+
 # can be heard
 # TODO JS implementation
 an Audible thing has # is Located and?

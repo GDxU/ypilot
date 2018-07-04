@@ -107,7 +107,6 @@ then
     Oriented with orientation (-π/2)
     Tangible with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
     Bouncy with coefficientOfRestitution 0.2
-    Visible with graphics [<polygon points="15,0 -9,8 -9,-8" stroke="white" />]
     Holding with slots [?slot1, ?slot2] # TODO 3-10
     Selective
     Owned with owner ?player

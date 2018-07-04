@@ -11,6 +11,10 @@ function toString() {
   return 'Vec2[' + this.x + ',' + this.y + ']';
 },
 
+function toSVGString() {
+  return '' + this.x + ',' + this.y;
+},
+
 function toJSON() {
   return { op: 'Vec2', args: [this.x, this.y] };
 },

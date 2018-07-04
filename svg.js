@@ -1,3 +1,8 @@
+// like Array#toString, but call toSVGString recursively if it's there
+Array.prototype.toSVGString = function() {
+  return this.map(x => (('function' == typeof x.toSVGString) ? x.toSVGString() : x.toString())).toString();
+}
+
 // throw an error if str does not represent an SVGGraphicsElement that's safe
 // to include in our web page.
 // called at parse time (and upon receiving game state from the hub)

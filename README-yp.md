@@ -285,6 +285,8 @@ Array/string indexing, e.g. `?array[?index]`. Indexes start from 0. Indexing int
 
 [SVG](https://www.w3.org/TR/SVG11/) literals. These are used for the `graphics` property of the built-in adjective `Visible`. An SVG literal must be a single valid SVG element of the type `SVGGraphicsElement`, which includes `<g>`, `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>`, and `<text>`. It must not include any `<script>` elements or event handler attributes like `onclick="launchTheNukes()"`.
 
+SVG literals may include variables, whose values are then turned into strings and included in the SVG. `Array` and `Vec2` objects turn into flat, comma-separated strings, so for example you can use a variable `?shape` containing an `Array of Vec2 objects` like `[Vec2[1,2],Vec2[3,4],Vec2[5,6]]` in the `points` attribute of a `<polygon>` element like this: `<polygon points="?shape" ... />`, and it will turn into `<polygon points="1,2,3,4,5,6" ... />`. Variables may not be used as (part of) a tag name (e.g. `<?foo ... />`) or an attribute name (e.g. `<polygon ?foo="..." ... />`), nor may they contain any of the characters `<`, `>`, `=`, `'`, or `"` when they are interpolated.
+
 ## Uses of other `.yp` files
 
 One file can `use` another file (specified as a URL in a string), meaning that the other file is loaded as if its contents were included in place of the `use` statement. Only the first `use` of a given URL has this effect; later `use`s of the same URL are ignored.

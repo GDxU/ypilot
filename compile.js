@@ -466,7 +466,37 @@ function compileOp(ast) {
     case '_':
       return '(' + compile(ast.l) + ')[' + compile(ast.r) + ']';
     case 'graphics':
-      return 'stringToSVGGraphicsElement(' + JSON.stringify(ast.string) + ')';
+      var usedVars = ast.string.match(/\?[a-z]\w+/g);
+      if (usedVars == null) {
+	// simple case, no vars to interpolate
+	return 'stringToSVGGraphicsElement(' + JSON.stringify(ast.string) + ')';
+      } else {
+	// get string versions of all used vars, and check they won't mess up
+	// svg
+	var preamble = usedVars.map(x => {
+	  x = x.substr(1); // remove '?' from beginning
+	  var xStr = x + 'Str$';
+	  return '      var ' + xStr + ' = [' + x + "].toSVGString();\n" +
+	     "      if (/[<>=\"']/.test(" + x + "))\n" +
+	     '        throw new Error("?' + x + " cannot be included in an SVG string because it contains one of the characters < > \\\"\");\n";
+	}).join('');
+	var strsAndVars = ast.string.split(/\?([a-z]\w+)/);
+	var concatExpr = '';
+	var i;
+	for (i = 0; i < strsAndVars.length - 1; i += 2) {
+	  var str = strsAndVars[i];
+	  var v = strsAndVars[i + 1];
+	  if (/<[\w-]*$/.test(str))
+	    throw new Error("variable interpolation not allowed in SVG tag names");
+	  if (i > 0 && /^[\w-]*=/.test(str))
+	    throw new Error("variable interpolation not allowed in SVG attribute names");
+	  concatExpr += JSON.stringify(str) + ' + ' + v + 'Str$ + ';
+	}
+	// odd-length strsAndVars have a str at the end
+	concatExpr +=
+	  ((i < strsAndVars.length) ? JSON.stringify(strsAndVars[i]) : '""');
+	return "(function() {\n" + preamble + '      return stringToSVGGraphicsElement(' + concatExpr + ");\n    })()";
+      }
     case '.': // dot product
     case '·': // (unicode)
       return compile(ast.l) + '.dot(' + compile(ast.r) + ')';
