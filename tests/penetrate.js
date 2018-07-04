@@ -1,5 +1,16 @@
 const assert = require('assert');
 
+// make sure nobody tries to get jquery, which won't work in node
+const Module = require('module');
+const oldRequire = Module.prototype.require;
+Module.prototype.require = function(x) {
+  if (x == 'jquery') {
+    return function() {};
+  } else {
+    return oldRequire.apply(this, arguments);
+  }
+};
+
 const Router = require('../router.js');
 const Space = require('../space.js');
 const Vec2 = require('../vec2.js');
@@ -15,20 +26,20 @@ describe('penetrate', function() {
   beforeEach(function(done) {
     global.router = new Router();
     // quick and dirty base.conf for just what Space needs
-    'Located Solid Oriented Mobile'.split(/ /).forEach(adj => 
+    'Located Tangible Oriented Mobile'.split(/ /).forEach(adj => 
       router.declareAdjective(adj));
     space = new Space();
     wall = router.newThing();
     router.add(wall, {
       Located: { space: space, position: new Vec2(0,0) },
-      Solid: { shape: [].concat(wallShape) },
+      Tangible: { shape: [].concat(wallShape) },
     });
     ship = router.newThing();
     router.add(ship, {
       Located: { space: space, position: new Vec2(0,0) },
       Oriented: { orientation: -Math.PI/2 }, // point up by default
       Mobile: { velocity: new Vec2(0,0), angularVelocity: 0 },
-      Solid: { shape: [].concat(shipShape) }
+      Tangible: { shape: [].concat(shipShape) }
     });
     setImmediate(done); // wait for events
   });
