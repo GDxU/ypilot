@@ -86,6 +86,7 @@ a Piloting thing has
 
 an Interfaced thing has
   an interface which is an Interface object
+  a shipShape which is an Array of Vec2 objects
 
 a Player is Named and Interfaced
 

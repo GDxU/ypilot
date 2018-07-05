@@ -50,7 +50,53 @@ function isValid(shape) {
   }
 }
 
+function toJSON(shape) {
+  return shape.map(p => [p.x, p.y]);
+}
+
+function toString(shape) {
+  return JSON.stringify(toJSON(shape));
+}
+
+function fromString(str) {
+  return ensureValid(JSON.parse(str));
+}
+
+const svgNS = "http://www.w3.org/2000/svg";
+
+function toSVG(shape) {
+  var svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("class", "ship-shape-svg");
+  svg.setAttribute("viewBox", "-17 -17 34 34");
+  svg.setAttribute("width", "34");
+  svg.setAttribute("height", "34");
+  svg.setAttribute("transform", "rotate(-90)");
+  var rect = document.createElementNS(svgNS, "rect");
+  rect.setAttribute("x", "-17");
+  rect.setAttribute("y", "-17");
+  rect.setAttribute("width", "34");
+  rect.setAttribute("height", "34");
+  rect.setAttribute("fill", "black");
+  rect.setAttribute("stroke", "none");
+  svg.appendChild(rect);
+  var polygon = document.createElementNS(svgNS, "polygon");
+  polygon.setAttribute("points", shape.toSVGString());
+  svg.appendChild(polygon);
+  return svg;
+}
+
+// deeply copy a ship shape
+function copy(shape) {
+  return shape.map(p => new Vec2(p.x, p.y));
+}
+
 module.exports = {
+  defaultShape: [new Vec2(15,0), new Vec2(-9,8), new Vec2(-9,-8)],
   ensureValid: ensureValid,
-  isValid: isValid
+  isValid: isValid,
+  toJSON: toJSON,
+  toString: toString,
+  fromString: fromString,
+  toSVG: toSVG,
+  copy: copy
 };

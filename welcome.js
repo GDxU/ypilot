@@ -1,6 +1,7 @@
 const $ = require('jquery');
 const qr = require('qr-image');
 const UserNames = require('./user-names.js');
+const ShipShapes = require('./ship-shapes.js');
 const Profile = require('./profile.js');
 const Game = require('./game.js');
 const Uplink = require('./uplink.js');
@@ -62,6 +63,7 @@ function setProfile(p) {
   $('#invite-svg').html(inviteSvgStr);
   $('#invite-url').text(href);
   $('#handle').val(p.handle).change();
+  $('#ship-shape').val(ShipShapes.toString(p.shipShape)).change();
   $('#use-local-storage').prop('checked', p.useLocalStorage);
   $('#id-svg').html(id2svg(p.id));
   updatePlayersTable();
@@ -97,7 +99,9 @@ function updatePlayersTable() {
 	'</select>' +
       '</td>' +
       '<td><button id="' + id + '-forget">Forget</button></td>';
-    $(row.childNodes[1]).text([player.handle, ...player.oldHandles].join(', '));
+    $(row.childNodes[1]).text(' ' + [player.handle, ...player.oldHandles].join(', '));
+    console.log(player);
+    $(row.childNodes[1]).prepend(ShipShapes.toSVG(player.shipShape));
     $(row.childNodes[2].childNodes[0]).
       val(player.statusResponsePolicy).
       on('change', onPolicyChange);
@@ -176,8 +180,10 @@ function addJoinGameRow(gameIndex, players) {
       playersTD.append(document.createTextNode(', '));
     }
     var span = $(document.createElement('span'));
-    span.text(p.handle);
+    span.text(' ' + p.handle);
     span.attr('title', p.id + ' ' + p.handle /* + ', AKA ' + p.handles.join(', ') */);
+    span.prepend(ShipShapes.toSVG(p.shipShape));
+    // TODO also prepend (small) id svg?
     playersTD.append(span);
   });
   $('#games-to-join').append(row);
@@ -309,6 +315,17 @@ $('#handle').on('change', evt => {
   window.profile.handle = $('#handle').val();
   $('h1').text("Welcome to YPilot, " + window.profile.handle);
   changedProfile();
+});
+
+$('#ship-shape').on('change', evt => {
+  try {
+    var shipShape = ShipShapes.ensureValid(JSON.parse($('#ship-shape').val()));
+    $('#ship-shape-polygon').attr('points', shipShape.toSVGString());
+    window.profile.shipShape = shipShape;
+    changedProfile();
+  } catch (err) {
+    errors.reportError(err, "while setting ship shape:\n");
+  }
 });
 
 $('#import-profile').on('change', evt => {

@@ -5,6 +5,7 @@ const base64js = require('base64-js');
 const id2color = require('./id2svg.js').id2color;
 const ask = require('./ask.js');
 const UserNames = require('./user-names.js');
+const ShipShapes = require('./ship-shapes.js');
 const Game = require('./game.js');
 const defineMethods = require('./define-methods.js');
 
@@ -27,6 +28,8 @@ function generateKeyPair() {
 function Profile(opts) {
   this.id = opts.id;
   this.handle = opts.handle;
+  if (!('shipShape' in opts)) opts.shipShape = ShipShapes.defaultShape;
+  this.shipShape = ShipShapes.ensureValid(opts.shipShape);
   this.useLocalStorage = opts.useLocalStorage;
   this.keyPair = opts.keyPair;
   this.knownPlayers = opts.knownPlayers;
@@ -51,6 +54,7 @@ function toObject() {
     return {
       id: this.id,
       handle: this.handle,
+      shipShape: ShipShapes.toJSON(this.shipShape),
       useLocalStorage: this.useLocalStorage,
       keyPair: { publicKey: pub, privateKey: priv },
       knownPlayers: this.knownPlayers,
@@ -67,6 +71,7 @@ function getPlayerDescription() {
     return {
       id: this.id,
       handle: this.handle,
+      shipShape: ShipShapes.toJSON(this.shipShape),
       publicKey: pub
     };
   });
@@ -79,7 +84,12 @@ function sign(msg) {
   then(publicKey => {
     // add sender info to msg
     var msgWithSender = Object.assign(
-      { sender: { id: this.id, handle: this.handle, publicKey: publicKey } },
+      { sender: {
+	id: this.id,
+	handle: this.handle,
+	shipShape: ShipShapes.toJSON(this.shipShape),
+	publicKey: publicKey
+      } },
       msg
     );
     // get string and bytes of message
@@ -156,6 +166,7 @@ function verifyTOFU(signedMsg) {
 // store player's info in this.knownPlayers (updating if already there)
 function know(player) {
   if (player.id in this.knownPlayers) { // already known
+    var changed = false;
     var knownPlayer = this.knownPlayers[player.id];
     if (knownPlayer.handle != player.handle) {
       // update the current handle and put the old handle in oldHandles
@@ -166,6 +177,15 @@ function know(player) {
       if (newOldIndex != -1) {
 	knownPlayer.oldHandles.splice(newOldIndex, 1);
       }
+      changed = true;
+    }
+    // update the current shipShape
+    newShipShape = ShipShapes.ensureValid(player.shipShape);
+    if (newShipShape.toSVGString() != knownPlayer.shipShape.toSVGString()) {
+      knownPlayer.shipShape = newShipShape;
+      changed = true;
+    }
+    if (changed) {
       this.onKnownPlayersChange();
     }
   } else { // just met
@@ -176,7 +196,9 @@ function know(player) {
 	statusResponsePolicy: 'askMe',
 	joinPolicy: 'askMe',
 	statusRequestPolicy: 'onlyOnRequest'
-      }, player);
+      }, player, {
+	shipShape: ShipShapes.ensureValid(player.shipShape)
+      });
     this.onKnownPlayersChange();
   }
 },
@@ -273,6 +295,7 @@ Profile.generateRandom = function() {
 	   return new Profile({
 	     id: uuidv4(),
 	     handle: UserNames.generateRandom(),
+	     shipShape: ShipShapes.defaultShape,
 	     useLocalStorage: true,
 	     keyPair: keyPair,
 	     knownPlayers: {},

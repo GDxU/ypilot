@@ -9,11 +9,11 @@
 <p>This document describes the protocol YPilot uses to connect players over the internet. In this document, computer code is displayed <code>like this</code> and variables are displayed <var>like this</var>.</p>
 
 <h2>Player profiles</h2>
-<p>Each player has a permanent <dfn>player ID</dfn> (<a href="https://tools.ietf.org/html/rfc4122">UUID</a><a href="https://tools.ietf.org/html/rfc4122#section-4.1.3">v4</a>), a permanent <dfn>public key</dfn> and <dfn>private key</dfn> (<a href="https://tools.ietf.org/html/rfc3447#section-8.1">RSASSA-PSS</a> 2048 / <a href="https://csrc.nist.gov/csrc/media/publications/fips/180/4/final/documents/fips180-4-draft-aug2014.pdf">SHA</a>-256; see the <a href="https://www.w3.org/TR/WebCryptoAPI/">Web Crypto API</a>), and a <dfn>handle</dfn> they can change. The handle is displayed to identify the player during gameplay, but the ID and key pair are used to identify and authenticate the player while setting up a network connection. In this document we will use <var>Alice</var>, <var>Bob</var>, <var>Charlie</var>, and <var>Eve</var> as example players.</p>
+<p>Each player has a permanent <dfn>player ID</dfn> (<a href="https://tools.ietf.org/html/rfc4122">UUID</a><a href="https://tools.ietf.org/html/rfc4122#section-4.1.3">v4</a>), a permanent <dfn>public key</dfn> and <dfn>private key</dfn> (<a href="https://tools.ietf.org/html/rfc3447#section-8.1">RSASSA-PSS</a> 2048 / <a href="https://csrc.nist.gov/csrc/media/publications/fips/180/4/final/documents/fips180-4-draft-aug2014.pdf">SHA</a>-256; see the <a href="https://www.w3.org/TR/WebCryptoAPI/">Web Crypto API</a>), and a <dfn>handle</dfn> and a <dfn>ship-shape</dfn> they can change. The handle (and to a lesser degree the ship-shape) is displayed to identify the player during gameplay, but the ID and key pair are used to identify and authenticate the player while setting up a network connection. In this document we will use <var>Alice</var>, <var>Bob</var>, <var>Charlie</var>, and <var>Eve</var> as example players.</p>
 
 <p>In order for <var>Alice</var> to initiate a connection to <var>Bob</var>, <var>Alice</var> must know <var>Bob</var>'s ID. Normally <var>Bob</var> would send <var>Alice</var> a link to join <var>Bob</var>'s current game, and this link would include <var>Bob</var>'s ID.</p>
 
-<p>Player's profiles also include IDs, public keys, and known handles of every other player they've played with. Keys follow a Trust On First Use (TOFU) policy: the first time <var>Alice</var> connects to <var>Bob</var>, <var>Alice</var> stores the public key <var>Bob</var> sends her. For later connections, <var>Alice</var> checks that <var>Bob</var>'s initial message is signed with <var>Bob</var>'s private key by verifying the message against the stored public key.</p>
+<p>Player's profiles also include IDs, public keys, and known handles and ship-shapes of every other player they've played with. Keys follow a Trust On First Use (TOFU) policy: the first time <var>Alice</var> connects to <var>Bob</var>, <var>Alice</var> stores the public key <var>Bob</var> sends her. For later connections, <var>Alice</var> checks that <var>Bob</var>'s initial message is signed with <var>Bob</var>'s private key by verifying the message against the stored public key.</p>
 
 <h2>Signaling relay</h2>
 <p>In general, players do not know each other's network addresses at first, so a third party is necessary to initiate a connection. This third party is the <dfn>signaling relay</dfn>. The signaling relay allows two players who share a <dfn>relay ID</dfn> to send messages in one direction; the receiver first makes a request to the relay with just the relay ID, which stalls until the sender makes another request to the relay with the relay ID and a message. Then the receiver receives the message, and both requests terminate. To send multiple messages both sides must make multiple requests.</p>
@@ -43,11 +43,12 @@
 {
   "id": "<var>player-id</var>",
   "handle": "<var>handle</var>",
+  "shipShape": <var>ship-shape</var>,
   "publicKey": <var>public-key-JWK</var>,
   "thing": <var>player-thing-number</var>
 }
 </pre></code>
-<p>The player's public key is given in <a href="https://tools.ietf.org/html/rfc7517">JSON Web Key (JWK)</a> format. The <code>thing</code> property is only present when the player has been added to a game, and identifies the player as a thing within that game.</p>
+<p>The player's public key is given in <a href="https://tools.ietf.org/html/rfc7517">JSON Web Key (JWK)</a> format. The <code>thing</code> property is only present when the player has been added to a game, and identifies the player as a thing within that game. The <var>ship-shape</var> is an array of points, each of which is an array of two numbers, X and Y. The center of the ship is at <code>[0,0]</code> and front of the ship is towards positive X.</p>
 
 <h3>Initial messages</h3>
 <p>An <dfn>initial message</dfn> is a message sent over a signaling relay before a player is connected to another player. Initial messages have a <code>sender</code> property containing a description of the player who sent the message.</p>

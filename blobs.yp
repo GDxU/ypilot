@@ -88,6 +88,7 @@ xxx               qxxxxw                       xxx
 
 when ?player is added and
   ?player is a Player
+  ?player is Interfaced with shipShape ?shape
   there is a thing ?map which is
     Located with space ?space
   ?map is a Map
@@ -105,7 +106,7 @@ then
     Located with space ?space and position ?spawnPos
     Respawnable with spawnPoint ?spawnPoint and lives 3
     Oriented with orientation (-π/2)
-    Tangible with shape [Vec2[15,0], Vec2[-9,8], Vec2[-9,-8]]
+    Tangible with shape ?shape
     Bouncy with coefficientOfRestitution 0.2
     Holding with slots [?slot1, ?slot2] # TODO 3-10
     Selective

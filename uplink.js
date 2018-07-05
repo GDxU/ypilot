@@ -1,6 +1,7 @@
 const $ = require('jquery');
 const deepEqual = require('deep-equal');
 const defineMethods = require('./define-methods.js');
+const ShipShapes = require('./ship-shapes.js');
 const SignalingRelay = require('./signaling-relay.js');
 const PeerConnection = require('./peer-connection.js');
 const Clock = require('./clock.js');
@@ -180,6 +181,7 @@ function getPlayerList() {
       players.unshift({
 	id: id,
 	handle: window.profile.handle,
+	shipShape: ShipShapes.toJSON(window.profile.shipShape),
 	/* publicKey: TODO? client doesn't actually need this, and it's an async call */
 	thing: this.players[id].thing
       });
@@ -188,6 +190,7 @@ function getPlayerList() {
       players.push({
 	id: id,
 	handle: p.handle,
+	shipShape: ShipShapes.toJSON(p.shipShape),
 	publicKey: p.publicKey,
 	thing: this.players[id].thing
       });
@@ -256,6 +259,7 @@ function accept(remoteID, sendID) {
       this.newPlayerQueue.push({
 	id: remoteID,
 	handle: window.profile.knownPlayers[remoteID].handle,
+	shipShape: ShipShapes.toJSON(window.profile.knownPlayers[remoteID].shipShape),
 	publicKey: window.profile.knownPlayers[remoteID].publicKey
       });
     } catch (err) {
@@ -396,12 +400,17 @@ function dispatchPeerMessageAsNonHub(msg) {
       if (debug) console.log('received addPlayer ' + playerID);
       var playerThing = this.router.newThing();
       var playerName = 'Anonymous';
+      var playerShipShape = [];
       if (playerID == this.id) { // we just got added
 	playerName = window.profile.handle;
+	playerShipShape = window.profile.shipShape;
       } else { // someone else just got added
         window.profile.know(msg.player);
 	playerName = window.profile.knownPlayers[playerID].handle;
+	playerShipShape = window.profile.knownPlayers[playerID].shipShape;
       }
+      // don't let games modify shipshapes in profiles
+      playerShipShape = ShipShapes.copy(playerShipShape);
       this.players[playerID] = {
 	thing: playerThing
       };
@@ -410,7 +419,10 @@ function dispatchPeerMessageAsNonHub(msg) {
       this.router.add(playerThing, {
 	Typed: new Typed({ type: Player }),
 	Named: new Named({ name: playerName }),
-	Interfaced: new Interfaced({ interface: new Interface(playerThing) })
+	Interfaced: new Interfaced({
+	  interface: new Interface(playerThing),
+	  shipShape: playerShipShape
+	})
       });
       Chat.appendToHistory(playerID, playerName, '/me just joined the game');
       break;

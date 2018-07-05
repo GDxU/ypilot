@@ -11,7 +11,7 @@ describe('ensureValid', function() {
   });
 
   it('should accept my ship shape', function() {
-    ensureValid([[9,-10],[1,-8],[-6,-4],[-9,0],[-5,2],[-9,4],[-7,7],[-3,9],[3,10],[-3,7],[-4,4],[2,2],[-4,0],[-3,-3],[3,-7]]);
+    ensureValid([[9,10],[1,8],[-6,4],[-9,0],[-5,-2],[-9,-4],[-7,-7],[-3,-9],[3,-10],[-3,-7],[-4,-4],[2,-2],[-4,0],[-3,3],[3,7]]);
   });
 
   it('should reject the empty shape', function() {

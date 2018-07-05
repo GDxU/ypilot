@@ -30,6 +30,7 @@ SRCS = \
 	peer-connection.js \
 	profile.js \
 	router.js \
+	ship-shapes.js \
 	signaling-relay.js \
 	space.js \
 	svg.js \
