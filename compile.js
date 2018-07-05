@@ -37,6 +37,27 @@ function expandNounDefaultAdjectives(noun, supertypes, defaultAdjectives) {
   return (nounDefaultAdjectives[noun] = Object.keys(included));
 }
 
+// remember that the given 'var' ast has been initialized
+function setInitialized(ast) {
+  var name = (('string' == typeof ast) ? ast : ast.name);
+  variableInitialized[name] = true;
+}
+
+// forget all variable initializations
+function clearInitialized(ast) {
+  variableInitialized = {};
+}
+
+// is the given 'var' ast initialized/declared?
+function isInitialized(ast) {
+  return variableInitialized[ast.name];
+}
+
+// is the argument a 'var' ast?
+function isVariable(ast) {
+  return (('object' == typeof ast) && ast !== null && ast.op == 'var');
+}
+
 // return an object whose keys are all the variable names used in ast at any
 // depth
 function getVars(ast) {
@@ -61,11 +82,17 @@ function compileTrigger(trigger, origConditions) {
   var eventName = trigger.op;
   var eventParams = [];
   var eventNamedParams = [];
+  // vars we must create even though they're not in the .yp code; these are
+  // mangled with a $ at the end so they don't conflict with anything else
+  var mangledVars = [];
   var conditions = [].concat(origConditions);
   if (eventName == 'event') {
     // TODO check against previous definition (and that the def exists!)
     eventName = trigger.verb;
-    eventParams = trigger.positionalArgs.map(compile);
+    eventParams = trigger.positionalArgs.map(a =>
+      // avoid initialization check for var params (setInitialized comes later)
+      (isVariable(a) ? a.name : compile(a))
+    );
     eventNamedParams = trigger.namedArgs;
   } else {
     eventParams =
@@ -75,23 +102,24 @@ function compileTrigger(trigger, origConditions) {
       filter(k => (k in trigger)).
       map(k => trigger[k].name);
     if ('key' in trigger) {
-      if (('object' == typeof trigger.key) && ('op' in trigger.key) &&
-	  trigger.key.op == 'var') {
+      if (isVariable(trigger.key)) {
 	// key is a variable, just use it directly
 	eventParams.push(trigger.key.name);
       } else {
-	// key is a value, make a key parameter and prepend a condition
+	// key is a value, make a key$ parameter and prepend a condition
 	// checking its value
-	eventParams.push('key');
+	eventParams.push('key$');
+	var mangledVar = { op: 'var', name: 'key$' };
+	mangledVars.push(mangledVar);
 	conditions.unshift({
 	  op: '==',
 	  l: trigger.key,
-	  r: { op: 'var', name: 'key' }
+	  r: mangledVar
 	});
       }
     }
   }
-  eventParams.forEach(p => { variableInitialized[p] = true; });
+  eventParams.forEach(p => { setInitialized(p); });
   if (eventName == 'become') {
     var adjective = trigger.adjectives[0]
     if (adjective.op == 'unadjective') {
@@ -107,13 +135,12 @@ function compileTrigger(trigger, origConditions) {
   if ('args' in trigger) {
     trigger.args.forEach(a => {
       eventParams.push(a.name);
-      variableInitialized[a.name] = true;
+      setInitialized(a);
     });
   }
   if (eventNamedParams.length > 0) {
     eventParams.push('{ ' + eventNamedParams.map(p => {
-      if (('object' == typeof p[1]) && p[1] !== null &&
-	  p[1].op == 'var') {
+      if (isVariable(p[1])) {
 	// property value is a variable, destructure it into that var
 	return p[0] + ': ' + p[1].name;
       } else {
@@ -122,21 +149,25 @@ function compileTrigger(trigger, origConditions) {
 	// condition to check its value (we mangle it to prevent
 	// conflicts)
 	var mangledName = p[0] + '$';
+	var mangledVar = { op: 'var', name: mangledName };
+	mangledVars.push(mangledVar);
 	conditions.unshift({
 	  op: '==',
-	  l: { op: 'var', name: mangledName },
+	  l: mangledVar,
 	  r: p[1]
 	});
 	return p[0] + ': ' + mangledName;
       }
     }).join(', ') + ' }');
     eventNamedParams.forEach(p => {
-      if (('object' == typeof p[1]) && p[1] !== null &&
-	  p[1].op == 'var') {
-	variableInitialized[p[1].name] = true;
-      } // TODO? do the same for the mangled prop name variable? prob. unnecc.
+      if (isVariable(p[1]))
+	setInitialized(p[1]);
     });
   }
+  mangledVars.forEach(setInitialized);
+  // get all the uninitialized vars used in conditions, so that they can be
+  // declared up front and then initialized by the conditions (if they are in
+  // fact used in a position where they can be so initialized)
   var vars = getVars(conditions);
   for (var v in variableInitialized) { delete vars[v]; }
   vars = Object.keys(vars);
@@ -240,7 +271,7 @@ function compileOp(ast) {
         "}\n" +
 	"deleteToUnload.push('" + ast.name + "', 'add" + ast.name + "');\n";
     case 'rule':
-      variableInitialized = {};
+      clearInitialized();
       var {
 	eventName,
 	eventParams,
@@ -272,7 +303,7 @@ function compileOp(ast) {
     case 'allow':
     case 'onlyAllow':
     case 'disallow':
-      variableInitialized = {};
+      clearInitialized();
       var {
 	eventName,
 	eventParams,
@@ -315,6 +346,7 @@ function compileOp(ast) {
 	  nonSelfRefAdjs.push(adj);
 	}
       });
+      setInitialized(ast.thing);
 	     // do nonSelfRefAdjs as part of the creation
       return '    var ' + ast.thing.name + ' = add' + ast.type + '({ ' +
 	nonSelfRefAdjs.map(adj =>
@@ -328,19 +360,19 @@ function compileOp(ast) {
 	  compile({ op: 'become', thing: ast.thing, adjectives: selfRefAdjs })
 	  : '');
     case 'remove':
-      return '    router.remove(' + ast.thing.name + ");\n";
+      return '    router.remove(' + compile(ast.thing) + ");\n";
     case 'become':
       return ast.adjectives.map(adj => {
 	switch (adj.op) {
 	  case 'adjective':
 	    return '    router.become(' +
-	      ast.thing.name + ", '" + adj.name + "', { " +
+	      compile(ast.thing) + ", '" + adj.name + "', { " +
 	      adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).
 		join(', ') +
 	      " });\n";
 	  case 'unadjective':
 	    return '    router.unbecome(' +
-	      ast.thing.name + ", '" + adj.name + "');\n";
+	      compile(ast.thing) + ", '" + adj.name + "');\n";
 	  default:
 	    throw new Error('WTF');
 	}
@@ -349,7 +381,7 @@ function compileOp(ast) {
       return '    router.readMap(' + compile(ast.thing) + ");\n";
     case 'let':
       var val = compile(ast.value);
-      variableInitialized[ast.variable.name] = true;
+      setInitialized(ast.variable);
       if (ast.isCondition) {
 	return '((' + ast.variable.name + ' = ' + val + ') || true)';
       } else {
@@ -369,25 +401,26 @@ function compileOp(ast) {
 	     ");\n";
     // conditions
     case 'isa':
-      return '((' + ast.l.name + ' in router.adjectives.Typed) &&' +
+      var l = compile(ast.l);
+      return '((' + l + ' in router.adjectives.Typed) &&' +
              ' subsumes(' + ast.r + ', ' +
-	         'router.adjectives.Typed[' + ast.l.name + '].type))';
+	         'router.adjectives.Typed[' + l + '].type))';
     case 'isin':
       return '(' + compile(ast.r) + ').includes(' + compile(ast.l) + ')';
     case 'is':
+      var l = compile(ast.l);
       if (ast.r.op == 'adjective') {
         return '(' +
-	  '(' + ast.l.name + ' in router.adjectives.' + ast.r.name + ')' +
+	  '(' + l + ' in router.adjectives.' + ast.r.name + ')' +
 	  ast.r.properties.map(p => {
 	    var op;
 	    var rhs =
-	      'router.adjectives.' + ast.r.name + '[' + ast.l.name + '].' +
+	      'router.adjectives.' + ast.r.name + '[' + l + '].' +
 	      p[0];
-	    if (('object' == typeof p[1]) && p[1] !== null && ('op' in p[1]) &&
-	        p[1].op == 'var' && !(p[1].name in variableInitialized)) {
+	    if (isVariable(p[1]) && !isInitialized(p[1].name)) {
 	      // p[1] is an uninitialized variable, assign to it, but make sure
 	      // the condition is true regardless of the value we assign
-	      variableInitialized[p[1].name] = true;
+	      setInitialized(p[1]);
 	      return ' && ((' + p[1].name + ' = ' + rhs + ') || true)';
 	    } else {
 	      // p[1] is an initialized variable or some other kind of value,
@@ -398,7 +431,7 @@ function compileOp(ast) {
 	  }).join('') +
 	')';
       } else { // unadjective
-	return '(!(' + ast.l.name + ' in router.adjectives.' + ast.r.name +'))';
+	return '(!(' + l + ' in router.adjectives.' + ast.r.name +'))';
       }
     case 'exists':
       // iterate over all matches for ast.suchThat
@@ -411,7 +444,7 @@ function compileOp(ast) {
 	// TODO? use all the other adjectives as the positiveAdjective
 	throw new Error("'there is' condition must include at least one positive adjective");
       }
-      variableInitialized[ast.variable.name] = true;
+      setInitialized(ast.variable);
 	      // terminate the outer 'if' condition with true
       return "true) {\n" +
 	   // iterate the variable over the keys of the positiveAdjective
@@ -434,7 +467,7 @@ function compileOp(ast) {
 	if ('key' in ast) {
 	  if (!ast.state) { throw new Error('WTF'); }
 	  if (ast.key.op != 'var') { throw new Error('WTF'); }
-	  variableInitialized[ast.key.name] = true;
+	  setInitialized(ast.key);
 	  return '(' + ast.key.name + ' = ' + keys + '.find' + predicate + ')';
 	} else { // no key variable
 	  return '(' + (ast.state ? '' : '!') + keys +
@@ -451,6 +484,14 @@ function compileOp(ast) {
     case 'unadjective':*/
     // expressions
     case 'var':
+      if (!isInitialized(ast)) {
+	var src = (('src' in ast) ?
+	  " at line " + ast.src.start.line + " column " + ast.src.start.column
+	  : "");
+	throw new Error("undeclared variable ?" + ast.name + " used" + src);
+      }
+      return ast.name;
+    case 'const':
       return ast.name;
     case 'new':
       // TODO? allow more constructors
@@ -534,7 +575,7 @@ function compileOp(ast) {
 }
 
 function compileStatements(statements) {
-  var compiledStatements =
+  var compiledStatements = (compile.strictly ? statements.map(compile) :
     statements.map(s => {
       try {
 	return compile(s);
@@ -544,7 +585,8 @@ function compileStatements(statements) {
 	console.warn(e);
 	return "/* failed to compile statement */\n";
       }
-    });
+    })
+  );
   return compiledStatements.join("\n");
 }
 

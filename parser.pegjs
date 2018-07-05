@@ -355,14 +355,16 @@ property_name
   = !reserved_word name:$([a-z] id_char*) { return name; }
 
 variable
-  = '?' name:$(id_char+) sp { return { op: 'var', name: name }; }
+  = '?' name:$(id_char+) sp { return {
+    op: 'var',
+    name: name,
+    src: peg$computeLocation(peg$savedPos, peg$currPos)
+  }; }
 
-// FIXME since these are "var"s, but aren't in variableInitialized, they might
-// get assigned to if they're used in the wrong place
 constant
-  = ('PI' / 'π') !id_char sp { return { op: 'var', name: 'Math.PI' }; }
-  / ('E' / 'e') !id_char sp { return { op: 'var', name: 'Math.E' }; }
-  / ('INFINITY' / '∞') !id_char sp { return { op: 'var', name: 'Number.MAX_VALUE' }; }
+  = ('PI' / 'π') !id_char sp { return { op: 'const', name: 'Math.PI' }; }
+  / ('E' / 'e') !id_char sp { return { op: 'const', name: 'Math.E' }; }
+  / ('INFINITY' / '∞') !id_char sp { return { op: 'const', name: 'Number.MAX_VALUE' }; }
 // NOTE: JavaScript does have an Infinity constant that would be more
 // appropriate than Number.MAX_VALUE, but it doesn't survive the trip to and
 // from JSON (it becomes null)
