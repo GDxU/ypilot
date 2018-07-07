@@ -398,7 +398,7 @@ function compileOp(ast) {
 	       (ast.namedArgs.length == 0 ? '' :
 	         ', { ' + ast.namedArgs.map(x => (x[0] + ': ' + compile(x[1]))).
 			  join(', ') + ' }') +
-	     ");\n";
+	     ").catch(err => console.log(err));\n";
     // conditions
     case 'isa':
       var l = compile(ast.l);

@@ -58,7 +58,8 @@ function emit(eventName, ...args) {
       if (this.eventLogEnabled) {
 	this.eventLog.push(JSON.stringify(['notAllowed', eventName, ...args]));
       }
-      reject();
+      // TODO would be nice to identify the permission condition(s) that failed
+      reject('not allowed: ' + eventName + ' ' + JSON.stringify(args));
       return;
     }
     if (this.eventLogEnabled) {
