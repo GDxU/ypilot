@@ -82,17 +82,11 @@ function compileTrigger(trigger, origConditions) {
   var eventName = trigger.op;
   var eventParams = [];
   var eventNamedParams = [];
-  // vars we must create even though they're not in the .yp code; these are
-  // mangled with a $ at the end so they don't conflict with anything else
-  var mangledVars = [];
   var conditions = [].concat(origConditions);
   if (eventName == 'event') {
     // TODO check against previous definition (and that the def exists!)
     eventName = trigger.verb;
-    eventParams = trigger.positionalArgs.map(a =>
-      // avoid initialization check for var params (setInitialized comes later)
-      (isVariable(a) ? a.name : compile(a))
-    );
+    eventParams = [].concat(trigger.positionalArgs);
     eventNamedParams = trigger.namedArgs;
   } else {
     eventParams =
@@ -100,26 +94,27 @@ function compileTrigger(trigger, origConditions) {
        'penetrator', 'point', 'penetrated', 'edgeFrom', 'edgeTo', 'ticksAgo', 'relativeVelocity',
        'map', 'position'].
       filter(k => (k in trigger)).
-      map(k => trigger[k].name);
+      map(k => trigger[k]);
     if ('key' in trigger) {
+      var localVar;
       if (isVariable(trigger.key)) {
 	// key is a variable, just use it directly
-	eventParams.push(trigger.key.name);
+	localVar = trigger.key;
       } else {
 	// key is a value, make a key$ parameter and prepend a condition
 	// checking its value
-	eventParams.push('key$');
-	var mangledVar = { op: 'var', name: 'key$' };
-	mangledVars.push(mangledVar);
+	localVar = { op: 'var', name: 'key$' };
 	conditions.unshift({
 	  op: '==',
 	  l: trigger.key,
-	  r: mangledVar
+	  r: localVar
 	});
       }
+      eventParams.push(localVar);
     }
   }
-  eventParams.forEach(p => { setInitialized(p); });
+  // compile all param vars as lvalues
+  eventParams = eventParams.map(lValue);
   if (eventName == 'become') {
     var adjective = trigger.adjectives[0]
     if (adjective.op == 'unadjective') {
@@ -133,44 +128,38 @@ function compileTrigger(trigger, origConditions) {
     eventName += trigger.character;
   }
   if ('args' in trigger) {
-    trigger.args.forEach(a => {
-      eventParams.push(a.name);
-      setInitialized(a);
-    });
+    trigger.args.forEach(a => eventParams.push(lValue(a)));
   }
   if (eventNamedParams.length > 0) {
     eventParams.push('{ ' + eventNamedParams.map(p => {
+      var localVar;
       if (isVariable(p[1])) {
 	// property value is a variable, destructure it into that var
-	return p[0] + ': ' + p[1].name;
+	localVar = p[1];
       } else {
 	// property value is not a variable, just use a mangled version
 	// of the property name as the variable name, and prepend a
 	// condition to check its value (we mangle it to prevent
 	// conflicts)
-	var mangledName = p[0] + '$';
-	var mangledVar = { op: 'var', name: mangledName };
-	mangledVars.push(mangledVar);
+	localVar = { op: 'var', name: p[0] + '$' };
 	conditions.unshift({
 	  op: '==',
-	  l: mangledVar,
+	  l: localVar,
 	  r: p[1]
 	});
-	return p[0] + ': ' + mangledName;
       }
+      return p[0] + ': ' + lValue(localVar); // even though on right (SMH, JS)
     }).join(', ') + ' }');
-    eventNamedParams.forEach(p => {
-      if (isVariable(p[1]))
-	setInitialized(p[1]);
-    });
   }
-  mangledVars.forEach(setInitialized);
   // get all the uninitialized vars used in conditions, so that they can be
   // declared up front and then initialized by the conditions (if they are in
   // fact used in a position where they can be so initialized)
   var vars = getVars(conditions);
   for (var v in variableInitialized) { delete vars[v]; }
   vars = Object.keys(vars);
+  vars = ((vars.length > 0) ?
+	    '  var ' + vars.map(x => ('yp$' + x)).join(', ') + ";\n" :
+	    '');
   // count the 'there is' conditions so we can balance them at the end
   var numExists = conditions.filter(c => (c.op == 'exists')).length;
   return {
@@ -180,6 +169,12 @@ function compileTrigger(trigger, origConditions) {
     vars: vars,
     numExists: numExists
   };
+}
+
+// compile a 'var' ast as an L-value
+function lValue(ast) {
+  setInitialized(ast);
+  return compileOp(ast);
 }
 
 function compileOp(ast) {
@@ -206,18 +201,18 @@ function compileOp(ast) {
       }
     case 'defineAdjective':
       adjectiveDependencies[ast.name] = ast.dependencies;
-      return 'function ' + ast.name + '({ ' + ast.properties.map(p => {
+      return 'function yp$' + ast.name + '({ ' + ast.properties.map(p => {
 	  return p[0] + ((p.length == 3) ? ' = ' + compile(p[2]) : '');
         }).join(', ') + " }) {\n" +
 	ast.properties.map(p => {
 	  // TODO? check that p[0] is of type p[1]
 	  return '  this.' + p[0] + ' = ' + p[0] + ";\n";
 	}).join('') + "}\n" +
-	ast.name + '.dependencies = [' +
+	'yp$' + ast.name + '.dependencies = [' +
 	  ast.dependencies.map(x => ('"' + x + '"')).join(', ') +
 	"];\n" +
 	"router.declareAdjective('" + ast.name + "');\n" +
-	"deleteToUnload.push('" + ast.name + "');\n";
+	"deleteToUnload.push('yp$" + ast.name + "');\n";
     case 'defineEvent':
       // TODO save definition so we can check uses against it later
       break;
@@ -229,20 +224,20 @@ function compileOp(ast) {
 	  ast.supertypes.filter(t => (t[0] == 'adjective')).map(t => t[1]));
       return '' +
         // define the type as a thing
-        'var ' + ast.name + " = router.newThing();\n" +
-        'router.add(' + ast.name + ', { ' +
-	  'Named: new Named({ name: "' + ast.name + '" }), ' +
-	  'Typing: new Typing({ supertypes: [' +
-	    supertypes.join(', ') + "] }) });\n" +
+        'var yp$' + ast.name + " = router.newThing();\n" +
+        'router.add(yp$' + ast.name + ', { ' +
+	  'Named: new yp$Named({ name: "' + ast.name + '" }), ' +
+	  'Typing: new yp$Typing({ supertypes: [' +
+	    supertypes.map(x => ('yp$' + x)).join(', ') + "] }) });\n" +
 	// define a function that makes a new instance of the type and adds it
-        'function add' + ast.name + "(adjectivesProps) {\n" +
+        'function yp$add' + ast.name + "(adjectivesProps) {\n" +
         "  var thing = router.newThing();\n" +
 	   // add Typed and all the defaultAdjectives, using the properties
 	   // from the argument when we have them
 	"  var adjectives = {\n" +
-	'    Typed: new Typed({ type: ' + ast.name  + " }),\n    " +
+	'    Typed: new yp$Typed({ type: yp$' + ast.name  + " }),\n    " +
 	defaultAdjectives.map(adj => {
-	  return adj + ': new ' + adj + '(' +
+	  return adj + ': new yp$' + adj + '(' +
 	    '("' + adj + '" in adjectivesProps) ? adjectivesProps.' + adj +
 	    " : {})";
 	}).join(",\n    ") + "\n  };\n" +
@@ -251,25 +246,27 @@ function compileOp(ast) {
 	"  var queue = [];\n" +
 	"  for (var adjective in adjectivesProps) {\n" +
 	"    if (!(adjective in adjectives)) {\n" +
+	"      var madj = 'yp$' + adjective;\n" +
 	"      adjectives[adjective] = " +
-		"new this[adjective](adjectivesProps[adjective]);\n" +
-	"      this[adjective].dependencies.forEach(d => queue.push(d));\n" +
+		"new this[madj](adjectivesProps[adjective]);\n" +
+	"      this[madj].dependencies.forEach(d => queue.push(d));\n" +
 	"    }\n" +
 	"  }\n" +
 	   // keep adding dependencies until we have them all
 	"  while (queue.length > 0) {\n" +
 	"    var d = queue.shift();\n" +
+	"    var md = 'yp$' + d;\n" +
 	"    if (!(d in adjectives)) {\n" +
-	"      if ('function' != typeof this[d]) throw new Error('no constructor for adjective ' + d);\n" +
-	"      adjectives[d] = new this[d]({});\n" +
-	"      this[d].dependencies.forEach(d2 => queue.push(d2));\n" +
+	"      if ('function' != typeof this[md]) throw new Error('no constructor for adjective ' + d);\n" +
+	"      adjectives[d] = new this[md]({});\n" +
+	"      this[md].dependencies.forEach(d2 => queue.push(d2));\n" +
 	"    }\n" +
 	"  }\n" +
 	   // finally, add the thing to the router with its adjectives
 	"  router.add(thing, adjectives);\n" +
 	"  return thing;\n" +
         "}\n" +
-	"deleteToUnload.push('" + ast.name + "', 'add" + ast.name + "');\n";
+	"deleteToUnload.push('yp$" + ast.name + "', 'yp$add" + ast.name + "');\n";
     case 'rule':
       clearInitialized();
       var {
@@ -282,7 +279,7 @@ function compileOp(ast) {
       return "router.on('" + eventName + "', function(" +
 	  eventParams.join(', ') +
 	") {try {\n" +
-	((vars.length > 0) ? '  var ' + vars.join(', ') + ";\n" : '') +
+	  vars +
 	"  if (" +
 	  conditions.map(compile).join(" &&\n      ") +
 	") {\n" +
@@ -316,7 +313,7 @@ function compileOp(ast) {
 	"function(" +
 	  eventParams.join(', ') +
 	") {try {\n" +
-	((vars.length > 0) ? '  var ' + vars.join(', ') + ";\n" : '') +
+	  vars +
 	"  if (" +
 	  conditions.map(compile).join(" &&\n      ") +
 	") {\n" +
@@ -348,7 +345,7 @@ function compileOp(ast) {
       });
       setInitialized(ast.thing);
 	     // do nonSelfRefAdjs as part of the creation
-      return '    var ' + ast.thing.name + ' = add' + ast.type + '({ ' +
+      return '    var ' + lValue(ast.thing) + ' = yp$add' + ast.type + '({ ' +
 	nonSelfRefAdjs.map(adj =>
 	  adj.name + ': { ' +
 	  adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
@@ -381,11 +378,11 @@ function compileOp(ast) {
       return '    router.readMap(' + compile(ast.thing) + ");\n";
     case 'let':
       var val = compile(ast.value);
-      setInitialized(ast.variable);
+      var jsVar = lValue(ast.variable);
       if (ast.isCondition) {
-	return '((' + ast.variable.name + ' = ' + val + ') || true)';
+	return '((' + jsVar + ' = ' + val + ') || true)';
       } else {
-	return '    let ' + ast.variable.name + ' = ' + val + ";\n";
+	return '    let ' + jsVar + ' = ' + val + ";\n";
       }
     case 'debug':
       return '    console.log(' + compile(ast.value) + ");\n";
@@ -403,7 +400,7 @@ function compileOp(ast) {
     case 'isa':
       var l = compile(ast.l);
       return '((' + l + ' in router.adjectives.Typed) &&' +
-             ' subsumes(' + ast.r + ', ' +
+             ' subsumes(yp$' + ast.r + ', ' +
 	         'router.adjectives.Typed[' + l + '].type))';
     case 'isin':
       return '(' + compile(ast.r) + ').includes(' + compile(ast.l) + ')';
@@ -420,8 +417,7 @@ function compileOp(ast) {
 	    if (isVariable(p[1]) && !isInitialized(p[1].name)) {
 	      // p[1] is an uninitialized variable, assign to it, but make sure
 	      // the condition is true regardless of the value we assign
-	      setInitialized(p[1]);
-	      return ' && ((' + p[1].name + ' = ' + rhs + ') || true)';
+	      return ' && ((' + lValue(p[1]) + ' = ' + rhs + ') || true)';
 	    } else {
 	      // p[1] is an initialized variable or some other kind of value,
 	      // test equality
@@ -444,14 +440,13 @@ function compileOp(ast) {
 	// TODO? use all the other adjectives as the positiveAdjective
 	throw new Error("'there is' condition must include at least one positive adjective");
       }
-      setInitialized(ast.variable);
 	      // terminate the outer 'if' condition with true
       return "true) {\n" +
 	   // iterate the variable over the keys of the positiveAdjective
-        "  for (var " + ast.variable.name +
+        "  for (var " + lValue(ast.variable) +
 		' in router.adjectives.' + positiveAdjective.name + ") {\n" +
 	     // make sure the thing is an integer, not a string
-	'    ' + ast.variable.name + " |= 0;\n" +
+	'    ' + compile(ast.variable) + " |= 0;\n" +
 	     // start a new 'if'
 	'    if (' +
 	  // compile all the suchThat adjectives as if they were 'is' conditions
@@ -467,8 +462,7 @@ function compileOp(ast) {
 	if ('key' in ast) {
 	  if (!ast.state) { throw new Error('WTF'); }
 	  if (ast.key.op != 'var') { throw new Error('WTF'); }
-	  setInitialized(ast.key);
-	  return '(' + ast.key.name + ' = ' + keys + '.find' + predicate + ')';
+	  return '(' + lValue(ast.key) + ' = ' + keys + '.find' + predicate + ')';
 	} else { // no key variable
 	  return '(' + (ast.state ? '' : '!') + keys +
 	           '.' + (ast.quantifier == 'any' ? 'some' : 'every') +
@@ -490,7 +484,7 @@ function compileOp(ast) {
 	  : "");
 	throw new Error("undeclared variable ?" + ast.name + " used" + src);
       }
-      return ast.name;
+      return 'yp$' + ast.name;
     case 'const':
       return ast.name;
     case 'new':
@@ -515,23 +509,23 @@ function compileOp(ast) {
 	// get string versions of all used vars, and check they won't mess up
 	// svg
 	var preamble = usedVars.map(x => {
-	  x = x.substr(1); // remove '?' from beginning
-	  var xStr = x + 'Str$';
-	  return '      var ' + xStr + ' = [' + x + "].toSVGString();\n" +
-	     "      if (/[<>=\"']/.test(" + x + "))\n" +
-	     '        throw new Error("?' + x + " cannot be included in an SVG string because it contains one of the characters < > \\\"\");\n";
+	  var xVar = { op: 'var', name: x.substr(1) }; // remove '?' from start
+	  var xStrVar = { op: 'var', name: xVar.name + 'Str$' };
+	  return '      var ' + lValue(xStrVar) + ' = [' + compile(xVar) + "].toSVGString();\n" +
+	     "      if (/[<>=\"']/.test(" + compile(xVar) + "))\n" +
+	     '        throw new Error("' + x + " cannot be included in an SVG string because it contains one of the characters < > \\\"\");\n";
 	}).join('');
 	var strsAndVars = ast.string.split(/\?([a-z]\w+)/);
 	var concatExpr = '';
 	var i;
 	for (i = 0; i < strsAndVars.length - 1; i += 2) {
 	  var str = strsAndVars[i];
-	  var v = strsAndVars[i + 1];
+	  var v = { op: 'var', name: strsAndVars[i + 1] + 'Str$' };
 	  if (/<[\w-]*$/.test(str))
 	    throw new Error("variable interpolation not allowed in SVG tag names");
 	  if (i > 0 && /^[\w-]*=/.test(str))
 	    throw new Error("variable interpolation not allowed in SVG attribute names");
-	  concatExpr += JSON.stringify(str) + ' + ' + v + 'Str$ + ';
+	  concatExpr += JSON.stringify(str) + ' + ' + compile(v) + ' + ';
 	}
 	// odd-length strsAndVars have a str at the end
 	concatExpr +=

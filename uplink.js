@@ -417,9 +417,9 @@ function dispatchPeerMessageAsNonHub(msg) {
       // NOTE: can't use addPlayer because we need playerThing first in order
       // to make the Interface
       this.router.add(playerThing, {
-	Typed: new Typed({ type: Player }),
-	Named: new Named({ name: playerName }),
-	Interfaced: new Interfaced({
+	Typed: new yp$Typed({ type: yp$Player }),
+	Named: new yp$Named({ name: playerName }),
+	Interfaced: new yp$Interfaced({
 	  interface: new Interface(playerThing),
 	  shipShape: playerShipShape
 	})
