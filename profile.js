@@ -182,7 +182,7 @@ function know(player) {
     // update the current shipShape
     newShipShape = ShipShapes.ensureValid(player.shipShape);
     if (newShipShape.toSVGString() != knownPlayer.shipShape.toSVGString()) {
-      knownPlayer.shipShape = newShipShape;
+      knownPlayer.shipShape = ShipShapes.toJSON(newShipShape);
       changed = true;
     }
     if (changed) {
@@ -197,7 +197,7 @@ function know(player) {
 	joinPolicy: 'askMe',
 	statusRequestPolicy: 'onlyOnRequest'
       }, player, {
-	shipShape: ShipShapes.ensureValid(player.shipShape)
+	shipShape: ShipShapes.toJSON(ShipShapes.ensureValid(player.shipShape))
       });
     this.onKnownPlayersChange();
   }

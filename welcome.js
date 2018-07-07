@@ -100,8 +100,10 @@ function updatePlayersTable() {
       '</td>' +
       '<td><button id="' + id + '-forget">Forget</button></td>';
     $(row.childNodes[1]).text(' ' + [player.handle, ...player.oldHandles].join(', '));
-    console.log(player);
-    $(row.childNodes[1]).prepend(ShipShapes.toSVG(player.shipShape));
+    if (!('shipShape' in player))
+      player.shipShape = ShipShapes.toJSON(ShipShapes.defaultShape);
+    $(row.childNodes[1]).prepend(
+      ShipShapes.toSVG(ShipShapes.ensureValid(player.shipShape)));
     $(row.childNodes[2].childNodes[0]).
       val(player.statusResponsePolicy).
       on('change', onPolicyChange);
@@ -182,7 +184,7 @@ function addJoinGameRow(gameIndex, players) {
     var span = $(document.createElement('span'));
     span.text(' ' + p.handle);
     span.attr('title', p.id + ' ' + p.handle /* + ', AKA ' + p.handles.join(', ') */);
-    span.prepend(ShipShapes.toSVG(p.shipShape));
+    span.prepend(ShipShapes.toSVG(ShipShapes.ensureValid(p.shipShape)));
     // TODO also prepend (small) id svg?
     playersTD.append(span);
   });

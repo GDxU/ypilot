@@ -190,7 +190,7 @@ function getPlayerList() {
       players.push({
 	id: id,
 	handle: p.handle,
-	shipShape: ShipShapes.toJSON(p.shipShape),
+	shipShape: p.shipShape,
 	publicKey: p.publicKey,
 	thing: this.players[id].thing
       });
@@ -259,7 +259,7 @@ function accept(remoteID, sendID) {
       this.newPlayerQueue.push({
 	id: remoteID,
 	handle: window.profile.knownPlayers[remoteID].handle,
-	shipShape: ShipShapes.toJSON(window.profile.knownPlayers[remoteID].shipShape),
+	shipShape: window.profile.knownPlayers[remoteID].shipShape,
 	publicKey: window.profile.knownPlayers[remoteID].publicKey
       });
     } catch (err) {
@@ -407,7 +407,7 @@ function dispatchPeerMessageAsNonHub(msg) {
       } else { // someone else just got added
         window.profile.know(msg.player);
 	playerName = window.profile.knownPlayers[playerID].handle;
-	playerShipShape = window.profile.knownPlayers[playerID].shipShape;
+	playerShipShape = ShipShapes.ensureValid(window.profile.knownPlayers[playerID].shipShape);
       }
       // don't let games modify shipshapes in profiles
       playerShipShape = ShipShapes.copy(playerShipShape);
