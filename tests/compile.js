@@ -1,5 +1,16 @@
 const assert = require('assert');
 
+// make sure nobody tries to get jquery, which won't work in node
+const Module = require('module');
+const oldRequire = Module.prototype.require;
+Module.prototype.require = function(x) {
+  if (x == 'jquery') {
+    return function() {};
+  } else {
+    return oldRequire.apply(this, arguments);
+  }
+};
+
 const parse = require('../parser.js').parse;
 const compile = require('../compile.js');
 compile.strictly = true; // allow errors to propagate to top

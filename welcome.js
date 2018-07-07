@@ -3,6 +3,7 @@ const qr = require('qr-image');
 const UserNames = require('./user-names.js');
 const ShipShapes = require('./ship-shapes.js');
 const Profile = require('./profile.js');
+const tryToParseString = require('./parser-utils.js').tryToParseString;
 const Game = require('./game.js');
 const Uplink = require('./uplink.js');
 const errors = require('./errors.js');
@@ -250,7 +251,7 @@ window.addNewGameFromURL = function(url) {
       try {
 	var ast, title, author;
 	try {
-	  ast = Game.tryToParseString(jqXHR.responseText);
+	  ast = tryToParseString(jqXHR.responseText, url);
 	  title = 'Untitled';
 	  author = 'Anonymous';
 	  ast.forEach(statement => {

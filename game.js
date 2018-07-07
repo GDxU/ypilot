@@ -1,16 +1,9 @@
 const parse = require('./parser.js').parse;
+const tryToParseString = require('./parser-utils.js').tryToParseString;
 const compile = require('./compile.js');
 const $ = require('jquery');
 const Clock = require('./clock.js');
 const errors = require('./errors.js');
-
-function tryToParseString(ypText) {
-  try {
-    return parse(ypText);
-  } catch (e) {
-    errors.rethrowError(e, "while parsing config file, at line " + e.location.start.line + " column " + e.location.start.column + " to line " + e.location.end.line + " column " + e.location.end.column + ":\n");
-  }
-}
 
 function loadFromAST(ast, sourceURL) {
   return compile(ast).then(jsText => {
@@ -28,7 +21,7 @@ function loadFromAST(ast, sourceURL) {
 
 function loadFromString(ypText, sourceURL) {
   try {
-    var ast = tryToParseString(ypText);
+    var ast = tryToParseString(ypText, sourceURL);
     return loadFromAST(ast, sourceURL);
   } catch (e) {
     return Promise.reject(e);
@@ -56,7 +49,6 @@ function unload() {
 }
 
 module.exports = {
-  tryToParseString: tryToParseString,
   loadFromAST: loadFromAST,
   loadFromString: loadFromString,
   loadFromProfile: loadFromProfile,

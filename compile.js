@@ -1,4 +1,6 @@
-const parse = require('./parser.js').parse;
+const $ = require('jquery'); // for remote use statements
+const errors = require('./errors.js');
+const tryToParseString = require('./parser-utils.js').tryToParseString;
 const stdlib = require('./stdlib.js');
 // yes, globals are usually bad, but these are global because otherwise we'd
 // have to pass them to literally every function in this file, so I think it's
@@ -190,23 +192,32 @@ function compileStatement(ast) {
 
 // promise to compile a 'use' statement to a string of JS code
 function compileUseStatement(ast) {
+	 // first, get the text
   return new Promise((resolve, reject) => {
-    if (/^standard:/.test(ast.url)) {
+    if (/^standard:/.test(ast.url)) { // from stdlib
       var name = ast.url.substring(9);
       if (name in usedUrls) {
 	resolve('');
       } else if ((name in stdlib) && stdlib[name] !== undefined) {
 	usedUrls[name] = true;
-	compileStatements(parse(stdlib[name])).then(resolve).catch(reject);
+	resolve(stdlib[name]);
       } else {
 	throw new Error("not found in standard library: " + name);
       }
-    } else {
-      console.log(JSON.stringify(ast));
-      throw new Error("for now, use url must begin with \"standard:\"");
-      // TODO fetch http(s) URLs
-      // need to return Promises instead of values
+    } else { // from the web
+      $.get(ast.url).
+      done((data, textStatus, jqXHR) => {
+	resolve(jqXHR.responseText);
+      }).
+      fail((jqXHR, textStatus, errorThrown) => {
+	errors.reportError(textStatus, "while fetching config file:\n");
+	errors.convertFailToReject(textStatus, errorThrown, reject);
+      });
     }
+  // then, parse and compile it
+  }).then(ypText => {
+    if (ypText == '') return ypText; // shortcut
+    return compileStatements(tryToParseString(ypText, ast.url));
   });
 }
 

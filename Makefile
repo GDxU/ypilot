@@ -27,6 +27,7 @@ SRCS = \
 	interface.js \
 	menu.js \
 	parser.js \
+	parser-utils.js \
 	peer-connection.js \
 	profile.js \
 	router.js \
