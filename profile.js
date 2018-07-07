@@ -278,9 +278,7 @@ function loadGameFromURL(url) {
   var i = this.games.findIndex(g => (g.url == url));
   if (i == -1) { // first time we're loading this game
     return addNewGameFromURL(url).
-	   then(({ i, ast }) => {
-	     Game.loadFromAST(ast, url);
-	   });
+	   then(({ i, ast }) => Game.loadFromAST(ast, url));
   } else {
     return Game.loadFromProfile(i);
   }

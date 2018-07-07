@@ -13,8 +13,7 @@ function tryToParseString(ypText) {
 }
 
 function loadFromAST(ast, sourceURL) {
-  try {
-    var jsText = compile(ast);
+  return compile(ast).then(jsText => {
     if (sourceURL) {
       jsText += "\n//# sourceURL=" + sourceURL + "\n";
     }
@@ -24,14 +23,16 @@ function loadFromAST(ast, sourceURL) {
     script.text = jsText;
     $('head').append(script);
     router.configURL = sourceURL;
-  } catch (e) {
-    errors.rethrowError(e, "while compiling config file:\n");
-  }
+  });
 }
 
 function loadFromString(ypText, sourceURL) {
-  var ast = tryToParseString(ypText);
-  loadFromAST(ast, sourceURL);
+  try {
+    var ast = tryToParseString(ypText);
+    return loadFromAST(ast, sourceURL);
+  } catch (e) {
+    return Promise.reject(e);
+  }
 }
 
 function loadFromProfile(gameIndex) {
@@ -39,12 +40,7 @@ function loadFromProfile(gameIndex) {
     var url = profile.games[gameIndex].url;
     $.get(url).
     done((data, textStatus, jqXHR) => {
-      try {
-        loadFromString(jqXHR.responseText, url);
-      } catch (e) {
-	reject(e);
-      }
-      resolve(null);
+      loadFromString(jqXHR.responseText, url).then(resolve).catch(reject);
     }).
     fail((jqXHR, textStatus, errorThrown) => {
       errors.reportError(textStatus, "while fetching config file:\n");

@@ -177,28 +177,44 @@ function lValue(ast) {
   return compileOp(ast);
 }
 
-function compileOp(ast) {
+// promise to compile a top-level statement to a string of JS code
+function compileStatement(ast) {
+  if (ast.op == 'use') {
+    return compileUseStatement(ast);
+  } else {
+    return new Promise((resolve, reject) => {
+      resolve(compileNonUseStatement(ast));
+    });
+  }
+}
+
+// promise to compile a 'use' statement to a string of JS code
+function compileUseStatement(ast) {
+  return new Promise((resolve, reject) => {
+    if (/^standard:/.test(ast.url)) {
+      var name = ast.url.substring(9);
+      if (name in usedUrls) {
+	resolve('');
+      } else if ((name in stdlib) && stdlib[name] !== undefined) {
+	usedUrls[name] = true;
+	compileStatements(parse(stdlib[name])).then(resolve).catch(reject);
+      } else {
+	throw new Error("not found in standard library: " + name);
+      }
+    } else {
+      console.log(JSON.stringify(ast));
+      throw new Error("for now, use url must begin with \"standard:\"");
+      // TODO fetch http(s) URLs
+      // need to return Promises instead of values
+    }
+  });
+}
+
+// compile a top-level statement that isn't 'use' to a string of JS code
+function compileNonUseStatement(ast) {
   switch (ast.op) {
-    // top-level statements
     case 'metadata':
       return '';
-    case 'use':
-      if (/^standard:/.test(ast.url)) {
-	var name = ast.url.substring(9);
-	if (name in usedUrls) {
-	  return '';
-	} else if ((name in stdlib) && stdlib[name] !== undefined) {
-	  usedUrls[name] = true;
-	  return compileStatements(parse(stdlib[name]));
-	} else {
-	  throw new Error("not found in standard library: " + name);
-	}
-      } else {
-	console.log(JSON.stringify(ast));
-	throw new Error("for now, use url must begin with \"standard:\"");
-	// TODO fetch http(s) URLs
-	// need to return Promises instead of values
-      }
     case 'defineAdjective':
       adjectiveDependencies[ast.name] = ast.dependencies;
       return 'function yp$' + ast.name + '({ ' + ast.properties.map(p => {
@@ -289,13 +305,6 @@ function compileOp(ast) {
 	"  }\n" +
 	"} catch (e) { console.error(e.message + \" while executing this rule:\\n\" + " + JSON.stringify(ast.text) + "); }\n" +
 	"});\n";
-    /* events (handled as part of 'rule' case)
-    case 'start':
-    case 'clockTick':
-    case 'hit':
-    case 'press':
-    case 'release':
-    case 'event':*/
     // permission conditions:
     case 'allow':
     case 'onlyAllow':
@@ -325,6 +334,21 @@ function compileOp(ast) {
 	"} catch (e) { console.error(e.message + \" while executing this permission condition:\\n\" + " + JSON.stringify(ast.text) + "); }\n" +
 	// FIXME return value when an error happens?
 	"});\n";
+    default:
+      throw new Error("WTF");
+  }
+}
+
+// compile an AST node like { op: '...', ... } to a string of JS code
+function compileOp(ast) {
+  switch (ast.op) {
+    /* events (handled as part of 'rule' statement case)
+    case 'start':
+    case 'clockTick':
+    case 'hit':
+    case 'press':
+    case 'release':
+    case 'event':*/
     // effects (these can also be events, but if they are they're handled in
     // the 'rule' case)
     case 'add':
@@ -568,22 +592,29 @@ function compileOp(ast) {
   }
 }
 
+// promise to compile a list of statements to a string of JS code
 function compileStatements(statements) {
-  var compiledStatements = (compile.strictly ? statements.map(compile) :
-    statements.map(s => {
-      try {
-	return compile(s);
-      } catch (e) {
+  var compiledStatements = [];
+  var p = Promise.resolve('');
+  statements.forEach(s => {
+    p =
+      p.
+      then(() => compileStatement(s)).
+      then(cs => { compiledStatements.push(cs); });
+    if (!compile.strictly) {
+      p = p.catch(e => {
 	console.warn("failed to compile statement; skipping");
 	console.warn(s /*.text*/);
 	console.warn(e);
-	return "/* failed to compile statement */\n";
-      }
-    })
-  );
-  return compiledStatements.join("\n");
+	compiledStatements.push("/* failed to compile statement */\n");
+      });
+    }
+  });
+  return p.then(() => compiledStatements.join("\n"));
 }
 
+// compile some part of a parsed AST to a string of JS code; if it's the
+// top-level array of statements, only promise to compile it
 function compile(ast) {
   switch (typeof ast) {
     case 'object':
@@ -595,8 +626,10 @@ function compile(ast) {
 	nounDefaultAdjectives = {};
 	nounSupertypes = {};
 	usedUrls = {};
-	return compile({ op: 'use', url: 'standard:base.yp' }) + "\n" +
-	       compileStatements(ast);
+	return compileStatements(
+	         // add 'use "standard:base.yp"' to the start
+	         [{ op: 'use', url: 'standard:base.yp' }, ...ast]
+	       );
       } else if ('op' in ast) {
 	return compileOp(ast);
       } else {

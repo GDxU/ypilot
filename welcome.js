@@ -357,12 +357,9 @@ $('#config-file').on('change', function(evt) {
     var file = evt.target.files[0];
     var reader = new FileReader();
     reader.onload = function() {
-      try {
-	Game.loadFromString(reader.result, encodeURI(file.name));
-	router.startNewGame();
-      } catch (e) {
-	errors.reportError(e);
-      }
+      Game.loadFromString(reader.result, encodeURI(file.name)).
+      then(() => router.startNewGame()).
+      catch(errors.reportError);
     };
     reader.readAsText(file);
   } catch (e) {
