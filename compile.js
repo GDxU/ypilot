@@ -414,7 +414,7 @@ function compileOp(ast) {
 	    var rhs =
 	      'router.adjectives.' + ast.r.name + '[' + l + '].' +
 	      p[0];
-	    if (isVariable(p[1]) && !isInitialized(p[1].name)) {
+	    if (isVariable(p[1]) && !isInitialized(p[1])) {
 	      // p[1] is an uninitialized variable, assign to it, but make sure
 	      // the condition is true regardless of the value we assign
 	      return ' && ((' + lValue(p[1]) + ' = ' + rhs + ') || true)';
