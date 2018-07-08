@@ -1,6 +1,6 @@
 # expires after some time has elapsed (distinct from hitpoints)
 a Fleeting thing has
-  a timeToLive which is a number (default 30) # 30 ticks, i.e. 1 second
+  a timeToLive which is a number (default 20) # 20 ticks, i.e. 1 second
 
 in the event ?f Expires then ?f is a Fleeting thing
 

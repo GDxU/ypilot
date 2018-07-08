@@ -1,21 +1,83 @@
-# can hold a single (type of) thing at a time
-a Capacious thing has
-  a content (default nothing)
-  a capacity which is a number (default 1)
-  # restrictions on the type of thing this slot can hold; the arrays of types here are treated as unions; may use special types "Any" (top) or "No" (bottom)
-  # TODO: do these as permissions
-  some allowedContentTypes which are Typing things (default [])
-  some deniedContentTypes which are Typing things (default [])
+use "standard:stackable.yp"
 
-# TODO? Contains/Releases events (or going the other way, Enters/Leaves?)
+# can hold a single (type of) thing at a time
+a Capacious thing has a content (default nothing)
+a Slot is Capacious
 
 # can hold several different things in different slots
-a Holding thing has
-  some slots which are Capacious things (default [])
+a Holding thing has some slots which are Capacious things (default [])
 
-# can fill a slot with multiple "copies" of itself (not actually copied)
-a Stackable thing is Located and has
-  a currentStackSize which is a number (default 1)
-  a maximumStackSize which is a number (default 64)
+# when a slot's content is removed it becomes nothing
+# FIXME? should it instead be a feature of the system that whenever a thing is
+# removed, stale references to it are turned to nothing?
+when ?content is removed and
+  there is a thing ?slot which is Capacious with content ?content
+then ?slot becomes Capacious with content nothing
 
-a Slot is Capacious
+# ?content goes into ?slot
+in the event ?content Fills ?slot then ?slot is a Capacious thing
+
+# a slot may only contain a new non-Stackable thing if it was empty
+disallow the event ?newContent Fills ?slot when
+  ?newContent is not Stackable
+  ?slot is Capacious with content ?oldContent
+  (?oldContent != nothing)
+
+# simple case of a slot gaining content when it was empty
+when ?newContent Fills ?slot and ?slot is Capacious with content nothing
+then ?slot becomes Capacious with content ?newContent
+
+# new content Stacks onto old content when both are Stackable
+when ?newContent Fills ?slot and
+  ?slot is Capacious with content ?oldContent
+  ?newContent is Stackable
+  ?oldContent is Stackable
+then ?newContent Stacks onto ?oldContent
+
+# all of ?content goes out of ?slot
+# NOTE: we must include ?content in the event parameters because we immediately
+# delete it from the slot itself, and would not otherwise be able to access it
+# from further rules triggered by this event
+in the event ?slot Empties of ?content then ?slot is a Capacious thing
+
+# a slot can only empty of the same content that it was filled with
+disallow the event ?slot Empties of ?fakeContent when
+  ?slot is Capacious with content ?realContent
+  (?fakeContent != ?realContent)
+
+# a slot becomes empty when it Empties
+when ?slot Empties of ?content
+then ?slot becomes Capacious with content nothing
+
+# some of ?content goes out of ?slot
+in the event ?slot Dispenses ?count then
+  ?slot is a Capacious thing
+  ?count is a number
+
+# can't dispense negative things
+disallow the event ?slot Dispenses ?count when (?count <= 0)
+
+# can't dispense more than one thing from a non-stack
+disallow the event ?slot Dispenses ?count when
+  (?count > 1)
+  ?slot is Capacious with content ?content
+  ?content is not Stackable
+
+# can't dispense more than we have from a stack
+disallow the event ?slot Dispenses ?count when
+  ?slot is Capacious with content ?content
+  ?content is Stackable with currentStackSize ?css
+  (?css < ?count)
+
+# dispensing a non-stackable thing from a slot empties it
+when ?slot Dispenses ?count and
+  ?slot is Capacious with content ?content
+  ?content is not Stackable
+then ?slot Empties of ?content
+
+# dispensing a stackable thing reduces its stack size
+when ?slot Dispenses ?count and
+  ?slot is Capacious with content ?content
+  ?content is Stackable with currentStackSize ?css
+then ?content becomes Stackable with currentStackSize (?css - ?count)
+

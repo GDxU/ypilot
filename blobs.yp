@@ -6,6 +6,7 @@ use "standard:bouncy.yp"
 use "standard:motile.yp"
 use "standard:bullet.yp"
 use "standard:holding.yp"
+#use "standard:dropped.yp" # not working yet
 use "standard:controls.yp"
 use "standard:owned.yp"
 use "standard:gun.yp"
@@ -24,7 +25,6 @@ use "standard:last-player-standing.yp"
 
 a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
-an Item is Fleeting and Mobile and Tangible and Visible
 
 when the game starts
 then

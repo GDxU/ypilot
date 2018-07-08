@@ -381,7 +381,7 @@ reserved_word
     / 'added' / 'removed' / 'becomes'
     / 'can' / 'is' / 'are' / 'and' / 'an' / 'a' / 'has' / 'there' / 'let'
     / 'only' / 'allow' / 'disallow'
-    / 'which' / 'with' / 'when' / 'then' / 'of' / 'new' / 'use'
+    / 'which' / 'with' / 'when' / 'then' / 'new' / 'use'
     / ('thing' / 'object' / 'flag' / 'boolean' / 'number' / 'string') 's'?
     / 'the' / 'clock' / 'ticks' / 'hits' / 'penetrates'
     / 'presses' / 'releases' / 'holding' / 'down'

@@ -1,0 +1,34 @@
+# can fill a slot with multiple "copies" of itself (not actually copied)
+a Stackable thing has
+  a currentStackSize which is a number (default 1)
+  a maximumStackSize which is a number (default 64)
+
+# stacks of 0 things go away
+when ?stack becomes Stackable with currentStackSize 0
+then ?stack is removed
+
+# stackable things stack with each other
+in the event ?a Stacks onto ?b then
+  ?a is a Stackable thing
+  ?b is a Stackable thing
+
+# only things of the same type stack
+disallow the event ?a Stacks onto ?b when
+  ?a is Typed with type ?aType
+  ?b is Typed with type ?bType
+  (?a != ?b)
+
+# stacks may not exceed the maximum stack size
+disallow the event ?a Stacks onto ?b when
+  ?a is Stackable with currentStackSize ?aCurrent
+  ?b is Stackable with currentStackSize ?bCurrent and maximumStackSize ?bMax
+  (?aCurrent + ?bCurrent > ?bMax)
+
+# when ?a Stacks onto ?b, the ?b stack gets bigger and ?a is removed
+when ?a Stacks onto ?b and
+  ?a is Stackable with currentStackSize ?aCurrent
+  ?b is Stackable with currentStackSize ?bCurrent
+then
+  ?b becomes Stackable with currentStackSize (?aCurrent + ?bCurrent)
+  ?a is removed
+

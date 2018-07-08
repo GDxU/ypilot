@@ -1,0 +1,91 @@
+# FIXME doesn't currently work (see notes below)
+
+use "standard:fleeting.yp"
+use "standard:holding.yp"
+
+# items that get "dropped on the floor" for ships to pick up
+a Dropped thing is Fleeting and Mobile and Tangible and Visible and has
+  a dropped flag (default true) # FIXME adjectives require at least one prop.
+
+# ships pick up drops into their slots
+in the event ?ship PicksUp ?item into ?slot then
+  ?ship is a Holding thing
+  ?item is a Dropped thing
+  ?slot is a Capacious thing
+
+# ...when the ship hits the drop and has an empty slot
+when ?ship hits ?item and
+  ?item is Dropped
+  ?ship is Holding with slots ?slots
+  # TODO implement this condition type
+  ?slot is the first element of ?slots which is
+    Capacious with content nothing
+then ?ship PicksUp ?item into ?slot
+
+# TODO ... or has a slot with a stack of the same type
+
+# when a drop is picked up it stops expiring/moving and fills the slot
+when ?ship PicksUp ?item into ?slot
+then
+  ?item becomes not Fleeting
+  ?item becomes not Mobile
+  ?item becomes not Located
+  ?item becomes not Oriented
+  ?item Fills ?slot
+
+in the event ?item IsDropped from ?slot in ?ship then
+  ?ship is a Holding thing
+  ?slot is a Capacious thing
+
+# FIXME would be nice if IsDropped caused Dispenses instead of the other way
+# around, so that we can use Dispenses for other reasons (e.g. ammo stack
+# separate from gun). But permission flows the other direction; if something
+# can't be dispensed, we shouldn't drop it. Maybe add a TryingToDrop adj that
+# gets added before Dispenses, and check for it in the rule triggered by
+# Dispenses that actually does the drop. But when should TryingToDrop go away
+# if Dispenses isn't allowed?
+
+# when a slot dispenses from a stack, a copy of the right size is created and
+# dropped
+when ?slot Dispenses ?count and
+  ?slot is Capacious with content ?stack
+  ?stack is Stackable with maximumStackSize ?mss
+  there is a thing ?ship which is
+    Holding with slots ?slots
+  ?slot is in ?slots
+then
+  # TODO implement this effect type
+  a copy ?item of ?stack is added which is
+    Stackable with currentStackSize ?count and maximumStackSize ?mss
+  ?item IsDropped from ?slot in ?ship
+
+# when a slot dispenses from a non-stack, the content itself is dropped
+when ?slot Dispenses ?count and
+  ?slot is Capacious with content ?item
+  ?item is not Stackable
+  there is a thing ?ship which is
+    Holding with slots ?slots
+  ?slot is in ?slots
+then ?item IsDroppped from ?slot in ?ship
+
+in the event ?item Drops in ?space at ?position with velocity ?velocity then
+  ?space is a Spatial thing
+  ?position is a Vec2 object
+  ?velocity is a Vec2 object
+
+# when something is dropped from a ship, it drops in front of the ship with its
+# velocity
+when ?item IsDropped from ?slot in ?ship and
+  ?ship is Located with space ?space and position ?shipPos
+  ?ship is Oriented with orientation ?o
+  ?ship is Mobile with velocity ?v
+then
+  let ?itemPos be (?shipPos + Vec2[cos(?o) * 32, 0])
+  ?item Drops in ?space at ?itemPos with velocity ?v
+
+# when something drops, it becomes Mobile, and expires in 1 minute
+when ?item Drops in ?space at ?pos with velocity ?v
+  ?item becomes Located with space ?space and position ?pos
+  ?item becomes Oriented with orientation 0
+  ?item becomes Mobile with velocity ?v and angularVelocity 0
+  ?item becomes Fleeting with timeToLive 1200 # 1200 ticks == 1 minute

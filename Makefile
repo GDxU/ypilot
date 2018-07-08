@@ -49,6 +49,7 @@ STDLIBS = \
 	controls.yp \
 	deathmatch.yp \
 	defeats.yp \
+	dropped.yp \
 	elo-scoring.yp \
 	fleeting.yp \
 	gun.yp \
@@ -69,6 +70,7 @@ STDLIBS = \
 	scoreboard.yp \
 	scored.yp \
 	scores-count-defeats.yp \
+	stackable.yp \
 	team.yp \
 	wall.yp
 
