@@ -291,7 +291,7 @@ SVG literals may include variables, whose values are then turned into strings an
 
 One file can `use` another file (specified as a URL in a string), meaning that the other file is loaded as if its contents were included in place of the `use` statement. Only the first `use` of a given URL has this effect; later `use`s of the same URL are ignored.
 
-For now, only standard libraries can be used, which all have URLs of the form `standard:foo.yp`, where `foo` is the name of the library. In the future, (CORS-enabled) `http:` and `https:` URLs, and possibly certain relative URLs, will be supported.
+Standard libraries all have URLs of the form `standard:foo.yp`, where `foo` is the name of the library. Other libraries have (CORS-enabled) `http:` or `https:` URLs. Relative URLs are also allowed, but always use the location of `ypilot.html` as the thing they're relative to, so they're not as useful as you might think.
 
 For example, someone might host a file like this at `http://www.example.com/ypilot/fish.yp`:
 
