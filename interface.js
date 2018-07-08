@@ -142,7 +142,8 @@ function changeSpace() {
 function updateWrap(newPlayerPos, oldPlayerPos) {
   // go through all visible things located in the player's space
   for (var thing in this.visible) {
-    if (this.located[thing].space === this.playerShipLocated.space) {
+    if ((thing in this.located) &&
+        this.located[thing].space === this.playerShipLocated.space) {
       // if the thing's position relative to the player's new and old positions
       // crosses the toroidSize/2 boundary in either direction, redo its
       // transform

@@ -92,6 +92,8 @@ effect
     { return { op: 'add', type: type, thing: thing, adjectives: adjectives }; }
   / a 'new' sp type:type_name thing:variable 'is' sp 'added' sp
     { return { op: 'add', type: type, thing: thing, adjectives: [] }; }
+  / a 'copy' sp copy:variable 'of' sp original:value_expr 'is' sp 'added' sp 'which' sp 'is' sp adjectives:adjective_inst+
+    { return { op: 'copy', copy: copy, original: original, adjectives: adjectives }; }
   / thing:variable 'is' sp 'removed' sp
     { return { op: 'remove', thing: thing }; }
   / thing:variable 'becomes' sp adjectives:adjective_inst+
@@ -120,6 +122,9 @@ condition
   / l:let { l.isCondition = true; return l; }
   / l:variable 'is' sp a r:type_name { return { op: 'isa', l: l, r: r }; }
   / l:variable 'is' sp r:adjective_inst { return { op: 'is', l: l, r: r }; }
+  / v:variable 'is' sp 'the' sp 'first' sp 'thing' sp 'in' sp c:value_expr
+    'which' sp 'is' sp st:adjective_inst+
+    { return { op: 'firstIn', variable: v, collection: c, suchThat: st }; }
   / l:value_expr 'is' sp 'in' sp r:value_expr
     { return { op: 'isin', l: l, r: r }; }
   / l:value_expr 'is' sp 'not' sp 'in' sp r:value_expr

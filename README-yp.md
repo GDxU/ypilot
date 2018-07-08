@@ -186,6 +186,12 @@ This condition is true when `?thing` is not described by the adjective `Wiggly`.
 
 This condition searches the game for a thing described by all of the given adjectives (or `not`), and if found, assigns it to the `?thing` variable and makes the condition true. If multiple things match the description, the rest of the rule applies independently for each matching thing. If a variable like `?phase` is bound to a property like `phase`, it can mean one of two things. If the variable was already assigned, it further constrains the search by requiring that the property have the same value. If the variable was not already assigned, the value of the property is assigned to the variable. More complex expressions can be bound to a property, not just variables, and in this case the first meaning is used. A `there is` condition must include at least one adjective without `not` in front of it.
 
+    ?thing is the first thing in ?array which is
+      Wiggly with phase ?phase
+      not Mortal
+
+This condition searches the array `?array` for a thing described by all of the given adjectives (or `not`), and if any are found, assigns the first one to the `?thing` variable and makes the condition true. Note that like `there is a thing` above, `?thing` must not already have a value before this condition is evaluated. But unlike the above, an adjective without `not` in front of it is not required (since we're already searching just the `?array` and not the entire game, we don't need that requirement to limit the search space).
+
     ?player is holding down "ControlLeft"
 
 This condition is true when the player `?player` has pressed the identified key and has not yet released it.
@@ -229,6 +235,12 @@ This effect adds a new thing to the game which is described by the noun `Worm` a
     a new Worm ?worm is added
 
 This alternate form of the above effect should be used when no adjectives are explicitly specified.
+
+    a copy ?copy of ?original is added which is
+      Wiggly with frequency 42
+      Located with position ?pos
+
+This effect adds a new thing `?copy` to the game, which is a copy of `?original` that has been modified by setting the adjective properties listed. Like `a new ... is added`, the `which is ...` part may be omitted, in which case the copy is identical to the original except for the thing number. This is a (somewhat) shallow copy: any other things referenced by the copied adjective properties are not themselves copied, but rather shared between the copy and the original.
 
     ?thing is removed
 

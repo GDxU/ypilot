@@ -363,22 +363,17 @@ function compileOp(ast) {
     // effects (these can also be events, but if they are they're handled in
     // the 'rule' case)
     case 'add':
-      if (ast.adjectives.some(adj => (adj.op == 'unadjective'))) {
-	// TODO? use unadjective to override defaults
-	throw new Error("negative adjectives not allowed on new things");
-      }
       // separate adjectives into those that do and don't refer to the thing
-      // we're creating
-      var selfRefAdjs = [];
+      // we're creating (and lump in unadjectives with self-referential)
+      var selfRefAndUnAdjs = [];
       var nonSelfRefAdjs = [];
       ast.adjectives.forEach(adj => {
-	if (ast.thing.name in getVars(adj)) {
-	  selfRefAdjs.push(adj);
+	if (adj.op == 'unadjective' || (ast.thing.name in getVars(adj))) {
+	  selfRefAndUnAdjs.push(adj);
 	} else {
 	  nonSelfRefAdjs.push(adj);
 	}
       });
-      setInitialized(ast.thing);
 	     // do nonSelfRefAdjs as part of the creation
       return '    var ' + lValue(ast.thing) + ' = yp$add' + ast.type + '({ ' +
 	nonSelfRefAdjs.map(adj =>
@@ -387,9 +382,42 @@ function compileOp(ast) {
 	  ' }'
 	).join(', ') +
 	" });\n" +
-	// do selfRefAdjs (if any) as a separate 'become' effect
-	(selfRefAdjs.length > 0 ?
-	  compile({ op: 'become', thing: ast.thing, adjectives: selfRefAdjs })
+	// do selfRefAndUnAdjs (if any) as a separate 'become' effect
+	(selfRefAndUnAdjs.length > 0 ?
+	  compile({
+	    op: 'become',
+	    thing: ast.thing,
+	    adjectives: selfRefAndUnAdjs
+	  })
+	  : '');
+    case 'copy':
+      // separate adjectives into those that do and don't refer to the thing
+      // we're creating (and lump in unadjectives with self-referential)
+      var selfRefAndUnAdjs = [];
+      var nonSelfRefAdjs = [];
+      ast.adjectives.forEach(adj => {
+	if (adj.op == 'unadjective' || (ast.copy.name in getVars(adj))) {
+	  selfRefAndUnAdjs.push(adj);
+	} else {
+	  nonSelfRefAdjs.push(adj);
+	}
+      });
+      var original = compile(ast.original); // do this before lValue
+	     // do nonSelfRefAdjs as part of the creation
+      return '    var ' + lValue(ast.copy) + ' = addCopy(' + original + ', { ' +
+	nonSelfRefAdjs.map(adj =>
+	  adj.name + ': { ' +
+	  adj.properties.map(p => (p[0] + ': ' + compile(p[1]))).join(', ') +
+	  ' }'
+	).join(', ') +
+	" });\n" +
+	// do selfRefAndUnAdjs (if any) as a separate 'become' effect
+	(selfRefAndUnAdjs.length > 0 ?
+	  compile({
+	    op: 'become',
+	    thing: ast.copy,
+	    adjectives: selfRefAndUnAdjs
+	  })
 	  : '');
     case 'remove':
       return '    router.remove(' + compile(ast.thing) + ");\n";
@@ -464,6 +492,14 @@ function compileOp(ast) {
       } else { // unadjective
 	return '(!(' + l + ' in router.adjectives.' + ast.r.name +'))';
       }
+    case 'firstIn':
+      return '((' + lValue(ast.variable) + ' = ' + compile(ast.collection) +
+		'.find(' + compile(ast.variable) + " =>\n" +
+		"\t( " +
+		  ast.suchThat.map(adj =>
+		    compile({ op: 'is', l: ast.variable, r: adj })
+		  ).join(" &&\n\t  ") +
+		"\n\t))) !== undefined)";
     case 'exists':
       // iterate over all matches for ast.suchThat
       // NOTE: this causes the output to be an unbalanced JS fragment; balance
@@ -618,6 +654,7 @@ function compileStatements(statements) {
 	console.warn(s /*.text*/);
 	console.warn(e);
 	compiledStatements.push("/* failed to compile statement */\n");
+	errors.reportError(e);
       });
     }
   });

@@ -6,7 +6,7 @@ use "standard:bouncy.yp"
 use "standard:motile.yp"
 use "standard:bullet.yp"
 use "standard:holding.yp"
-#use "standard:dropped.yp" # not working yet
+use "standard:dropped.yp"
 use "standard:controls.yp"
 use "standard:owned.yp"
 use "standard:gun.yp"

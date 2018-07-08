@@ -17,8 +17,7 @@ in the event ?ship PicksUp ?item into ?slot then
 when ?ship hits ?item and
   ?item is Dropped
   ?ship is Holding with slots ?slots
-  # TODO implement this condition type
-  ?slot is the first element of ?slots which is
+  ?slot is the first thing in ?slots which is
     Capacious with content nothing
 then ?ship PicksUp ?item into ?slot
 
@@ -54,7 +53,6 @@ when ?slot Dispenses ?count and
     Holding with slots ?slots
   ?slot is in ?slots
 then
-  # TODO implement this effect type
   a copy ?item of ?stack is added which is
     Stackable with currentStackSize ?count and maximumStackSize ?mss
   ?item IsDropped from ?slot in ?ship
@@ -80,11 +78,11 @@ when ?item IsDropped from ?slot in ?ship and
   ?ship is Oriented with orientation ?o
   ?ship is Mobile with velocity ?v
 then
-  let ?itemPos be (?shipPos + Vec2[cos(?o) * 32, 0])
+  let ?itemPos be (?shipPos + Vec2[cos(?o), sin(?o)] * 32)
   ?item Drops in ?space at ?itemPos with velocity ?v
 
 # when something drops, it becomes Mobile, and expires in 1 minute
-when ?item Drops in ?space at ?pos with velocity ?v
+when ?item Drops in ?space at ?pos with velocity ?v then
   ?item becomes Located with space ?space and position ?pos
   ?item becomes Oriented with orientation 0
   ?item becomes Mobile with velocity ?v and angularVelocity 0
