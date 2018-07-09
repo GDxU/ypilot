@@ -1,5 +1,3 @@
-# FIXME doesn't currently work (see notes below)
-
 use "standard:fleeting.yp"
 use "standard:holding.yp"
 
@@ -21,7 +19,18 @@ when ?ship hits ?item and
     Capacious with content nothing
 then ?ship PicksUp ?item into ?slot
 
-# TODO ... or has a slot with a stack of the same type
+# ... or has a slot with a stack of the same type
+# FIXME this doesn't work because the "first thing in" condition needs to also
+# test the type of ?content
+#when ?ship hits ?item and
+#  ?item is Dropped
+#  ?item is Stackable
+#  ?item is Typed with type ?itemType
+#  ?ship is Holding with slots ?slots
+#  ?slot is the first thing in ?slots which is
+#    Capacious with content ?content
+#  ?content is Typed with type ?itemType
+#then ?ship PicksUp ?item into ?slot
 
 # when a drop is picked up it stops expiring/moving and fills the slot
 when ?ship PicksUp ?item into ?slot
@@ -32,39 +41,43 @@ then
   ?item becomes not Oriented
   ?item Fills ?slot
 
-in the event ?item IsDropped from ?slot in ?ship then
+# commands to drop an item from a slot on a ship should emit the IsToDrop event
+in the event ?slot IsToDrop from ?ship then
   ?ship is a Holding thing
   ?slot is a Capacious thing
 
-# FIXME would be nice if IsDropped caused Dispenses instead of the other way
-# around, so that we can use Dispenses for other reasons (e.g. ammo stack
-# separate from gun). But permission flows the other direction; if something
-# can't be dispensed, we shouldn't drop it. Maybe add a TryingToDrop adj that
-# gets added before Dispenses, and check for it in the rule triggered by
-# Dispenses that actually does the drop. But when should TryingToDrop go away
-# if Dispenses isn't allowed?
+# while we're trying to drop something from a slot, it becomes TryingToDrop
+a TryingToDrop thing has
+  a ship
+  a slotContent
 
-# when a slot dispenses from a stack, a copy of the right size is created and
-# dropped
+# on IsToDrop, become TryingToDrop and then emit Dispenses (which may be
+# disallowed)
+when ?slot IsToDrop from ?ship and
+  ?slot is Capacious with content ?content
+then
+  ?slot becomes TryingToDrop with ship ?ship and slotContent ?content
+  ?slot Dispenses 1
+
+in the event ?item DropsFromShip ?ship then
+  ?ship is a Mobile thing
+
+# if the slot Dispenses something and it was TryingToDrop, and the content was
+# a stack, then make a copy of the stack and drop it from the ship
 when ?slot Dispenses ?count and
-  ?slot is Capacious with content ?stack
+  ?slot is TryingToDrop with ship ?ship and slotContent ?stack
   ?stack is Stackable with maximumStackSize ?mss
-  there is a thing ?ship which is
-    Holding with slots ?slots
-  ?slot is in ?slots
 then
   a copy ?item of ?stack is added which is
     Stackable with currentStackSize ?count and maximumStackSize ?mss
-  ?item IsDropped from ?slot in ?ship
+  ?item DropsFromShip ?ship
 
-# when a slot dispenses from a non-stack, the content itself is dropped
+# if the content wasn't a stack, just drop it from the ship
 when ?slot Dispenses ?count and
-  ?slot is Capacious with content ?item
+  ?slot is TryingToDrop with ship ?ship and slotContent ?item
   ?item is not Stackable
-  there is a thing ?ship which is
-    Holding with slots ?slots
-  ?slot is in ?slots
-then ?item IsDroppped from ?slot in ?ship
+then
+  ?item DropsFromShip ?ship
 
 in the event ?item Drops in ?space at ?position with velocity ?velocity then
   ?space is a Spatial thing
@@ -73,7 +86,7 @@ in the event ?item Drops in ?space at ?position with velocity ?velocity then
 
 # when something is dropped from a ship, it drops in front of the ship with its
 # velocity
-when ?item IsDropped from ?slot in ?ship and
+when ?item DropsFromShip ?ship and
   ?ship is Located with space ?space and position ?shipPos
   ?ship is Oriented with orientation ?o
   ?ship is Mobile with velocity ?v

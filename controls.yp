@@ -1,4 +1,5 @@
 use "standard:motile.yp"
+use "standard:dropped.yp"
 
 # TODO? convert "then ... becomes ..." herein to custom events
 
@@ -109,6 +110,19 @@ when ?player presses ?digit and
   ?digit is in ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
 then
   ?player becomes JustPressingADigit with digit ?digit
+
+when ?player releases ?digit and
+  ?digit is in ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
+  ?player is JustPressingADigit with digit ?digit
+  ?player is Piloting with ship ?ship
+  let ?i be ?digit[5]
+  # already set primary and secondary fire, this is the second press of this
+  # digit
+  ?ship is Selective with primaryIndex ?i and primarySecondary false and secondaryIndex ?i and secondarySecondary true
+  ?ship is Holding with slots ?slots
+then
+  let ?slot be ?slots[?i]
+  ?slot IsToDrop from ?ship
 
 when ?player releases ?digit and
   ?digit is in ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
