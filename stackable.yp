@@ -16,7 +16,7 @@ in the event ?a Stacks onto ?b then
 disallow the event ?a Stacks onto ?b when
   ?a is Typed with type ?aType
   ?b is Typed with type ?bType
-  (?a != ?b)
+  (?aType != ?bType)
 
 # stacks may not exceed the maximum stack size
 disallow the event ?a Stacks onto ?b when

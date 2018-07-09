@@ -20,17 +20,15 @@ when ?ship hits ?item and
 then ?ship PicksUp ?item into ?slot
 
 # ... or has a slot with a stack of the same type
-# FIXME this doesn't work because the "first thing in" condition needs to also
-# test the type of ?content
-#when ?ship hits ?item and
-#  ?item is Dropped
-#  ?item is Stackable
-#  ?item is Typed with type ?itemType
-#  ?ship is Holding with slots ?slots
-#  ?slot is the first thing in ?slots which is
-#    Capacious with content ?content
-#  ?content is Typed with type ?itemType
-#then ?ship PicksUp ?item into ?slot
+when ?ship hits ?item and
+  ?item is Dropped
+  ?item is Stackable
+  ?item is Typed with type ?itemType
+  ?ship is Holding with slots ?slots
+  ?slot is the first thing in ?slots which is
+    Capacious with content ?content
+    (and ?content is Typed with type ?itemType)
+then ?ship PicksUp ?item into ?slot
 
 # when a drop is picked up it stops expiring/moving and fills the slot
 when ?ship PicksUp ?item into ?slot

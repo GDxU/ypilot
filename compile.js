@@ -333,14 +333,21 @@ function compileNonUseStatement(ast) {
 	"function(" +
 	  eventParams.join(', ') +
 	") {try {\n" +
+//	"  console.log(" + JSON.stringify(ast.text) + ");\n" +
 	  vars +
 	"  if (" +
 	  conditions.map(compile).join(" &&\n      ") +
 	") {\n" +
+//	"    console.log(" + JSON.stringify(vars) + ");\n" +
+//	"    console.log([" + vars.replace(/^  var /,'').replace(/;\n/,'') + "]);\n" +
+//	"    console.log('return true');\n" +
 	"    return true;\n" +
 	// balance 'there is' conditions
 	new Array(numExists).fill("}}\n").join('') +
 	"  }\n" +
+//	"  console.log(" + JSON.stringify(vars) + ");\n" +
+//	"  console.log([" + vars.replace(/^  var /,'').replace(/;\n/,'') + "]);\n" +
+//	"  console.log('return false');\n" +
 	"  return false;\n" +
 	"} catch (e) { console.error(e.message + \" while executing this permission condition:\\n\" + " + JSON.stringify(ast.text) + "); }\n" +
 	// FIXME return value when an error happens?
@@ -496,9 +503,7 @@ function compileOp(ast) {
       return '((' + lValue(ast.variable) + ' = ' + compile(ast.collection) +
 		'.find(' + compile(ast.variable) + " =>\n" +
 		"\t( " +
-		  ast.suchThat.map(adj =>
-		    compile({ op: 'is', l: ast.variable, r: adj })
-		  ).join(" &&\n\t  ") +
+		  ast.suchThat.map(compile).join(" &&\n\t  ") +
 		"\n\t))) !== undefined)";
     case 'exists':
       // iterate over all matches for ast.suchThat
@@ -506,7 +511,7 @@ function compileOp(ast) {
       // is restored with a hack in the 'rule' case above.
       // first, identify an adjective that's not negated so we can use it to
       // enumerate a list of things to check for matches
-      var positiveAdjective = ast.suchThat.find(a => (a.op == 'adjective'));
+      var positiveAdjective = ast.suchThat.find(a => (a.r.op == 'adjective'));
       if (positiveAdjective === undefined) { // all unadjective
 	// TODO? use all the other adjectives as the positiveAdjective
 	throw new Error("'there is' condition must include at least one positive adjective");
@@ -515,15 +520,13 @@ function compileOp(ast) {
       return "true) {\n" +
 	   // iterate the variable over the keys of the positiveAdjective
         "  for (var " + lValue(ast.variable) +
-		' in router.adjectives.' + positiveAdjective.name + ") {\n" +
+		' in router.adjectives.' + positiveAdjective.r.name + ") {\n" +
 	     // make sure the thing is an integer, not a string
 	'    ' + compile(ast.variable) + " |= 0;\n" +
 	     // start a new 'if'
 	'    if (' +
-	  // compile all the suchThat adjectives as if they were 'is' conditions
-	  ast.suchThat.map(adj =>
-	    compile({ op: 'is', l: ast.variable, r: adj })
-	  ).join(" &&\n\t");
+	  // compile all the suchThat adjectives
+	  ast.suchThat.map(compile).join(" &&\n\t");
 	  // end unbalanced, missing }} (see above)
     case 'keyState':
       if ('keys' in ast) {

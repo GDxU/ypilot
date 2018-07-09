@@ -23,16 +23,16 @@ disallow the event ?newContent Fills ?slot when
   ?slot is Capacious with content ?oldContent
   (?oldContent != nothing)
 
-# simple case of a slot gaining content when it was empty
-when ?newContent Fills ?slot and ?slot is Capacious with content nothing
-then ?slot becomes Capacious with content ?newContent
-
 # new content Stacks onto old content when both are Stackable
 when ?newContent Fills ?slot and
   ?slot is Capacious with content ?oldContent
   ?newContent is Stackable
   ?oldContent is Stackable
 then ?newContent Stacks onto ?oldContent
+
+# simple case of a slot gaining content when it was empty
+when ?newContent Fills ?slot and ?slot is Capacious with content nothing
+then ?slot becomes Capacious with content ?newContent
 
 # all of ?content goes out of ?slot
 # NOTE: we must include ?content in the event parameters because we immediately

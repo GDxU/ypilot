@@ -123,15 +123,27 @@ condition
   / l:variable 'is' sp a r:type_name { return { op: 'isa', l: l, r: r }; }
   / l:variable 'is' sp r:adjective_inst { return { op: 'is', l: l, r: r }; }
   / v:variable 'is' sp 'the' sp 'first' sp 'thing' sp 'in' sp c:value_expr
-    'which' sp 'is' sp st:adjective_inst+
-    { return { op: 'firstIn', variable: v, collection: c, suchThat: st }; }
+    'which' sp 'is' sp stAdjs:adjective_inst+ stConds:('(' sp 'and' sp conds:condition+ ')' sp { return conds; })?
+    { return {
+      op: 'firstIn',
+      variable: v,
+      collection: c,
+      suchThat:
+        stAdjs.
+	map(a => ({ op: 'is', l: v, r: a })).
+	concat(stConds ? stConds : [])
+    }; }
   / l:value_expr 'is' sp 'in' sp r:value_expr
     { return { op: 'isin', l: l, r: r }; }
   / l:value_expr 'is' sp 'not' sp 'in' sp r:value_expr
     { return { op: '!', r: { op: 'isin', l: l, r: r } }; }
   / 'there' sp 'is' sp a 'thing' sp v:variable
     'which' sp 'is' sp st:adjective_inst+
-    { return { op: 'exists', variable: v, suchThat: st }; }
+    { return {
+      op: 'exists',
+      variable: v,
+      suchThat: st.map(a => ({ op: 'is', l: v, r: a }))
+    }; }
   / player:variable 'is' sp 'holding' sp 'down' sp key:variable 'which' sp 'is' sp 'one' sp 'of' sp keys:value_expr
     { return {
       op: 'keyState',

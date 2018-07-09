@@ -189,8 +189,12 @@ This condition searches the game for a thing described by all of the given adjec
     ?thing is the first thing in ?array which is
       Wiggly with phase ?phase
       not Mortal
+      (and
+	(?phase >= 0)
+        (?phase < π)
+      )
 
-This condition searches the array `?array` for a thing described by all of the given adjectives (or `not`), and if any are found, assigns the first one to the `?thing` variable and makes the condition true. Note that like `there is a thing` above, `?thing` must not already have a value before this condition is evaluated. But unlike the above, an adjective without `not` in front of it is not required (since we're already searching just the `?array` and not the entire game, we don't need that requirement to limit the search space).
+This condition searches the array `?array` for a thing described by all of the given adjectives (or `not`), which satisfies the conditions in `(and ...)`, and if any are found, assigns the first one to the `?thing` variable and makes the condition true. The `(and ...)` part is optional. Note that like `there is a thing` above, `?thing` must not already have a value before this condition is evaluated. But unlike the above, an adjective without `not` in front of it is not required (since we're already searching just the `?array` and not the entire game, we don't need that requirement to limit the search space).
 
     ?player is holding down "ControlLeft"
 
