@@ -49,6 +49,7 @@ STDLIBS = \
 	controls.yp \
 	deathmatch.yp \
 	defeats.yp \
+	diggy.yp \
 	dropped.yp \
 	elo-scoring.yp \
 	fleeting.yp \

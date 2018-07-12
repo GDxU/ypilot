@@ -1,0 +1,112 @@
+use "standard:dropped.yp"
+use "standard:controls.yp" # for Active
+
+## digging ##
+
+a Diggy thing has
+  a hardness which is a number (default 0)
+
+a Pick is Diggy # diggy diggy hole!
+
+a Diggable thing is Tangible and has
+  # what level of pick is necessary to dig this?
+  a hardness which is a number (default 0)
+  # 0 => placed; (0,1) => partly dug; 1 => dropped
+  a dugness which is a number (default 0)
+
+a Block is Diggable
+
+a Digging thing is Diggy and has
+  a block which is a Diggable thing
+
+when ?pick becomes Active with ship ?ship and
+  ?pick is Diggy
+  ?ship is Located with space ?space and position ?shipPos
+  ?ship is Oriented with orientation ?a
+  # TODO use Mapped blockSize instead of hardcoding 32 all over?
+  let ?front be (?shipPos + Vec2[cos(?a), sin(?a)] * 32)
+  let ?blockPos be (?front - (?front % 32))
+  # TODO special case this search to use SpatialIndex for speed
+  there is a thing ?block which is
+    Located with space ?space and position ?blockPos # FIXME need deepEqual
+    Diggable
+then ?pick becomes Digging with block ?block
+
+when ?pick becomes not Active and ?pick is Digging
+then ?pick becomes not Digging
+
+in the event ?pick DigsAt ?block then
+  ?pick is a Digging thing
+  ?block is a Diggable thing
+
+when the clock ticks and
+  there is a thing ?pick which is
+    Digging with block ?block
+then ?pick DigsAt ?block
+
+only allow the event ?pick DigsAt ?block when
+  ?pick is Diggy with hardness ?pickHardness
+  ?block is Diggable with hardness ?blockHardness
+  (?pickHardness >= ?blockHardness)
+
+when ?pick DigsAt ?block and
+  ?block is Diggable with dugness ?dugness
+  (?dugness < 1)
+then
+  # dig 1/20 per tick so that we dig a whole block in one second
+  # TODO adjust this ratio according to hardness difference?
+  ?block becomes Diggable with dugness (?dugness + 1/20)
+
+# TODO heal partly dug blocks when they're not actively being dug?
+
+in the event ?pick DigsUp ?block then
+  ?pick is a Diggy thing
+  ?block is a Diggable thing
+
+when ?pick DigsAt ?block and
+  ?block is Diggable with dugness ?dugness
+  (?dugness >= 1)
+then
+  ?pick becomes not Digging
+  ?pick DigsUp ?block
+
+when ?pick DigsUp ?block and
+  ?block is Located with space ?space and position ?pos
+then ?block Drops in ?space at ?pos with velocity 0
+
+## placement ##
+
+# TODO
+# - figure out how placement works; options:
+#  . when the dropped block hits a non-Holding thing, that Places it there
+#  . when the block (or slot?) is Active, it Places a block in front of the ship
+#   - need another TryingToPlace hack like TryingToDrop, to cover when IsPlaced isn't allowed
+#  . both?!
+#  > I kind of like #2 best from a gameplay perspective
+# - standard graphical transformation for Visible blocks: make it smaller and surround it with a blue triangle
+# - standard graphics for dugness
+
+# problem is that different parts of the process want different subsets of
+# these arguments:
+# ?player Places ?block at ?position in ?space from ?ship slot ?slot
+
+# maybe coopt Drops for some of this: when ?block Drops... and ?block is TryingToBePlaced ... then ?block IsPlaced ...
+# that way when placement fails, the item ends up being dropped instead
+# also make Activate-ing a block drop it while trying to be placed
+
+in the event ?ship Places ?block then
+  ?ship is a Located thing
+  ?block is a Diggable thing
+
+in the event ?block IsPlaced at ?position in ?space then
+  ?block is a Diggable thing
+  ?position is a Vec2 object
+  ?space is a Spatial thing
+
+# blocks may only be placed where there isn't already a block
+disallow the event ?block IsPlaced at ?position in ?space when
+  there is a thing ?otherBlock which is
+    Located with space ?space and position ?position
+
+when ?block IsPlaced at ?position in ?space
+then ?block becomes Located with space ?space and position ?position

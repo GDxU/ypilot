@@ -491,7 +491,7 @@ function compileOp(ast) {
 	    } else {
 	      // p[1] is an initialized variable or some other kind of value,
 	      // test equality
-	      // FIXME == or === ?
+	      // FIXME == or === ? or deepEqual?
 	      return ' && ' + compile(p[1]) + ' == ' + rhs;
 	    }
 	  }).join('') +
