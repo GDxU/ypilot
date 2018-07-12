@@ -98,3 +98,4 @@ when ?item Drops in ?space at ?pos with velocity ?v then
   ?item becomes Oriented with orientation 0
   ?item becomes Mobile with velocity ?v and angularVelocity 0
   ?item becomes Fleeting with timeToLive 1200 # 1200 ticks == 1 minute
+  ?item becomes Dropped with dropped true

@@ -28,7 +28,7 @@ when ?pick becomes Active with ship ?ship and
   let ?blockPos be (?front - (?front % 32))
   # TODO special case this search to use SpatialIndex for speed
   there is a thing ?block which is
-    Located with space ?space and position ?blockPos # FIXME need deepEqual
+    Located with space ?space and position ?blockPos
     Diggable
 then ?pick becomes Digging with block ?block
 
@@ -72,7 +72,7 @@ then
 
 when ?pick DigsUp ?block and
   ?block is Located with space ?space and position ?pos
-then ?block Drops in ?space at ?pos with velocity 0
+then ?block Drops in ?space at ?pos with velocity Vec2[0,0]
 
 ## placement ##
 

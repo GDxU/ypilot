@@ -12,6 +12,16 @@ const svgjs = require('./svg.js');
 window.stringToSVGGraphicsElement = svgjs.stringToSVGGraphicsElement;
 SVGGraphicsElement.prototype.toJSON = svgjs.svgGraphicsElementToJSON;
 
+// .yp "==" operator: deep WRT Array and Vec2 objects, JS "==" WRT other types;
+// since things are numbers, thie compares thing identity (not deep)
+Object.equals = function(a,b) {
+  if (('object' == typeof a) && a !== null && 'equals' in a) {
+    return a.equals(b);
+  } else {
+    return (a == b);
+  }
+}
+
 // is ancestor a (non-strict) ancestor of descendant, in the .yp type graph?
 window.subsumes = function(ancestor, descendant) {
   return (ancestor == descendant ||

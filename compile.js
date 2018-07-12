@@ -491,8 +491,7 @@ function compileOp(ast) {
 	    } else {
 	      // p[1] is an initialized variable or some other kind of value,
 	      // test equality
-	      // FIXME == or === ? or deepEqual?
-	      return ' && ' + compile(p[1]) + ' == ' + rhs;
+	      return ' && Object.equals(' + compile(p[1]) + ', ' + rhs + ')';
 	    }
 	  }).join('') +
 	')';
@@ -629,6 +628,10 @@ function compileOp(ast) {
 			  '+': 'add', '-': 'subtract' })[ast.op] +
 		 '(' + compiledR + ') : (' +
 		 compiledL + ' ' + ast.op + ' ' + compiledR + '))';
+	} else if (/^[=!]=$/.test(ast.op)) {
+	  var eq =
+	    'Object.equals(' + compile(ast.l) + ', ' + compile(ast.r) + ')';
+	  return ((ast.op == '!=') ? '(!' + eq + ')' : eq);
 	} else {
 	  return '(' + compile(ast.l) + ' ' + ast.op + ' ' +
 		 compile(ast.r) + ')';

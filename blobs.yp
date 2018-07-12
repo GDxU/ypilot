@@ -28,7 +28,7 @@ a Map is Mapped
 a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
 
 when ?wall is added and ?wall is a Wall
-then ?wall becomes Diggable
+then ?wall becomes Diggable with hardness 0 and dugness 0
 
 when the game starts
 then

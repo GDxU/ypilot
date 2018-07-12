@@ -224,7 +224,7 @@ This condition is true when `?part` is an element of the array `?whole`, or when
 
     (?x <= ?y)
 
-This condition is used to compare values. `?x` and `?y` can be arbitrary value expressions, not just variables. The comparison operation (here `<=`) can be any of the usual C-style operators: `<`, `<=`, `==`, `!=`, `>=`, or `>`.
+This condition is used to compare values. `?x` and `?y` can be arbitrary value expressions, not just variables. The comparison operation (here `<=`) can be any of the usual C-style operators: `<`, `<=`, `==`, `!=`, `>=`, or `>`. The equality operators `==` and `!=` compare `Array` and `Vec2` objects deeply (e.g. `Vec2[42,57] == Vec2[42,57]` even though they are distinct instances of `Vec2`), but are otherwise the same as JavaScript's.
 
 ### Effects
 

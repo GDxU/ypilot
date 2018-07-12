@@ -33,3 +33,8 @@ Array.prototype.scale = function(other) {
     throw new Error("Arrays can only be scaled by integers");
   }
 }
+
+Array.prototype.equals = function(other) {
+  return Array.isArray(other) && this.length == other.length &&
+         this.every((element, index) => Object.equals(element, other[index]));
+}

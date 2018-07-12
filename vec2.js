@@ -7,6 +7,10 @@ function Vec2(x,y) {
 
 defineMethods(Vec2, [
 
+function equals(other) {
+  return ((other instanceof Vec2) && this.x == other.x && this.y == other.y);
+},
+
 function toString() {
   return 'Vec2[' + this.x + ',' + this.y + ']';
 },
