@@ -4,6 +4,9 @@ use "standard:stackable.yp"
 a Capacious thing has a content (default nothing)
 a Slot is Capacious
 
+# is held by a Capacious holder (is in a slot)
+a Held thing has a holder which is a Capacious thing
+
 # can hold several different things in different slots
 a Holding thing has some slots which are Capacious things (default [])
 
@@ -32,7 +35,9 @@ then ?newContent Stacks onto ?oldContent
 
 # simple case of a slot gaining content when it was empty
 when ?newContent Fills ?slot and ?slot is Capacious with content nothing
-then ?slot becomes Capacious with content ?newContent
+then
+  ?slot becomes Capacious with content ?newContent
+  ?newContent becomes Held with holder ?slot
 
 # all of ?content goes out of ?slot
 # NOTE: we must include ?content in the event parameters because we immediately
@@ -47,7 +52,9 @@ disallow the event ?slot Empties of ?fakeContent when
 
 # a slot becomes empty when it Empties
 when ?slot Empties of ?content
-then ?slot becomes Capacious with content nothing
+then
+  ?content becomes not Held
+  ?slot becomes Capacious with content nothing
 
 # some of ?content goes out of ?slot
 in the event ?slot Dispenses ?count then
