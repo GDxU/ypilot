@@ -76,37 +76,45 @@ then ?block Drops in ?space at ?pos with velocity Vec2[0,0]
 
 ## placement ##
 
-# TODO
-# - figure out how placement works; options:
-#  . when the dropped block hits a non-Holding thing, that Places it there
-#  . when the block (or slot?) is Active, it Places a block in front of the ship
-#   - need another TryingToPlace hack like TryingToDrop, to cover when IsPlaced isn't allowed
-#  . both?!
-#  > I kind of like #2 best from a gameplay perspective
-# - standard graphical transformation for Visible blocks: make it smaller and surround it with a blue triangle
-# - standard graphics for dugness
+a TryingToBePlaced thing has
+  a tryingToBePlaced flag (default true)
 
-# problem is that different parts of the process want different subsets of
-# these arguments:
-# ?player Places ?block at ?position in ?space from ?ship slot ?slot
+# activating a diggable block drops it while TryingToBePlaced
+when ?block becomes Active with ship ?ship and
+  ?block is Diggable
+  ?block is Held with holder ?slot
+then
+  ?block becomes TryingToBePlaced
+  ?slot IsToDrop from ?ship
 
-# maybe coopt Drops for some of this: when ?block Drops... and ?block is TryingToBePlaced ... then ?block IsPlaced ...
-# that way when placement fails, the item ends up being dropped instead
-# also make Activate-ing a block drop it while trying to be placed
-
-in the event ?ship Places ?block then
-  ?ship is a Located thing
-  ?block is a Diggable thing
-
-in the event ?block IsPlaced at ?position in ?space then
+in the event ?block IsPlaced in ?space at ?position then
   ?block is a Diggable thing
   ?position is a Vec2 object
   ?space is a Spatial thing
 
+# when a block drops while TryingToBePlaced, it's placed
+when ?block Drops in ?space at ?pos with velocity ?v
+  and ?block is TryingToBePlaced
+then
+  ?block becomes not TryingToBePlaced
+  let ?placedPos be (?pos - (?pos % 32))
+  ?block IsPlaced in ?space at ?placedPos
+
 # blocks may only be placed where there isn't already a block
-disallow the event ?block IsPlaced at ?position in ?space when
+disallow the event ?block IsPlaced in ?space at ?position when
   there is a thing ?otherBlock which is
     Located with space ?space and position ?position
 
-when ?block IsPlaced at ?position in ?space
-then ?block becomes Located with space ?space and position ?position
+# when a block is placed it becomes located and diggable again
+when ?block IsPlaced in ?space at ?position
+then
+  ?block becomes
+    Located with space ?space and position ?position
+    Diggable with dugness 0
+    not Dropped
+    not Fleeting
+    not Mobile
+
+# TODO
+# - standard graphical transformation for Visible blocks: make it smaller and surround it with a blue triangle
+# - standard graphics for dugness
