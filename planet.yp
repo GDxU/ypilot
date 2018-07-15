@@ -1,0 +1,113 @@
+title: "Planet"
+author: "Will112358"
+
+use "standard:wall.yp"
+use "standard:bouncy.yp"
+use "standard:motile.yp"
+use "standard:bullet.yp"
+use "standard:holding.yp"
+use "standard:dropped.yp"
+use "standard:diggy.yp"
+use "standard:controls.yp"
+use "standard:owned.yp"
+use "standard:gun.yp"
+use "standard:no-friendly-fire.yp"
+use "standard:materials.yp"
+
+a Map is Mapped
+a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
+
+when the game starts
+then
+  let ?size be Vec2[50,50]
+  a new Space ?space is added which is Toroidal with size (?size * 32)
+  a new Map ?map is added which is
+    Located with space ?space
+    Mapped with mapSize ?size and map """
+                                                  
+                                                  
+                                                  
+                   AAAAAAAAA                      
+                 AAAAAAAAAAAAA                    
+                AAAAAAAAAAAAAAA                   
+               AAAAAAAAAAAAAAAAA                  
+              AAAAAAAAAAAAAAAAAAA                 
+             AAAAAAAAAAAAAAAAAAAAA                
+            AAAAAAAAAAAAAAAAAAAAAAA               
+           AAAAAAAAAAAAAAAAAAAAAAAAA              
+          AAAAAAAAAAAAAFAAAAAAAAAAAAA             
+         AAAAAAAAAAAAGFFFGAAAAAAAAAAAA            
+        AAAAAAAAAAAWWDDDDDGGAAAAAAAAAAA           
+       AAAAAAAAAAAWWWDDDDDDDGAAAAAAAAAAA          
+       AAAAAAAAAAWWDDRRRRRDDDGAAAAAAAAAA          
+      AAAAAAAAAAWWDRRRMMMRRRDDGAAAAAAAAAA         
+      AAAAAAAAAAWWDRMMMMMMMRDDGAAAAGGAAAA        
+      AAAAAAAAAGDDRRMMMMMMMRRDDGAAGTGGAAA         
+      AAAAAAGGAGDDRMMMMMMMMMRDDGAGTGGGGAA         
+      AAAAAGGTTTDDRMMMMMMMMMRDDTTTTTGGGGA         
+      AAAAAAGGAGDDRMMMMMMMMMRDDGAAGTGGGGA         
+      AAAAAAAAAGDDRRMMMMMMMRRDDGAAAGTGGAA         
+      AAAAAAAAAAGDDRMMMMMMMRDDGAAAAAGGAAA         
+      AAAAAAAAAAGDDRRRMMMRRRDDGAAAAAAAAAA         
+       AAAAAAAAAAGDDDRRRRRDDDGAAAAAAAAAA          
+       AAAAAAAAAAAGDDDDDDDDDGAAAAAAAAAAA          
+        AAAAAAAAAAAGGDDDDDGGAAAAAAAAAAA           
+         AAAAAAAAAAAAGGGGGAAAAAAAAAAAA            
+          AAAAAAAAAAAAAAAAAAAAAAAAAAA             
+           AAAAAAAAAAAAAAAAAAAAAAAAA              
+            AAAAAAAAAAAAAAAAAAAAAAA               
+             AAAAAAAAAAAAAAAAAAAAA                
+              AAAAAAAAAAAAAAAAAAA                 
+               AAAAAAAAAAAAAAAAA                  
+                AAAAAAAAAAAAAAA                   
+                 AAAAAAAAAAAAA                    
+                   AAAAAAAAA                      
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+                                                  
+"""
+  ?map is read
+
+when ?player is added and
+  ?player is a Player
+  ?player is Interfaced with shipShape ?shape
+  there is a thing ?map which is
+    Located with space ?space
+  ?map is a Map
+then
+  a new Gun ?gun is added which is
+    Shooty with muzzleVelocity 5
+    Repeating with period 5
+  a new Pick ?pick is added
+  a new Slot ?slot0 is added
+  a new Slot ?slot1 is added which is Capacious with content ?gun
+  a new Slot ?slot2 is added which is Capacious with content ?pick
+  a new Slot ?slot3 is added
+  # TODO 4-9
+  let ?spawnPos be (Vec2[5.5,5.5] * 32)
+  a new Point ?spawnPoint is added which is
+    Located with space ?space and position ?spawnPos
+  a new Ship ?ship is added which is
+    Located with space ?space and position ?spawnPos
+    Respawnable with spawnPoint ?spawnPoint and lives 3
+    Oriented with orientation (-π/2)
+    Tangible with shape ?shape
+    Bouncy with coefficientOfRestitution 0.5
+    Holding with slots [?slot0, ?slot1, ?slot2, ?slot3] # TODO 4-9
+    Selective
+    Owned with owner ?player
+  ?player becomes Piloting with ship ?ship
+
+when ?player is removed and
+  ?player is Piloting with ship ?ship
+then ?ship is removed
+

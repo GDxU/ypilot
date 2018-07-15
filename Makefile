@@ -59,6 +59,7 @@ STDLIBS = \
 	inertial.yp \
 	join-smallest-team.yp \
 	last-player-standing.yp \
+	materials.yp \
 	mortal.yp \
 	motile.yp \
 	no-friendly-fire.yp \
