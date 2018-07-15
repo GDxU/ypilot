@@ -22,10 +22,12 @@ a Digging thing is Diggy and has
 when ?pick becomes Active with ship ?ship and
   ?pick is Diggy
   ?ship is Located with space ?space and position ?shipPos
+  there is a thing ?map which is
+    Mapped with blockSize ?bs
+    Located with space ?space
   ?ship is Oriented with orientation ?a
-  # TODO use Mapped blockSize instead of hardcoding 32 all over?
-  let ?front be (?shipPos + Vec2[cos(?a), sin(?a)] * 32)
-  let ?blockPos be (?front - (?front % 32))
+  let ?front be (?shipPos + Vec2[cos(?a), sin(?a)] * ?bs)
+  let ?blockPos be (?front - (?front % ?bs))
   # TODO special case this search to use SpatialIndex for speed
   there is a thing ?block which is
     Located with space ?space and position ?blockPos
@@ -93,11 +95,14 @@ in the event ?block IsPlaced in ?space at ?position then
   ?space is a Spatial thing
 
 # when a block drops while TryingToBePlaced, it's placed
-when ?block Drops in ?space at ?pos with velocity ?v
-  and ?block is TryingToBePlaced
+when ?block Drops in ?space at ?pos with velocity ?v and
+  ?block is TryingToBePlaced
+  there is a thing ?map which is
+    Mapped with blockSize ?bs
+    Located with space ?space
 then
   ?block becomes not TryingToBePlaced
-  let ?placedPos be (?pos - (?pos % 32))
+  let ?placedPos be (?pos - (?pos % ?bs))
   ?block IsPlaced in ?space at ?placedPos
 
 # blocks may only be placed where there isn't already a block
