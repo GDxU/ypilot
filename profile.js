@@ -288,6 +288,7 @@ function loadGameFromURL(url) {
 
 // Promise to make a new Profile with random id, handle, and keyPair
 Profile.generateRandom = function() {
+  var blobsURL = location.href.replace(/ypilot\.html(#.*)?$/, 'blobs.yp');
   return generateKeyPair().
 	 then(keyPair => {
 	   return new Profile({
@@ -299,7 +300,7 @@ Profile.generateRandom = function() {
 	     knownPlayers: {},
 	     games: [
 	       // include a default game
-	       { url: 'https://willdb.net/ypilot/blobs.yp',
+	       { url: blobsURL,
 	         title: 'Blobs', author: 'Will112358'
 	       }
 	     ]
