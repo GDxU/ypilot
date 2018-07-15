@@ -1,5 +1,6 @@
 use "standard:motile.yp"
 use "standard:dropped.yp"
+use "standard:active.yp"
 
 # TODO? convert "then ... becomes ..." herein to custom events
 
@@ -38,11 +39,6 @@ then
   ?ship becomes Motile with turnDirection 0
 
 # tool controls
-
-# while a player has a fire key held down, the corresponding tool is Active
-an Active thing has
-  a secondaryMode flag
-  a ship which is a BasicShip
 
 a Selective thing has
   # the index of the primary selection in Holding slots

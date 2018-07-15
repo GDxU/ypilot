@@ -1,5 +1,5 @@
 use "standard:bullet.yp"
-use "standard:controls.yp" # for Active
+use "standard:active.yp"
 use "standard:owned.yp"
 
 a Repeating thing has

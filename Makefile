@@ -42,6 +42,7 @@ SRCS = \
 	welcome.js
 
 STDLIBS = \
+	active.yp \
 	aligned.yp \
 	base.yp \
 	bouncy.yp \

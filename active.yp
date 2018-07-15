@@ -1,0 +1,5 @@
+# while a player has a fire key held down, the corresponding tool is Active
+an Active thing has
+  a secondaryMode flag
+  a ship which is a BasicShip
+
