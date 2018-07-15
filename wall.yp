@@ -5,11 +5,14 @@ a Wall is Bouncy and Visible
 # x => wall filling a whole cell
 when ?map reads "x" at ?pos and
   ?map is Located with space ?space
+  ?map is Mapped with blockSize ?bs
 then
+  let ?w be ?bs["x"]
+  let ?h be ?bs["y"]
   a new Wall ?wall is added which is
     Located with space ?space and position ?pos
-    Tangible with shape [Vec2[0,0], Vec2[32,0], Vec2[32,32], Vec2[0,32]]
-    Visible with graphics [<rect x="0" y="0" width="32" height="32" stroke="#4e7cfe" />]
+    Tangible with shape [Vec2[0,0], Vec2[?w,0], Vec2[?w,?h], Vec2[0,?h]]
+    Visible with graphics [<rect x="0" y="0" width="?w" height="?h" stroke="#4e7cfe" />]
 
 # qw
 # as => walls filling half a cell at 45° angle,
@@ -17,33 +20,45 @@ then
 
 when ?map reads "q" at ?pos and
   ?map is Located with space ?space
+  ?map is Mapped with blockSize ?bs
 then
+  let ?w be ?bs["x"]
+  let ?h be ?bs["y"]
   a new Wall ?wall is added which is
     Located with space ?space and position ?pos
-    Tangible with shape [Vec2[32,0], Vec2[32,32], Vec2[0,32]]
-    Visible with graphics [<polygon points="32,0 32,32 0,32" stroke="#4e7cfe" />]
+    Tangible with shape [Vec2[?w,0], Vec2[?w,?h], Vec2[0,?h]]
+    Visible with graphics [<polygon points="?w,0 ?w,?h 0,?h" stroke="#4e7cfe" />]
 
 when ?map reads "w" at ?pos and
   ?map is Located with space ?space
+  ?map is Mapped with blockSize ?bs
 then
+  let ?w be ?bs["x"]
+  let ?h be ?bs["y"]
   a new Wall ?wall is added which is
     Located with space ?space and position ?pos
-    Tangible with shape [Vec2[0,0], Vec2[32,32], Vec2[0,32]]
-    Visible with graphics [<polygon points="0,0 32,32 0,32" stroke="#4e7cfe" />]
+    Tangible with shape [Vec2[0,0], Vec2[?w,?h], Vec2[0,?h]]
+    Visible with graphics [<polygon points="0,0 ?w,?h 0,?h" stroke="#4e7cfe" />]
 
 when ?map reads "s" at ?pos and
   ?map is Located with space ?space
+  ?map is Mapped with blockSize ?bs
 then
+  let ?w be ?bs["x"]
+  let ?h be ?bs["y"]
   a new Wall ?wall is added which is
     Located with space ?space and position ?pos
-    Tangible with shape [Vec2[0,0], Vec2[32,0], Vec2[0,32]]
-    Visible with graphics [<polygon points="0,0 32,0 0,32" stroke="#4e7cfe" />]
+    Tangible with shape [Vec2[0,0], Vec2[?w,0], Vec2[0,?h]]
+    Visible with graphics [<polygon points="0,0 ?w,0 0,?h" stroke="#4e7cfe" />]
 
 when ?map reads "a" at ?pos and
   ?map is Located with space ?space
+  ?map is Mapped with blockSize ?bs
 then
+  let ?w be ?bs["x"]
+  let ?h be ?bs["y"]
   a new Wall ?wall is added which is
     Located with space ?space and position ?pos
-    Tangible with shape [Vec2[0,0], Vec2[32,0], Vec2[32,32]]
-    Visible with graphics [<polygon points="0,0 32,0 32,32" stroke="#4e7cfe" />]
+    Tangible with shape [Vec2[0,0], Vec2[?w,0], Vec2[?w,?h]]
+    Visible with graphics [<polygon points="0,0 ?w,0 ?w,?h" stroke="#4e7cfe" />]
 
