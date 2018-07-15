@@ -8,6 +8,16 @@ a Diggy thing has
 
 a Pick is Diggy # diggy diggy hole!
 
+when ?pick is added and ?pick is a Pick
+then
+  let ?tri be [Vec2[-12, -12], Vec2[0, 12], Vec2[12, -12]]
+  ?pick becomes
+    Tangible with shape ?tri
+    Visible with graphics [
+      <polygon points="?tri" stroke="#4e7cfe" />,
+      <path d="M 6,2 L -4,-8 M -7,0 A 9,9, 0, 0, 1, 4,-11" stroke="#fe3a27" />
+    ]
+
 a Diggable thing is Tangible and has
   # what level of pick is necessary to dig this?
   a hardness which is a number (default 0)
