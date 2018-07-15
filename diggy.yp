@@ -23,8 +23,75 @@ a Diggable thing is Tangible and has
   a hardness which is a number (default 0)
   # 0 => placed; (0,1) => partly dug; 1 => dropped
   a dugness which is a number (default 0)
+  # a visible thing representing dugness
+  a crack (default nothing)
 
 a Block is Diggable
+
+a Crack is Visible
+
+# when a block starts being dug, add a visible crack
+when ?block becomes Diggable with dugness ?d and crack nothing and
+  (?d > 0)
+  (?d <= 1)
+  ?block is Located with space ?space and position ?pos
+  there is a thing ?map which is
+    Mapped with blockSize ?bs
+    Located with space ?space
+then
+  let ?edgeX be (?bs["x"] / 2)
+  let ?edgeY be (?bs["y"] / 2)
+  let ?tipX be (?edgeX * (1 - ?d))
+  let ?tipY be (?edgeY * (1 - ?d))
+  a new Crack ?crack is added which is
+    Located with space ?space and position ?pos
+    Visible with graphics [
+      <g>
+       <path transform="translate(?edgeX,?edgeY)"
+             d="M ?edgeX,?edgeY L ?tipX,?tipY M ?edgeX,-?edgeY L ?tipX,-?tipY M -?edgeX,?edgeY L -?tipX,?tipY M -?edgeX,-?edgeY L -?tipX,-?tipY"
+	     stroke="#fe3a27" />
+      </g>
+    ]
+  ?block becomes Diggable with crack ?crack
+
+# when a block's dugness is changed, update its crack
+when ?block becomes Diggable with dugness ?d and crack ?crack and
+  (?d > 0)
+  (?d <= 1)
+  ?crack is Visible with graphics ?g
+  ?block is Located with space ?space and position ?pos
+  there is a thing ?map which is
+    Mapped with blockSize ?bs
+    Located with space ?space
+then
+  let ?edgeX be (?bs["x"] / 2)
+  let ?edgeY be (?bs["y"] / 2)
+  let ?tipX be (?edgeX * (1 - ?d))
+  let ?tipY be (?edgeY * (1 - ?d))
+  ?crack becomes Visible with graphics [
+    <g>
+     <path transform="translate(?edgeX,?edgeY)"
+           d="M ?edgeX,?edgeY L ?tipX,?tipY M ?edgeX,-?edgeY L ?tipX,-?tipY M -?edgeX,?edgeY L -?tipX,?tipY M -?edgeX,-?edgeY L -?tipX,-?tipY"
+	   stroke="#fe3a27" />
+    </g>
+  ]
+
+# when a cracked block becomes not dug at all, remove its crack
+when ?block becomes Diggable with dugness 0 and crack ?crack and
+  (?crack != nothing)
+then
+  ?block becomes Diggable with crack nothing
+  ?crack is removed
+
+# when a cracked block leaves the space, remove its crack
+when ?block becomes not Located and
+  ?block is Diggable with crack ?crack
+  (?crack != nothing)
+then
+  ?block becomes Diggable with crack nothing
+  ?crack is removed
+
+# TODO move crack when block moves? shouldn't happen
 
 a Digging thing is Diggy and has
   a block which is a Diggable thing
@@ -80,6 +147,7 @@ when ?pick DigsAt ?block and
   (?dugness >= 1)
 then
   ?pick becomes not Digging
+  ?block becomes Diggable with dugness 1 # clamp to 1 so Crack works
   ?pick DigsUp ?block
 
 when ?pick DigsUp ?block and

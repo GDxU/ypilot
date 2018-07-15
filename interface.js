@@ -177,9 +177,20 @@ function becomeVisible(thing, {graphics}, oldVisible) {
 //  console.log('Interface#becomeVisible(' + thing + ', #, #)');
   if (this.thingIsInPlayersSpace(thing)) {
 //    console.log("...is in player's space, appending");
+    // first remove any old graphics we no longer have
+    if (oldVisible && oldVisible.graphics) {
+      oldVisible.graphics.forEach(g => {
+	if (!graphics.includes(g) && g.parentNode === this.svg) {
+	  g.remove();
+	}
+      });
+    }
+    // then append all the new graphics (any we already had will just move in
+    // the DOM)
     graphics.forEach(g => {
       this.svg.appendChild(g);
     });
+    // and make sure the graphics are positioned and oriented properly
     this.setThingTransform(graphics,
       this.located[thing].position, this.getThingOrientation(thing));
   } else if (oldVisible) {
