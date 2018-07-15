@@ -574,7 +574,7 @@ function compileOp(ast) {
     case '_':
       return '(' + compile(ast.l) + ')[' + compile(ast.r) + ']';
     case 'graphics':
-      var usedVars = ast.string.match(/\?[a-z]\w+/g);
+      var usedVars = ast.string.match(/\?[a-z]\w*/g);
       if (usedVars == null) {
 	// simple case, no vars to interpolate
 	return 'stringToSVGGraphicsElement(' + JSON.stringify(ast.string) + ')';
@@ -588,7 +588,7 @@ function compileOp(ast) {
 	     "      if (/[<>=\"']/.test(" + compile(xVar) + "))\n" +
 	     '        throw new Error("' + x + " cannot be included in an SVG string because it contains one of the characters < > \\\"\");\n";
 	}).join('');
-	var strsAndVars = ast.string.split(/\?([a-z]\w+)/);
+	var strsAndVars = ast.string.split(/\?([a-z]\w*)/);
 	var concatExpr = '';
 	var i;
 	for (i = 0; i < strsAndVars.length - 1; i += 2) {
