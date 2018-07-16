@@ -16,6 +16,10 @@ when ?a Bounces off ?b to ?newPos with velocity ?newVel then
   ?a becomes Mobile with velocity ?newVel
   ?a becomes Located with position ?newPos
 
+# NOTE: Bouncy things must also be both Mobile and Inertial in order to Bounce
+# off other Bouncy things (the other things they bounce off don't have to be,
+# but can be)
+
 # mobile penetrator
 when ?penetrator point ?point penetrates
      ?penetrated edge from ?from to ?to

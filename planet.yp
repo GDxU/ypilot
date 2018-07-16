@@ -87,7 +87,11 @@ then
   a new Gun ?gun is added which is
     Shooty with muzzleVelocity 5
     Repeating with period 5
-  a new Pick ?pick is added
+    Inertial
+    Bouncy
+  a new Pick ?pick is added which is
+    Inertial
+    Bouncy
   a new Slot ?slot0 is added
   a new Slot ?slot1 is added which is Capacious with content ?gun
   a new Slot ?slot2 is added which is Capacious with content ?pick

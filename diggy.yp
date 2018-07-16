@@ -1,12 +1,14 @@
 use "standard:dropped.yp"
 use "standard:active.yp"
+use "standard:inertial.yp"
 
 ## digging ##
 
+# diggy diggy hole!
 a Diggy thing has
   a hardness which is a number (default 0)
 
-a Pick is Diggy # diggy diggy hole!
+a Pick is Diggy
 
 when ?pick is added and ?pick is a Pick
 then
@@ -152,7 +154,9 @@ then
 
 when ?pick DigsUp ?block and
   ?block is Located with space ?space and position ?pos
-then ?block Drops in ?space at ?pos with velocity Vec2[0,0]
+then
+  ?block becomes Inertial with mass 16 and force Vec2[0,0]
+  ?block Drops in ?space at ?pos with velocity Vec2[0,0]
 
 ## placement ##
 
@@ -197,6 +201,7 @@ then
     not Dropped
     not Fleeting
     not Mobile
+    not Inertial
 
 # TODO
 # - standard graphical transformation for Visible blocks: make it smaller and surround it with a blue triangle
