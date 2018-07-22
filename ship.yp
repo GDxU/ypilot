@@ -1,0 +1,62 @@
+use "standard:bouncy.yp"
+use "standard:motile.yp"
+use "standard:holding.yp"
+use "standard:dropped.yp"
+use "standard:diggy.yp"
+use "standard:controls.yp"
+use "standard:owned.yp"
+use "standard:gun.yp"
+
+a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
+
+in the event ?player MakesTheirShip in ?space at ?position then
+  ?player is an Interfaced thing
+  ?space is a Spatial thing
+  ?position is a Vec2 object
+
+# make the ship (except slots and their contents)
+when ?player MakesTheirShip in ?space at ?position and
+  ?player is Interfaced with shipShape ?shape
+then
+  a new Ship ?ship is added which is
+    Located with space ?space and position ?position
+    Oriented with orientation (-π/2) # pointing up
+    Tangible with shape ?shape
+    Bouncy with coefficientOfRestitution 0.2
+    Holding with slots []
+    Selective
+    Owned with owner ?player
+  ?player becomes Piloting with ship ?ship
+
+# keep adding slots until we have 10
+when ?ship becomes Holding with slots ?slots and
+  ?ship is a Ship
+  (?slots["length"] < 10)
+then
+  a new Slot ?slot is added
+  ?ship becomes Holding with slots (?slots + ?slot)
+
+# when we're finished adding slots...
+when ?ship becomes Holding with slots ?slots and
+  ?ship is a Ship
+  (?slots["length"] >= 10)
+  ?ship is Owned with owner ?player
+then
+  # put a gun in slot 1
+  a new Gun ?gun is added which is
+    Shooty with muzzleVelocity 5
+    Repeating with period 5
+    Inertial
+    Bouncy
+  ?ship PicksUp ?gun into ?slots[1]
+  # put a pick in slot 2
+  a new Pick ?pick is added which is
+    Inertial
+    Bouncy
+  ?ship PicksUp ?pick into ?slots[2]
+
+# remove a player's ship when they leave
+when ?player is removed and
+  ?player is Piloting with ship ?ship
+then ?ship is removed
+

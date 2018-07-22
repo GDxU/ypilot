@@ -2,15 +2,7 @@ title: "Blobs"
 author: "Will112358"
 
 use "standard:wall.yp"
-use "standard:bouncy.yp"
-use "standard:motile.yp"
-use "standard:bullet.yp"
-use "standard:holding.yp"
-use "standard:dropped.yp"
-use "standard:diggy.yp"
-use "standard:controls.yp"
-use "standard:owned.yp"
-use "standard:gun.yp"
+use "standard:ship.yp"
 use "standard:no-friendly-fire.yp"
 use "standard:scored.yp"
 use "standard:team.yp"
@@ -23,9 +15,6 @@ use "standard:last-player-standing.yp"
 
 #use "standard:play-to-score-threshold.yp"
 #when ?round Begins then ?round becomes Thresholded with threshold 5
-
-a Map is Mapped
-a Ship is a BasicShip and Mortal and Motile and Bouncy and Visible
 
 when ?wall is added and ?wall is a Wall
 then ?wall becomes Diggable with hardness 0 and dugness 0
@@ -90,21 +79,6 @@ xxx               qxxxxw                       xxx
 """
   ?map is read
 
-when ?slot becomes Capacious with content ?content and
-  (?content != nothing)
-  there is a thing ?player which is
-    Piloting with ship ?ship
-  ?ship is Holding with slots ?slots
-  ?slot is in ?slots at ?slotIndex
-then
-  ?content becomes OnScreen with
-    player ?player and
-    positionPercent Vec2[(((?slotIndex + 9) % 10 + 1.5) * 100 / 11), 0] and
-    positionPixels Vec2[0,76]
-
-when ?item DropsFromShip ?ship and ?item is OnScreen
-then ?item becomes not OnScreen
-
 when ?player is added and
   ?player is a Player
   ?player is Interfaced with shipShape ?shape
@@ -112,36 +86,20 @@ when ?player is added and
     Located with space ?space
   ?map is a Map
 then
-  a new Gun ?gun is added which is
-    Shooty with muzzleVelocity 5
-    Repeating with period 5
-    Inertial
-    Bouncy
-  a new Pick ?pick is added which is
-    Inertial
-    Bouncy
-  a new Slot ?slot0 is added
-  a new Slot ?slot1 is added which is Capacious with content ?gun
-  a new Slot ?slot2 is added which is Capacious with content ?pick
-  a new Slot ?slot3 is added
-  # TODO 4-9
-  let ?spawnPos be (Vec2[25.5,25.5] * 32)
-  a new Point ?spawnPoint is added which is
-    Located with space ?space and position ?spawnPos
-  a new Ship ?ship is added which is
-    Located with space ?space and position ?spawnPos
-    Respawnable with spawnPoint ?spawnPoint and lives 3
-    Oriented with orientation (-π/2)
-    Tangible with shape ?shape
-    Bouncy with coefficientOfRestitution 0.2
-    Holding with slots [?slot0, ?slot1, ?slot2, ?slot3] # TODO 4-9
-    Selective
-    Owned with owner ?player
-  ?player becomes Piloting with ship ?ship
+  ?player MakesTheirShip in ?space at (Vec2[25.5,25.5] * 32)
 
-when ?player is removed and
-  ?player is Piloting with ship ?ship
-then ?ship is removed
+# ships start with 3 lives
+when ?ship is added and
+  ?ship is a Ship
+  ?ship is Located with space ?space and position ?position
+then
+  a new Point ?spawnPoint is added which is
+    Located with space ?space and position ?position
+  ?ship becomes Respawnable with
+    spawnPoint ?spawnPoint and
+    spawnDelay 30 and
+    lives 3 and
+    initialHitPoints 1
 
 when the game starts
 then
@@ -158,3 +116,4 @@ then
   a new Space ?purgatory is added
   ?ship becomes Located with space ?purgatory
   ?ship becomes Respawning with timeToRespawn 0
+

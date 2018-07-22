@@ -354,7 +354,7 @@ Describes things that have a single physical location in a space. Used by the `S
 
     Mapped
 
-Describes things that can be `read` as a map.
+Describes things that can be `read` as a map. For convenience the noun `Map` is also defined in base.yp, as `a Map is Mapped`, but `Map` isn't used in the JS code, only `Mapped`.
 
     Mobile
 

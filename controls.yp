@@ -42,12 +42,12 @@ then
 
 a Selective thing has
   # the index of the primary selection in Holding slots
-  a primaryIndex which is a number (default 0)
+  a primaryIndex which is a number (default 1)
   # true iff the primary fire key activates the secondary fire mode of the
   # primary selection (otherwise activates the primary fire mode)
   a primarySecondary flag (default false)
   # ditto for secondary selection/fire key
-  a secondaryIndex which is a number (default 0)
+  a secondaryIndex which is a number (default 1)
   a secondarySecondary flag (default true)
 
 # TODO? might be nice to allow top-level let, and allow var after 'any/all/one of', so I can factor out digit list
@@ -173,4 +173,20 @@ then
   ?ship becomes
     Selective with secondaryIndex ?i and secondarySecondary (not ?mode)
     not JustPressingADigit
+
+# show slot contents on screen below digit buttons
+when ?slot becomes Capacious with content ?content and
+  (?content != nothing)
+  there is a thing ?player which is
+    Piloting with ship ?ship
+  ?ship is Holding with slots ?slots
+  ?slot is in ?slots at ?slotIndex
+then
+  ?content becomes OnScreen with
+    player ?player and
+    positionPercent Vec2[(((?slotIndex + 9) % 10 + 1.5) * 100 / 11), 0] and
+    positionPixels Vec2[0,76]
+
+when ?item DropsFromShip ?ship and ?item is OnScreen
+then ?item becomes not OnScreen
 

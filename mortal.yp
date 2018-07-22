@@ -74,7 +74,7 @@ then
 # returns to a spawn point after being killed, after a delay
 a Respawnable thing is Mortal and has
   a spawnPoint which is a Located thing
-  a spawnDelay which is a number (default 30) # initial timeToRespawn
+  a spawnDelay which is a number (default 20) # initial timeToRespawn
   a number of lives (default ∞)
   a number of initialHitPoints (default 1)
 

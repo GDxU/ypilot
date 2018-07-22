@@ -41,6 +41,8 @@ a Mapped thing is Located and has
   a mapSize which is a Vec2 object (default Vec2[4,4]) # in blocks
   a map which is a string (default "") # each character represents a block
 
+a Map is Mapped
+
 an Oriented thing has
   an orientation which is a number (default 0) # angle in radians
 
