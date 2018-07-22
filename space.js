@@ -38,6 +38,7 @@ function SpatialIndex(thingID) {
   // if thingID wasn't provided, use -1 as a placeholder until becomeSpatial
   this.id = ((thingID === undefined) ? -1 : thingID);
   this.bin2things = {};
+  this.thing2bin = {};
   router.on('becomeSpatial', this.becomeSpatial.bind(this));
   this.located = router.getAdjectivePropertiesMap('Located');
   router.on('becomeLocated', this.becomeLocated.bind(this));
@@ -86,6 +87,7 @@ defineMethods(SpatialIndex, [
     } else {
       this.bin2things[bin].push(thing);
     }
+    this.thing2bin[thing] = bin;
   },
 
   function removeFromBin(thing, bin) {
@@ -96,14 +98,16 @@ defineMethods(SpatialIndex, [
     if (this.bin2things[bin].length == 0) {
       delete this.bin2things[bin];
     }
+    if (this.thing2bin[thing] == bin) {
+      delete this.thing2bin[thing];
+    }
   },
 
   function becomeLocated(thing, {space, position}, oldLocated) {
     var oldBin = null;
     var newBin = null;
-    if (oldLocated && oldLocated.space == this.id) {
-      var oldPosition = oldLocated.position;
-      oldBin = SpatialIndex.position2bin(oldPosition);
+    if (thing in this.thing2bin) {
+      oldBin = this.thing2bin[thing];
     }
     if (space == this.id) {
       newBin = SpatialIndex.position2bin(position);
@@ -123,9 +127,8 @@ defineMethods(SpatialIndex, [
   },
 
   function unbecomeLocated(thing, {space, position}) {
-    if (space == this.id) {
-      var bin = SpatialIndex.position2bin(position);
-      this.removeFromBin(thing, bin);
+    if (thing in this.thing2bin) {
+      this.removeFromBin(thing, this.thing2bin[thing]);
     }
   },
 
