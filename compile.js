@@ -473,7 +473,14 @@ function compileOp(ast) {
              ' subsumes(yp$' + ast.r + ', ' +
 	         'router.adjectives.Typed[' + l + '].type))';
     case 'isin':
-      return '(' + compile(ast.r) + ').includes(' + compile(ast.l) + ')';
+      var l = compile(ast.l);
+      var r = compile(ast.r);
+      if ('at' in ast) {
+	var at = lValue(ast.at);
+	return '((' + at + ' = (' + r + ').indexOf(' + l + ')) != -1)';
+      } else {
+	return '(' + r + ').includes(' + l + ')';
+      }
     case 'is':
       var l = compile(ast.l);
       if (ast.r.op == 'adjective') {

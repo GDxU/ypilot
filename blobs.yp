@@ -90,6 +90,21 @@ xxx               qxxxxw                       xxx
 """
   ?map is read
 
+when ?slot becomes Capacious with content ?content and
+  (?content != nothing)
+  there is a thing ?player which is
+    Piloting with ship ?ship
+  ?ship is Holding with slots ?slots
+  ?slot is in ?slots at ?slotIndex
+then
+  ?content becomes OnScreen with
+    player ?player and
+    positionPercent Vec2[(((?slotIndex + 9) % 10 + 1.5) * 100 / 11), 0] and
+    positionPixels Vec2[0,76]
+
+when ?item DropsFromShip ?ship and ?item is OnScreen
+then ?item becomes not OnScreen
+
 when ?player is added and
   ?player is a Player
   ?player is Interfaced with shipShape ?shape

@@ -36,6 +36,9 @@ function Interface(player) {
     router.on('unbecomeOriented', this.unbecomeOriented.bind(this));
     this.toroidal = router.getAdjectivePropertiesMap('Toroidal');
     // TODO support dynamically changing Toroidal status of a space?
+    this.onScreen = router.getAdjectivePropertiesMap('OnScreen');
+    router.on('becomeOnScreen', this.becomeOnScreen.bind(this));
+    router.on('unbecomeOnScreen', this.unbecomeOnScreen.bind(this));
     this.boardLike = router.getAdjectivePropertiesMap('BoardLike');
     router.on('becomeBoardLike', this.becomeBoardLike.bind(this));
     router.on('unbecomeBoardLike', this.unbecomeBoardLike.bind(this));
@@ -43,6 +46,7 @@ function Interface(player) {
     this.named = router.getAdjectivePropertiesMap('Named');
     this.typed = router.getAdjectivePropertiesMap('Typed');
     this.svg = $('#svg-container svg')[0];
+    this.screen = $('#screen-container svg')[0];
     document.body.onkeydown = this.keydown.bind(this);
     document.body.onkeyup = this.keyup.bind(this);
     $('.key').
@@ -91,10 +95,11 @@ function setViewBox() {
 },
 
 function setThingTransform(graphics, position, orientation) {
+  var isOnScreen = (graphics[0].parentNode === this.screen);
   var wrappedPos = position;
   // when the space is Toroidal, wrap the position of things that are distant
   // from the player around to the opposite side
-  if (this.toroidSize !== undefined) {
+  if ((!isOnScreen) && this.toroidSize !== undefined) {
     var wrappedPos = new Vec2(position.x, position.y);
     var playerPos = this.playerShipLocated.position;
     var relPos = position.subtract(playerPos);
@@ -113,7 +118,26 @@ function setThingTransform(graphics, position, orientation) {
   var attrVal =
     'translate(' + wrappedPos.x + ', ' + wrappedPos.y + ') ' +
     'rotate(' + (orientation * 180 / Math.PI) + ')';
+  if (isOnScreen && wrappedPos.y == 0) { throw new Error("WTF: " + JSON.stringify(wrappedPos)); }
   graphics.forEach(g => g.setAttributeNS(null, 'transform', attrVal));
+},
+
+function getScreenDims() {
+  return new Vec2(this.screen.width.baseVal.value, this.screen.height.baseVal.value);
+},
+
+function getThingPosition(thing, onScreen) {
+  if ((!onScreen) && (thing in this.onScreen)) {
+    onScreen = this.onScreen[thing];
+  }
+  if (onScreen) {
+    var {positionPercent, positionPixels} = onScreen;
+    var screenDims = this.getScreenDims();
+    return screenDims.scale(positionPercent).divide(100).add(positionPixels);
+  } else if (thing in this.located) {
+    return this.located[thing].position;
+  }
+  return new Vec2(0,0); // I guess?
 },
 
 function getThingOrientation(thing) {
@@ -193,6 +217,7 @@ function becomeVisible(thing, {graphics}, oldVisible) {
     // and make sure the graphics are positioned and oriented properly
     this.setThingTransform(graphics,
       this.located[thing].position, this.getThingOrientation(thing));
+  // TODO? separate case for OnScreen things
   } else if (oldVisible) {
     this.unbecomeVisible(thing, oldVisible);
   }
@@ -201,7 +226,7 @@ function becomeVisible(thing, {graphics}, oldVisible) {
 function unbecomeVisible(thing, {graphics}) {
 //  console.log('Interface#unbecomeVisible(' + thing + ', #)');
   graphics.forEach(g => {
-    if (g.parentNode === this.svg) {
+    if (g.parentNode === this.svg || g.parentNode === this.screen) {
       g.remove();
     }
   });
@@ -238,21 +263,46 @@ function unbecomeLocated(thing, {space, position}) {
 },
 
 function thingIsShown(thing) {
-  return ((thing in this.visible) && (thing in this.located) &&
-	  this.visible[thing].graphics.parentNode === this.svg);
+  return ((thing in this.visible) &&
+          ( (thing in this.located) &&
+	    this.visible[thing].graphics[0].parentNode === this.svg) ||
+	  ( (thing in this.onScreen) &&
+	    this.visible[thing].graphics[0].parentNode === this.screen));
 },
 
 function becomeOriented(thing, {orientation}, oldOriented) {
   if (this.thingIsShown(thing)) {
     this.setThingTransform(this.visible[thing].graphics,
-      this.located[thing].position, orientation);
+      this.getThingPosition(thing), orientation);
   }
 },
 
 function unbecomeOriented(thing, {orientation}) {
   if (this.thingIsShown(thing)) {
     this.setThingTransform(this.visible[thing].graphics,
-      this.located[thing].position, 0);
+      this.getThingPosition(thing), 0);
+  }
+},
+
+function becomeOnScreen(thing, newOnScreen, oldOnScreen) {
+  if (newOnScreen.player == this.player && (thing in this.visible)) {
+    var position = this.getThingPosition(thing, newOnScreen);
+    var orientation = this.getThingOrientation(thing);
+    if (!(oldOnScreen && oldOnScreen.player == this.player)) {
+      // wasn't already displayed on screen
+      this.visible[thing].graphics.forEach(g => {
+	this.screen.appendChild(g);
+      });
+    }
+    this.setThingTransform(this.visible[thing].graphics, position, orientation);
+  } else if (oldOnScreen) {
+    this.unbecomeOnScreen(thing, oldOnScreen);
+  }
+},
+
+function unbecomeOnScreen(thing, {player, positionPercent, positionPixels}) {
+  if (player == this.player && (thing in this.visible)) {
+    this.unbecomeVisible(thing, this.visible[thing]);
   }
 },
 

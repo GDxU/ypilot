@@ -222,6 +222,10 @@ Usually keys and key lists will be literal values as above, but they may also be
 
 This condition is true when `?part` is an element of the array `?whole`, or when `?part` is a substring of the string `?whole`. This can be particularly useful in combination with `presses`/`releases` events, e.g. a rule starting with `when ?player presses ?key and ?key is in ["ShiftLeft", "ShiftRight"] ...` will fire when a player presses either shift key. `?part is not in ?whole` also works as you might expect.
 
+    ?part is in ?whole at ?index
+
+This condition is like the above, with the addition that the index in the array `?whole` where `?part` was found is put in the new variable `?index`. This isn't allowed when `?index` already has a value; use `(?part == ?whole[?index])` in that case.
+
     (?x <= ?y)
 
 This condition is used to compare values. `?x` and `?y` can be arbitrary value expressions, not just variables. The comparison operation (here `<=`) can be any of the usual C-style operators: `<`, `<=`, `==`, `!=`, `>=`, or `>`. The equality operators `==` and `!=` compare `Array` and `Vec2` objects deeply (e.g. `Vec2[42,57] == Vec2[42,57]` even though they are distinct instances of `Vec2`), but are otherwise the same as JavaScript's.
@@ -359,6 +363,10 @@ Describes things that move and/or spin through space. Used by the `SpatialIndex`
     Named
 
 Describes things that have a name (or handle).
+
+    OnScreen
+
+Describes things that appear on a player's screen without being `Located` in a space (e.g. they're part of a heads-up display). Used by `Interface` objects.
 
     Oriented
 

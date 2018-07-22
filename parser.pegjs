@@ -133,6 +133,8 @@ condition
 	map(a => ({ op: 'is', l: v, r: a })).
 	concat(stConds ? stConds : [])
     }; }
+  / l:value_expr 'is' sp 'in' sp r:value_expr 'at' sp at:variable
+    { return { op: 'isin', l: l, r: r, at: at }; }
   / l:value_expr 'is' sp 'in' sp r:value_expr
     { return { op: 'isin', l: l, r: r }; }
   / l:value_expr 'is' sp 'not' sp 'in' sp r:value_expr

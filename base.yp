@@ -63,8 +63,8 @@ when the clock ticks and
 then
   ?m becomes Oriented with orientation (?o + ?av)
 
-# can be seen
-a Visible thing is Located and has
+# can be seen if Located or OnScreen
+a Visible thing has
   some graphics which are SVGGeometryElement objects
 
 # by default Visible's graphics are the same as Tangible's shape, in white
@@ -89,6 +89,16 @@ an Interfaced thing has
   a shipShape which is an Array of Vec2 objects
 
 a Player is Named and Interfaced
+
+# can be seen on someone's screen (as opposed to in a Space)
+# This is an alternative to Located.
+# If screenDims is the screen's dimensions in pixels, then the thing's position
+# on the screen, in pixels, is:
+#   screenDims * positionPercent / 100 + positionPixels
+an OnScreen thing is Visible and has
+  a player which is an Interfaced thing
+  a positionPercent which is a Vec2 object (default Vec2[0,0])
+  a positionPixels which is a Vec2 object (default Vec2[0,0])
 
 a Columnar thing is Named and has
   a cellPath which is a string
