@@ -56,8 +56,9 @@ function Interface(player) {
       on('touchend', this.touchend.bind(this));
     // TODO mouse enter/leave etc.?
     router.on('finish', () => {
-      delete document.body.onkeydown;
-      delete document.body.onkeyup;
+      // NOTE: delete doesn't work for these; have to set to null
+      document.body.onkeydown = null;
+      document.body.onkeyup = null;
       $('.key').off();
       this.svg.innerHTML = '';
     });

@@ -376,11 +376,13 @@ function joinGame(remoteID) {
 
 // emit a 'finish' event and then reset event listeners
 function finishGame() {
+  this.on('idle', () => {
+    this.listeners = {};
+    this.onceListeners = {};
+    this.permissionConditions = {};
+    this.listenForKeyState();
+  });
   this.emit('finish');
-  this.listeners = {};
-  this.onceListeners = {};
-  this.permissionConditions = {};
-  this.listenForKeyState();
 },
 
 function leaveGame() {

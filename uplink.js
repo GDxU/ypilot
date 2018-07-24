@@ -291,6 +291,7 @@ function disconnect() {
     Clock.stop();
   }
   Chat.clearHistory();
+  this.hideChatInput();
 },
 
 function receivePeerMessage(senderID, msg) {
