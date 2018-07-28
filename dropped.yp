@@ -40,7 +40,6 @@ then
   ?item Fills ?slot
 
 # commands to drop an item from a slot on a ship should emit the IsToDrop event
-# FIXME this is used by controls.yp, circular dependency; this and Active should be in a third, separate file
 in the event ?slot IsToDrop from ?ship then
   ?ship is a Holding thing
   ?slot is a Capacious thing
