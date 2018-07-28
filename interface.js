@@ -61,6 +61,9 @@ function Interface(player) {
       document.body.onkeyup = null;
       $('.key').off();
       this.svg.innerHTML = '';
+      this.screen.innerHTML = '';
+      $('#board').empty();
+      $('#board-container').hide();
     });
     if (this.player in this.piloting) {
   //    console.log('interface found player ' + this.player + ' piloting on creation');
