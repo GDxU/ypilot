@@ -8,7 +8,7 @@ a Bouncy thing is Tangible and has
 
 in the event ?a Bounces off ?b to ?newPos with velocity ?newVel then
   ?a is a Bouncy thing
-  ?b is a Solid thing
+  ?b is a Tangible thing
   ?newPos is a Vec2 object
   ?newVel is a Vec2 object
 

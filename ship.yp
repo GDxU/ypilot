@@ -48,11 +48,13 @@ then
     Repeating with period 5
     Inertial
     Bouncy
+    Dropped
   ?ship PicksUp ?gun into ?slots[1]
   # put a pick in slot 2
   a new Pick ?pick is added which is
     Inertial
     Bouncy
+    Dropped
   ?ship PicksUp ?pick into ?slots[2]
 
 # remove a player's ship when they leave

@@ -30,6 +30,8 @@ in the event ?gun Fires from ?ship then
 
 # when a repeating thing with no time left becomes active
 when ?x becomes Active with ship ?s and
+  ?x is Shooty
+  ?s is Located
   ?x is Repeating with period ?p and timeLeft ?t
   (?t == 0)
 then
@@ -38,8 +40,10 @@ then
 
 # when an active thing runs out of time left
 when ?x becomes Repeating with period ?p and timeLeft ?t and
+  ?x is Shooty
   (?t == 0)
   ?x is Active with ship ?s
+  ?s is Located
 then
   ?x becomes Repeating with timeLeft ?p
   ?x Fires from ?s

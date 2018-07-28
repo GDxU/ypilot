@@ -22,5 +22,7 @@ when ?player Leaves ?team and
   ?player is Aligned with team ?team
 then ?player becomes not Aligned
 
-when ?player is removed and ?player is Aligned with team ?team
+when ?player is removed and
+  ?player is Aligned with team ?team
+  ?team is Multifarious
 then ?player Leaves ?team

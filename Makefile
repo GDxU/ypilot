@@ -36,6 +36,7 @@ SRCS = \
 	space.js \
 	svg.js \
 	stdlib.js \
+	types.js \
 	uplink.js \
 	user-names.js \
 	vec2.js \

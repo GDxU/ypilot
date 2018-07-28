@@ -47,7 +47,7 @@ in the event ?slot IsToDrop from ?ship then
 
 # while we're trying to drop something from a slot, it becomes TryingToDrop
 a TryingToDrop thing has
-  a ship
+  a ship which is a Mobile thing # FIXME base.yp says ships don't have to be Mobile, but this file assumes it
   a slotContent
 
 # on IsToDrop, become TryingToDrop and then emit Dispenses (which may be

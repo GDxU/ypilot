@@ -111,7 +111,7 @@ when ?player releases ?digit and
   ?digit is in ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
   ?player is JustPressingADigit with digit ?digit
   ?player is Piloting with ship ?ship
-  let ?i be ?digit[5]
+  let ?i be (1 * ?digit[5]) # 1* forces it to be a number, not a string
   # already set primary and secondary fire, this is the second press of this
   # digit
   ?ship is Selective with primaryIndex ?i and primarySecondary false and secondaryIndex ?i and secondarySecondary true
@@ -125,7 +125,7 @@ when ?player releases ?digit and
   ?player is JustPressingADigit with digit ?digit
   ?player is Piloting with ship ?ship
 then
-  let ?i be ?digit[5]
+  let ?i be (1 * ?digit[5])
   ?ship becomes Selective with primaryIndex ?i and primarySecondary false and secondaryIndex ?i and secondarySecondary true
 
 # select tool/mode for primary fire key by holding the digit for the tool's
@@ -134,7 +134,7 @@ then
 when ?player presses "ControlRight" and
   ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
   ?player is Piloting with ship ?ship
-  let ?i be ?digit[5]
+  let ?i be (1 * ?digit[5])
   ?ship is Selective with primaryIndex ?j
   (?i != ?j)
 then
@@ -145,7 +145,7 @@ then
 when ?player presses "ControlRight" and
   ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
   ?player is Piloting with ship ?ship
-  let ?i be ?digit[5]
+  let ?i be (1 * ?digit[5])
   ?ship is Selective with primaryIndex ?i and primarySecondary ?mode
 then
   ?ship becomes
@@ -156,7 +156,7 @@ then
 when ?player presses "ShiftRight" and
   ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
   ?player is Piloting with ship ?ship
-  let ?i be ?digit[5]
+  let ?i be (1 * ?digit[5])
   ?ship is Selective with secondaryIndex ?j
   (?i != ?j)
 then
@@ -167,7 +167,7 @@ then
 when ?player presses "ShiftRight" and
   ?player is holding down ?digit which is one of ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
   ?player is Piloting with ship ?ship
-  let ?i be ?digit[5]
+  let ?i be (1 * ?digit[5])
   ?ship is Selective with secondaryIndex ?i and secondarySecondary ?mode
 then
   ?ship becomes

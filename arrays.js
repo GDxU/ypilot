@@ -38,3 +38,13 @@ Array.prototype.equals = function(other) {
   return Array.isArray(other) && this.length == other.length &&
          this.every((element, index) => Object.equals(element, other[index]));
 }
+
+// .yp "==" operator: deep WRT Array and Vec2 objects, JS "==" WRT other types;
+// since things are numbers, this compares thing identity (not deep)
+Object.equals = function(a,b) {
+  if (('object' == typeof a) && a !== null && 'equals' in a) {
+    return a.equals(b);
+  } else {
+    return (a == b);
+  }
+}

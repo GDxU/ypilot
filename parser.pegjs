@@ -315,7 +315,7 @@ property_decl_without_default
     type:( 'flag' { return 'boolean'; }
          / 'which' sp 'is' sp a type:singular_type { return type; }
 	 )? sp {
-    return [name, type];
+    return [name, (type || 'top')];
   }
   / 'some' sp name:property_name ilsp
     eltype:( 'flags' { return 'boolean'; }
@@ -353,7 +353,7 @@ defalt
 singular_type
   = 'Array' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
   / name:type_name kind:('thing' / 'object') { return [kind, name]; }
-  / name1:type_name { return ['thing', name1]; }
+  / name1:type_name { return ['thing', ['Typed', name1]]; }
   / 'boolean' / 'number' / 'string'
 
 plural_type
@@ -362,7 +362,7 @@ plural_type
     ( name:type_name kind:('thing' / 'object') { return [kind, name]; }
     / 'boolean' / 'number' / 'string'
     ) 's' { return scalar; }
-  / name1:plural_type_name { return ['thing', name1]; }
+  / name1:plural_type_name { return ['thing', ['Typed', name1]]; }
 
 type_name
   = name:$([A-Z] id_char*) sp { return name; }

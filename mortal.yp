@@ -51,7 +51,7 @@ then ?b Dies
 # Dead mostly just marks things that have died, but adjectives are required to
 # have properties, so we might as well include a death point
 a Dead thing has
-  a deathPoint which is a Located thing (default nothing)
+  a deathPoint which is a Located thing
 
 # just in case someone wants something that is Mortal but not Located, whose
 # hitPoints would be deducted by something other than Damaging hits
@@ -84,7 +84,7 @@ a Respawning thing is Dead and has
 
 in the event ?a Respawns at ?sp with hitPoints ?hp then
   ?a is a Respawning thing
-  ?sp is a Vec2 object
+  ?sp is a Located thing
   ?hp is a number
 
 # when you die and have lives left, decrement lives and start respawning

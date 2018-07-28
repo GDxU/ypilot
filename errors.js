@@ -24,11 +24,16 @@ function reportError(error, context) {
   if (('object' == typeof error) && error !== null && ('context' in error)) {
     context = (context || '') + error.context;
   }
-  var pre = $(document.createElement('pre'));
-  pre.text((context || '') + errorToString(error));
-  var hr = document.createElement('hr');
-  $('#error-messages').append(pre, hr);
-  $('#error-popup').show();
+  var reportStr = (context || '') + errorToString(error);
+  if ('undefined' == typeof document) { // node.js
+    console.error(reportStr);
+  } else { // browser
+    var pre = $(document.createElement('pre'));
+    pre.text(reportStr);
+    var hr = document.createElement('hr');
+    $('#error-messages').append(pre, hr);
+    $('#error-popup').show();
+  }
 }
 
 $(function() {

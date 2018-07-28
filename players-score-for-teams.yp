@@ -2,5 +2,8 @@ use "standard:score-players.yp"
 use "standard:score-teams.yp"
 
 # when a player scores, their team does too
-when ?x Scores ?n and ?x is Aligned with team ?t then ?t Scores ?n
+when ?x Scores ?n and
+  ?x is Aligned with team ?t
+  ?t is Scored
+then ?t Scores ?n
 

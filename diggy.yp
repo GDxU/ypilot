@@ -160,7 +160,7 @@ then
 
 ## placement ##
 
-a TryingToBePlaced thing has
+a TryingToBePlaced thing is Diggable and has
   a tryingToBePlaced flag (default true)
 
 # activating a diggable block drops it while TryingToBePlaced
