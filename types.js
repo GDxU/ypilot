@@ -70,11 +70,13 @@ function getAdjectiveDependencies(type) {
     if (type.length > 2) { // also has adjective intersection
       deps = expandAdjectiveSet(deps.concat(type.slice(2)));
     }
-    return deps;
   } else {
     // expand adj set with each adj's dependencies
-    return expandAdjectiveSet(type.slice(1));
+    deps = expandAdjectiveSet(type.slice(1));
   }
+  // all things are Typed
+  if (!deps.includes('Typed')) deps = deps.concat('Typed');
+  return deps;
 }
 
 // is ancestor a (non-strict) ancestor of descendant, in the .yp type graph?
@@ -201,7 +203,6 @@ function leastCommonSubsumer(a, b) {
       var aDeps = getAdjectiveDependencies(a);
       var bDeps = getAdjectiveDependencies(b);
       var intersection = aDeps.filter(adj => bDeps.include(adj));
-      intersection.push('Typed'); // just in case it's empty
       // TODO? contract the intersection again? not really necessary
       return ['thing', ...intersection];
     default:
@@ -209,14 +210,65 @@ function leastCommonSubsumer(a, b) {
   }
 }
 
-// TODO function for printing types better than JSON.stringify
-// TODO function to assert compileTimeSubsumes, with configurable message
+// return a string that would parse back to the given type (except for
+// bottom/top/nothing)
+function format(type) {
+  if ('string' == typeof type) {
+    return type;
+  } else if (Array.isArray(type) && type.length >= 1 &&
+	     'string' == typeof type[0]) {
+    switch (type[0]) {
+      case 'object':
+        return type[1] + ' object';
+      case 'thing':
+        var noun = 'thing';
+	var adjs;
+        if (Array.isArray(type[1]) && type[1][0] == 'Typed') {
+	  noun = type[1][1];
+	  adjs = type.slice(2);
+	} else {
+	  adjs = type.slice(1);
+	}
+	// all things are Typed, don't bother saying it
+	adjs = adjs.filter(x => (x != 'Typed'));
+	return ((adjs.length == 0 ? '' : (adjs.join(', ') + ' ')) + noun);
+      case 'Array':
+        var elType = type[1];
+	if (elType == 'top') { return 'Array'; }
+	var elTypeStr = format(elType);
+	if (Array.isArray(elType) && elType[0] == 'Array') {
+	  elTypeStr = elTypeStr.replace(/^Array/, 'Arrays');
+	} else {
+	  elTypeStr += 's';
+	}
+        return 'Array of ' + elTypeStr;
+    }
+  }
+  var json = JSON.stringify(type);
+  // NOTE: not an error, since this is usually part of an error message anyway
+  console.warn('bogus kind of type: ' + json);
+  return json;
+}
+
+// roughly decide whether to put "a" or "an" before a type name
+function aAn(str) {
+  return 'a' + (/^[aeiou]/i.test(str) ? 'n' : '') + ' ' + str;
+}
+
+function assertSubsumes(a, b, desc) {
+  if (!compileTimeSubsumes(a, b)) {
+    throw new TypeError('expected ' + desc + ' to be ' + aAn(format(a)) + ', but got ' + aAn(format(b)));
+  }
+}
 
 module.exports = {
   expandNounDefaultAdjectives: expandNounDefaultAdjectives,
   runTimeSubsumes: runTimeSubsumes,
   compileTimeSubsumes: compileTimeSubsumes,
   leastCommonSubsumer: leastCommonSubsumer,
+  format: format,
+  aAn: aAn,
+  assertSubsumes: assertSubsumes,
   adjectiveDependencies: {},
   nounDefaultAdjectives: {},
   nounSupertypes: {}

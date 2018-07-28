@@ -271,9 +271,8 @@ function compileNonUseStatement(ast) {
 	    var [name, type, dfalt] = p;
 	    var dfaltStr = compile(dfalt);
 	    var dfaltType = getType(dfalt);
-	    if (!types.compileTimeSubsumes(type, dfaltType)) {
-	      throw new Error('expected default for property ' + name + ' of adjective ' + ast.name + ' to be a ' + JSON.stringify(type) + ', but got a ' + JSON.stringify(dfaltType));
-	    }
+	    types.assertSubsumes(type, dfaltType,
+	      'default for property ' + name + ' of adjective ' + ast.name);
 	    return name + ' = ' + dfaltStr;
 	  } else {
 	    return p[0];
@@ -581,9 +580,8 @@ function compileOp(ast) {
 	  var argStr = compile(arg);
 	  var argType = getType(arg);
 	  var paramType = sig.positionalParams[i];
-	  if (!types.compileTimeSubsumes(paramType, argType)) {
-	    throw new Error('expected a ' + JSON.stringify(paramType) + ' for ' + (i == 0 ? 'subject' : 'object') + ' of custom event ' + ast.verb + ', but got a ' + JSON.stringify(argType));
-	  }
+	  types.assertSubsumes(paramType, argType,
+            (i == 0 ? 'subject' : 'object') + ' of custom event ' + ast.verb);
 	  return ', ' + argStr;
 	}).join('');
       var namedArgSupplied = {};
@@ -599,9 +597,8 @@ function compileOp(ast) {
 	    var valStr = compile(val);
 	    var valType = getType(val);
 	    var paramType = sig.namedParams[name];
-	    if (!types.compileTimeSubsumes(paramType, valType)) {
-	      throw new Error('expected a ' + JSON.stringify(paramType) + ' for argument ' + name + ' of custom event ' + ast.verb + ', but got a ' + JSON.stringify(valType));
-	    }
+	    types.assertSubsumes(paramType, valType,
+	      'argument "' + name + '" of custom event ' + ast.verb);
 	    return (name + ': ' + valStr);
 	  }).join(', ') +
 	  ' }';
@@ -632,9 +629,7 @@ function compileOp(ast) {
       // NOTE: we don't check the element type against l's type, because they
       // could be overlapping but not subsuming types and the isin expression
       // would still be valid (and we don't have a disjointness test)
-      if (!(Array.isArray(rType) && rType[0] == 'Array')) {
-	throw new Error('expected an Array after "is in", but got a ' + JSON.stringify(rType));
-      }
+      types.assertSubsumes(['Array', 'top'], rType, 'value after "is in"');
       if ('at' in ast) {
 	ast.at.type = 'number';
 	var at = lValue(ast.at);
@@ -646,9 +641,9 @@ function compileOp(ast) {
       var l = compile(ast.l);
       var lType = getType(ast.l);
       // check that l could possibly have an adjective (could be a thing)
-      if (!('top' == lType ||
-	    (Array.isArray(lType) && lType[0] == 'thing'))) {
-	throw new Error('expected a thing before "is ' + (ast.r.op == 'unadjective' ? 'not ' : '') + ast.r.name + '", but got a ' + JSON.stringify(lType));
+      if ('top' != lType) {
+	types.assertSubsumes(['thing', 'Typed'], lType,
+	  'variable before "is ' + (ast.r.op == 'unadjective' ? 'not ' : '') + ast.r.name + '"');
       }
       ast.type = 'boolean';
       if (ast.r.op == 'adjective') {
@@ -700,7 +695,7 @@ function compileOp(ast) {
       } else if (Array.isArray(collType) && collType[0] == 'Array') {
 	elemType = collType[1];
       } else {
-	throw new Error('expected a string or array after "first thing in", but got a ' + JSON.stringify(collType));
+	throw new Error('expected a string or array after "first thing in", but got ' + types.aAn(types.format(collType)));
       }
       ast.type = 'boolean';
       ast.variable.type = elemType;
@@ -741,15 +736,12 @@ function compileOp(ast) {
       ast.type = 'boolean';
       var playerStr = compile(ast.player);
       var playerType = getType(ast.player);
-      if (!types.compileTimeSubsumes(['thing', 'Interfaced'], playerType)) {
-	throw new Error('expected an Interfaced thing before "is (not) holding down", but got a ' + JSON.stringify(playerType));
-      }
+      types.assertSubsumes(['thing', 'Interfaced'], playerType,
+        'variable before "is (not) holding down"');
       if ('keys' in ast) {
 	var keys = '(' + compile(ast.keys) + ')';
 	var keysType = getType(ast.keys);
-	if (!(['Array', 'string'].equals(keysType))) {
-	  throw new Error('expected key list to be an Array of strings, but got a ' + JSON.stringify(keysType));
-	}
+	types.assertSubsumes(['Array', 'string'], keysType, 'key list');
 	var predicate =
 	  '(x => router.playerKeyState(' + compile(ast.player) + ', x))';
 	if ('key' in ast) {
@@ -765,9 +757,8 @@ function compileOp(ast) {
       } else {
 	var keyStr = compile(ast.key);
 	var keyType = getType(ast.key);
-	if (keyType != 'string') {
-	  throw new Error('expected a string after "is (not) holding down", but got a ' + JSON.stringify(keyType));
-	}
+	types.assertSubsumes('string', keyType,
+	  'value after "is (not) holding down"');
 	return '(' + (ast.state ? '' : '!') +
 		 'router.playerKeyState(' + playerStr + ', ' + keyStr + '))';
       }
@@ -818,7 +809,7 @@ function compileOp(ast) {
 	} else if (propType == 'number') {
 	  ast.type = ((objType == 'string') ? 'string' : objType[1]);
 	} else {
-	  throw new Error('expected string/array index to be a number or "length", but got a ' + JSON.stringify(propType));
+	  throw new Error('expected string/array index to be a number or "length", but got ' + types.aAn(types.format(propType)));
 	}
       } else if (Array.isArray(objType) &&
 		 objType[0] == 'object' && objType[1] == 'Vec2') {
@@ -829,7 +820,7 @@ function compileOp(ast) {
 	}
 	ast.type = 'number';
       } else {
-	throw new Error('expected subscripted object to be an Array or a Vec2, but got a ' + JSON.stringify(objType));
+	throw new Error('expected subscripted object to be an Array or a Vec2, but got ' + types.aAn(types.format(objType)));
       }
       return '(' + objStr + ')[' + propStr + ']';
     case 'graphics':
@@ -874,7 +865,7 @@ function compileOp(ast) {
       var rType = getType(ast.r);
       if (!(['object', 'Vec2'].equals(lType) &&
 	    ['object', 'Vec2'].equals(rType))) {
-	throw new Error('expected two Vec2 objects in dot product, but got ' + JSON.stringify(lType) + ' · ' + JSON.stringify(rType));
+	throw new Error('expected two Vec2 objects in dot product, but got ' + types.format(lType) + ' · ' + types.format(rType));
       }
       ast.type = 'number';
       return compile(ast.l) + '.dot(' + compile(ast.r) + ')';
@@ -886,7 +877,7 @@ function compileOp(ast) {
       var rType = getType(ast.r);
       if (!(['object', 'Vec2'].equals(lType) &&
 	    ['object', 'Vec2'].equals(rType))) {
-	throw new Error('expected two Vec2 objects in cross product, but got ' + JSON.stringify(lType) + ' × ' + JSON.stringify(rType));
+	throw new Error('expected two Vec2 objects in cross product, but got ' + types.format(lType) + ' × ' + types.format(rType));
       }
       ast.type = ['object', 'Vec2'];
       return compile(ast.l) + '.cross(' + compile(ast.r) + ')';
@@ -916,12 +907,11 @@ function compileOp(ast) {
 	      }
 	      // check rType
 	      if (/^[+-]$/.test(ast.op)) { // additive ops take Vec2
-		if (!(['object', 'Vec2'].equals(rType))) {
-		  throw new Error('expected a Vec2 object after ' + ast.op + ', but got a ' + JSON.stringify(rType));
-		}
+		types.assertSubsumes(['object', 'Vec2'], rType,
+		  'value after ' + ast.op);
 	      } else { // multiplicative ops take Vec2 or number
 		if (!('number' == rType || ['object', 'Vec2'].equals(rType))) {
-		  throw new Error('expected a number or a Vec2 object after ' + ast.op + ', but got a ' + JSON.stringify(rType));
+		  throw new Error('expected a number or a Vec2 object after ' + ast.op + ', but got ' + types.aAn(types.format(rType)));
 		}
 	      }
 	      ast.type = lType;
@@ -944,7 +934,7 @@ function compileOp(ast) {
 		  break;
 		case 'scale':
 		  if (rType != 'number') {
-		    throw new Error('expected number to scale an ' + JSON.stringify(lType) + ' by, but got a ' + JSON.stringify(rType));
+		    throw new Error('expected number to scale ' + types.aAn(types.format(lType)) + ' by, but got ' + types.aAn(types.format(rType)));
 		  }
 		  ast.type = lType;
 		  break;
@@ -976,7 +966,7 @@ function compileOp(ast) {
 	  ast.type = 'boolean';
 	} else if (/^(&&|\|\|)$/.test(ast.op)) {
 	  if (!(lType == 'boolean' && rType == 'boolean')) {
-	    throw new Error('expected two booleans in ' + ast.op + ' but got ' + JSON.stringify(lType) + ' ' + ast.op + ' ' + JSON.stringify(rType));
+	    throw new Error('expected two booleans in ' + ast.op + ' but got ' + types.format(lType) + ' ' + ast.op + ' ' + types.format(rType));
 	  }
 	  ast.type = 'boolean';
 	}
@@ -990,14 +980,10 @@ function compileOp(ast) {
 	var rStr = compile(ast.r);
 	var rType = getType(ast.r);
 	if (ast.op == '!') {
-	  if (rType != 'boolean') {
-	    throw new Error('expected a boolean for argument of ! but got a ' + JSON.stringify(rType));
-	  }
+	  types.assertSubsumes('boolean', rType, 'argument of !');
 	  ast.type = 'boolean';
 	} else {
-	  if (rType != 'number') {
-	    throw new Error('expected a number for argument of unary ' + ast.op + ' but got a ' + JSON.stringify(rType));
-	  }
+	  types.assertSubsumes('number', rType, 'argument of unary ' + ast.op);
 	  ast.type = 'number';
 	}
 	// TODO? unary +- for Vec2 objects
