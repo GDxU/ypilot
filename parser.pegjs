@@ -350,19 +350,31 @@ parameter_decl
 defalt
   = '(' sp 'default' sp v:value_expr ')' sp { return v; }
 
+object_type
+  = constructor:type_name 'object' { return ['object', constructor]; }
+
+thing_type
+  = first_adj:type_name adjs:(',' sp adj:type_name { return adj; })* 'thing'
+    { return ['thing', first_adj, ...adjs]; }
+
+simple_type
+  = 'boolean' / 'number' / 'string'
+
 singular_type
   = 'Array' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
-  / name:type_name kind:('thing' / 'object') { return [kind, name]; }
-  / name1:type_name { return ['thing', ['Typed', name1]]; }
-  / 'boolean' / 'number' / 'string'
+  / object_type / thing_type / simple_type
+  / first_adj:type_name adjs:(',' sp adj1:type_name { return adj; })*
+    noun:type_name
+    { return ['thing', ['Typed', noun], first_adj, ...adjs]; }
+  / noun1:type_name { return ['thing', ['Typed', noun1]]; }
 
 plural_type
   = 'Arrays' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
-  / scalar:
-    ( name:type_name kind:('thing' / 'object') { return [kind, name]; }
-    / 'boolean' / 'number' / 'string'
-    ) 's' { return scalar; }
-  / name1:plural_type_name { return ['thing', ['Typed', name1]]; }
+  / scalar:( object_type / thing_type / simple_type ) 's' { return scalar; }
+  / first_adj:type_name adjs:(',' sp adj1:type_name { return adj; })*
+    noun:plural_type_name
+    { return ['thing', ['Typed', noun], first_adj, ...adjs]; }
+  / noun1:plural_type_name { return ['thing', ['Typed', noun1]]; }
 
 type_name
   = name:$([A-Z] id_char*) sp { return name; }
