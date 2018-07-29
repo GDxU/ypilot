@@ -33,10 +33,11 @@ then ?ship PicksUp ?item into ?slot
 # when a drop is picked up it stops expiring/moving and fills the slot
 when ?ship PicksUp ?item into ?slot
 then
-  ?item becomes not Fleeting
-  ?item becomes not Mobile
-  ?item becomes not Located
-  ?item becomes not Oriented
+  ?item becomes
+    not Fleeting
+    not Mobile
+    not Located
+    not Oriented
   ?item Fills ?slot
 
 # commands to drop an item from a slot on a ship should emit the IsToDrop event
@@ -97,8 +98,9 @@ then
 
 # when something drops, it becomes Mobile, and expires in 1 minute
 when ?item Drops in ?space at ?pos with velocity ?v then
-  ?item becomes Located with space ?space and position ?pos
-  ?item becomes Oriented with orientation 0
-  ?item becomes Mobile with velocity ?v and angularVelocity 0
-  ?item becomes Fleeting with timeToLive 1200 # 1200 ticks == 1 minute
-  ?item becomes Dropped with dropped true
+  ?item becomes
+    Located with space ?space and position ?pos
+    Oriented with orientation 0
+    Mobile with velocity ?v and angularVelocity 0
+    Fleeting with timeToLive 1200 # 1200 ticks == 1 minute
+    Dropped with dropped true

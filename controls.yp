@@ -107,6 +107,7 @@ when ?player presses ?digit and
 then
   ?player becomes JustPressingADigit with digit ?digit
 
+# just press the same digit again to drop an item from that slot
 when ?player releases ?digit and
   ?digit is in ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8","Digit9","Digit0"]
   ?player is JustPressingADigit with digit ?digit

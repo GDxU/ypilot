@@ -6,6 +6,11 @@ use "standard:ship.yp"
 use "standard:no-friendly-fire.yp"
 use "standard:materials.yp"
 
+use "standard:stackable.yp"
+when ?block is added and ?block is a Block
+				# FIXME defaults
+then ?block becomes Stackable with currentStackSize 1 and maximumStackSize 64
+
 when the game starts
 then
   let ?size be Vec2[50,50]
