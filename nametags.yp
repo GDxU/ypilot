@@ -1,0 +1,6 @@
+use "standard:labels.yp"
+
+when ?player becomes Piloting with ship ?ship and
+  ?player is Named with name ?name
+then ?ship IsLabelled ?name
+

@@ -1,0 +1,78 @@
+a Labelling thing is Visible and has
+  # the content of the label
+  a text which is a string
+  # text-anchor point - labelled thing position
+  an offset which is a Vec2 object (default Vec2[0,32])
+  # CSS style of SVG text element
+  a style which is a string (default "text-anchor: middle; stroke: none; fill: white")
+
+a Label is Labelling
+
+a Labelled thing has a label which is a Labelling thing
+
+in the event ?thing IsLabelled ?text then
+  ?thing is a Typed thing
+  ?text is a string
+
+in the event ?thing IsConfigurablyLabelled ?text with offset ?offset and style ?style then
+  ?thing is a Typed thing
+  ?text is a string
+  ?offset is a Vec2 object
+  ?style is a string
+
+when ?thing IsLabelled ?text
+# FIXME duplicate defaults
+then ?thing IsConfigurablyLabelled ?text with offset Vec2[0,32] and style "text-anchor: middle; stroke: none; fill: white"
+
+when ?thing IsConfigurablyLabelled ?text with offset ?offset and style ?style
+then
+  a new Label ?label is added which is
+    Labelling with text ?text and offset ?offset and style ?style
+    Visible with graphics [<text style="?style">?text</text>]
+  ?thing becomes Labelled with label ?label
+
+# position the label relative to the labelled thing, whether Located or OnScreen
+
+when ?thing becomes Labelled with label ?label and
+  ?thing is Located with space ?space and position ?position
+  ?label is Labelling with offset ?offset
+then
+  ?label becomes Located with space ?space and position (?position + ?offset)
+
+when ?thing becomes Labelled with label ?label and
+  ?thing is OnScreen with
+    player ?player and
+    positionPercent ?posPct and
+    positionPixels ?posPx
+  ?label is Labelling with offset ?offset
+then
+  ?label becomes OnScreen with
+    player ?player and
+    positionPercent ?posPct and
+    positionPixels (?posPx + ?offset)
+
+# essentially the same two rules, except they're for updating an
+# already-labelled thing's label position
+# (FIXME? would be nice to collapse these to one pair of rules somehow)
+
+when ?thing becomes Located with space ?space and position ?position and
+  ?thing is Labelled with label ?label
+  ?label is Labelling with offset ?offset
+then
+  ?label becomes Located with space ?space and position (?position + ?offset)
+
+when
+  ?thing becomes OnScreen with
+    player ?player and
+    positionPercent ?posPct and
+    positionPixels ?posPx
+and
+  ?thing is Labelled with label ?label
+  ?label is Labelling with offset ?offset
+then
+  ?label becomes OnScreen with
+    player ?player and
+    positionPercent ?posPct and
+    positionPixels (?posPx + ?offset)
+
+# TODO rules for removing labels?

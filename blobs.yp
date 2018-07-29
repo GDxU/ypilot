@@ -3,6 +3,7 @@ author: "Will112358"
 
 use "standard:wall.yp"
 use "standard:ship.yp"
+use "standard:nametags.yp"
 use "standard:no-friendly-fire.yp"
 use "standard:scored.yp"
 use "standard:team.yp"

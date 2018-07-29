@@ -59,10 +59,12 @@ STDLIBS = \
 	holding.yp \
 	inertial.yp \
 	join-smallest-team.yp \
+	labels.yp \
 	last-player-standing.yp \
 	materials.yp \
 	mortal.yp \
 	motile.yp \
+	nametags.yp \
 	no-friendly-fire.yp \
 	no-self-fire.yp \
 	owned.yp \
