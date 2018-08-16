@@ -296,7 +296,7 @@ noun_def
 adjective_def
   = a name:type_name 'thing' sp
     deps:('is' sp deps1:(dep:type_name 'and' sp { return dep; })+ { return deps1; })?
-    'has' sp props:property_decl+
+    'has' sp props:('nothing' sp { return []; } / property_decl+)
     { return {
         op: 'defineAdjective',
 	name: name,

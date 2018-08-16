@@ -2,8 +2,7 @@ use "standard:fleeting.yp"
 use "standard:holding.yp"
 
 # items that get "dropped on the floor" for ships to pick up
-a Dropped thing is Fleeting and Mobile and Tangible and Visible and has
-  a dropped flag (default true) # FIXME adjectives require at least one prop.
+a Dropped thing is Fleeting and Mobile and Tangible and Visible and has nothing
 
 # ships pick up drops into their slots
 in the event ?ship PicksUp ?item into ?slot then
@@ -103,4 +102,4 @@ when ?item Drops in ?space at ?pos with velocity ?v then
     Oriented with orientation 0
     Mobile with velocity ?v and angularVelocity 0
     Fleeting with timeToLive 1200 # 1200 ticks == 1 minute
-    Dropped with dropped true
+    Dropped
