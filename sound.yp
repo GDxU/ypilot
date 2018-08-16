@@ -1,0 +1,137 @@
+# properties in this file use the following units:
+#
+# pitches are logarithmic frequencies, and correspond to MIDI note numbers, but
+#   may be fractional
+# durations are in clock ticks
+# volume levels are in dBFS
+#   (full volume is 0, and silence is technically -∞, but practically around
+#   -48 suffices for 16-bit audio samples)
+
+a Tonal thing has
+  # fundamental pitch of the wave to generate
+  a pitch which is a number (default 69) # MIDI note 69 == A 440Hz
+  # type of wave to generate
+  # may be one of "sine", "square", "sawtooth", "triangle", or "custom"
+  a type which is a string (default "sine")
+  # With type "custom", this is the sequence of imaginary components of the
+  # coefficients of the Fourier transform of the periodic wave to generate (not
+  # including the DC offset term). The default, [1], corresponds to a sine
+  # wave. (If type isn't "custom", this is ignored.)
+  a spectrum which is an Array of numbers (default [1])
+
+a Tone is Tonal
+
+# loops a randomly generated buffer of white noise
+a Noisy thing has
+  # the duration of the loop (the noise itself continues until it is stopped)
+  a period which is a number (default 1)
+
+a Noise is Noisy
+
+# see the BiquadFilterNode in the Web Audio API spec here for precise details:
+# https://webaudio.github.io/web-audio-api/#biquadfilternode
+a Filtered thing has
+  # the type of filter to apply, may be one of:
+  #		s-gram		uses:	pitch	q	level
+  # "lowpass",	-\_			√	√	
+  # "highpass",	_/-			√	√
+  # "bandpass",	_-_			√	√
+  # "lowshelf",	¯--			√		√
+  # "highshelf",--¯			√		√
+  # "peaking",	-^-			√	√	√
+  # "notch",	-_-			√	√
+  # "allpass"	---			√	√
+  #    low freq-^ ^-high freq
+  # ("allpass" changes phases depending on frequencies)
+  a type which is a string (default "none")
+  # the center pitch of the central feature of the above figures
+  # (corresponds to log(frequency) in BiquadFilterNode)
+  a pitch which is a number
+  # the width of the feature (corresponds to log(Q))
+  a q which is a number
+  # the (log) height of the feature (corresponds to gain)
+  a level which is a number
+
+#  P
+#  ^\_
+# /   \
+# A DSR
+#
+# Note: if you only want to set the overall volume and ignore the envelope, set
+# sustainLevel.
+an Enveloped thing has
+  # duration of the attack phase of the volume envelope
+  an attackDuration which is a number (default 0)
+  # volume level of the peak of the volume envelope between attack and decay
+  # phases
+  a peakLevel which is a number (default 0)
+  # duration of the decay phase of the volume envelope
+  a decayDuration which is a number (default 0)
+  # volume level of the sustain phase of the volume envelope
+  a sustainLevel which is a number (default 0)
+  # duration of the release phase of the volume envelope
+  a releaseDuration which is a number (default 0)
+  # default combined duration of all phases except release
+  a durationUntilRelease which is a number (default ∞)
+
+an Audible thing has # may be Located
+  # FIXME would like to have access to both the source node (for stopping) and the final gain node (for releasing/disconnecting from destination)
+  some audioSources which are AudioScheduledSourceNode objects
+  some notes which are Enveloped things (default [])
+  # map indices of notes to indices of audioSources
+  some noteSources which are numbers (default [])
+
+# start playing a sound from ?x
+the event ?x Sounds ?y can happen
+# ?x may be Located
+# ?y is either Tonal or Noisy, and may also be Filtered and/or Enveloped
+
+# when ?x Sounds ?y then ?x becomes Audible
+# (with properties determined by ?y)
+
+# stop playing all sound from ?x immediately (no release phase)
+in the event ?x IsSilenced then ?x is an Audible thing
+# when ?x IsSilenced then ?x becomes not Audible
+
+# assuming ?y is one of the notes sounded by ?x, cause it to enter the release
+# phase of its volume envelope (eventually ending the note)
+in the event ?x ReleasesNote ?y then
+  ?x is an Audible thing
+  ?y is an Enveloped thing
+
+# In general, sounding a sound may result in an audio node graph like this:
+#
+# AudioScheduledSourceNode
+# (OscillatorNode for Tonal, AudioBufferSourceNode for Noisy)
+#	|
+#	V
+# BiquadFilterNode (if Filtered)
+#	|
+#	V
+# GainNode (if Enveloped)
+#	|
+#	V
+# destination
+#
+# This graph will go away when silenced, or after the release phase finishes
+# (if Enveloped).
+
+# TODO:
+# - AM
+#	another sound ->\
+#	ON -> (BQFN) -> GN -> d
+# - FM
+#	another sound -> ON -> (BQFN) -> (GN) -> d
+# ? modulate filter frequency
+# ? global GainNode (and/or GN per Audible thing)
+#	... \
+#	... --> GN -> d
+#	... /
+# ? stereo panning for Located Audible things
+# - music sequencing support:
+#  - instruments
+#   > essentially just soundable things whose pitch properties are relative to the note pitch
+#   > ...but, need to distinguish different notes played at the same time on the same instrument
+#  ? tempo (define beat units)
+#  - MIDI-like channels and note on/off events
+#   - string encoding

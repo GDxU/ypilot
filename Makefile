@@ -76,6 +76,7 @@ STDLIBS = \
 	scoreboard.yp \
 	scored.yp \
 	scores-count-defeats.yp \
+	sound.yp \
 	ship.yp \
 	stackable.yp \
 	team.yp \

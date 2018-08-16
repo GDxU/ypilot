@@ -75,10 +75,8 @@ when ?thing becomes Visible with graphics nothing and
 then ?thing becomes
   Visible with graphics [<polygon points="?shape" stroke="white" />]
 
-# can be heard
-# TODO JS implementation
-an Audible thing has # is Located and?
-  some audioSources which are AudioScheduledSourceNode objects
+# defines Audible (among other things)
+use "standard:sound.yp"
 
 # this is the only requirement for a ship in the JS core, but you probably want
 # to add other things like Tangible and Motile and Visible in a subtype
