@@ -118,3 +118,11 @@ then
   ?ship becomes Located with space ?purgatory
   ?ship becomes Respawning with timeToRespawn 0
 
+when ?bullet is added and
+  ?bullet is a Bullet
+then
+  a new Tone ?pewpew is added which is
+    Tonal
+    Enveloped with peakLevel 2 and releaseDuration 20 and durationUntilRelease 0
+  ?bullet Sounds ?pewpew
+

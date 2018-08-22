@@ -92,13 +92,15 @@ function makeGainNode() {
   var ct = ctx.currentTime;
   this.gain = ctx.createGain();
   // set the initial gain value according to the current envelope phase
-  if (now == this.triggerTime) { // very start (common case shortcut)
+  if (now == this.peakTime) { // peak (common case shortcut)
+    this.gain.gain.value = levelToGain(this.peakLevel);
+  } else if (now == this.triggerTime) { // very start (common case shortcut)
     this.gain.gain.value = ExpSilence;
-  } else if (now < peakTime) { // attack
+  } else if (now < this.peakTime) { // attack
     this.gain.gain.value =
         expInterp(this.triggerTime, now, this.peakTime,
 		  ExpSilence, this.peakLevel);
-  } else if (now < sustainTime) { // decay
+  } else if (now < this.sustainTime) { // decay
     this.gain.gain.value =
         expInterp(this.peakTime, now, this.sustainTime,
 		  this.peakLevel, this.sustainLevel);
@@ -109,12 +111,15 @@ function makeGainNode() {
         expInterp(this.releaseTime, now, this.endTime,
 		  this.sustainLevel, ExpSilence);
   }
+  //console.log('initial gain set to ' + this.gain.gain.value);
   // set scheduled gain value changes according to which phases are left to do
   if (now < this.peakTime) { // attack
+    //console.log('attack; ramp to ' + levelToGain(this.peakLevel) + ' at time now + ' + ((this.peakTime - now) / fps) + 's');
     this.gain.gain.exponentialRampToValueAtTime(
 	levelToGain(this.peakLevel), ct + (this.peakTime - now) / fps);
   }
-  if (now < sustainTime) { // decay
+  if (now < this.sustainTime) { // decay
+    //console.log('decay; ramp to ' + levelToGain(this.sustainLevel) + ' at time now + ' + ((this.sustainTime - now) / fps) + 's');
     this.gain.gain.exponentialRampToValueAtTime(
 	levelToGain(this.sustainLevel), ct + (this.sustainTime - now) / fps);
   }
@@ -140,18 +145,21 @@ function scheduleRelease(releaseTime) {
 },
 
 function scheduleReleaseGain() {
+  var ct = ctx.currentTime;
   if (now < this.releaseTime) { // now before beginning of release (in sustain?)
+    //console.log('sustain; keep value at ' + levelToGain(this.sustainLevel) + ' until time now + ' + ((this.releaseTime - now) / fps) + 's');
     this.gain.gain.setValueAtTime(
 	levelToGain(this.sustainLevel), ct + (this.releaseTime - now) / fps);
   }
   if (now < this.endTime) { // now before end of release (should be always)
+    //console.log('release; ramp to ' + ExpSilence + ' at time now + ' + ((this.endTime - now) / fps) + 's');
     this.gain.gain.exponentialRampToValueAtTime(
 	ExpSilence, ct + (this.endTime - now) / fps);
   }
 },
 
 function isFullyReleased() {
-  return (('endTime' in this) && now >= endTime);
+  return (('endTime' in this) && now >= this.endTime);
 }
 
 ]);
@@ -219,11 +227,7 @@ function silence() {
   this.remove();
 },
 
-//
-// implementation details
-//
-
-// is this.audibleThing audible to the local player?
+// is this.audibleThing supposed to be audible to the local player?
 function isLocallyAudible() {
   var located = router.getProperties('Located', this.audibleThing);
   if (!located) return true; // omnipresent sound
@@ -231,6 +235,11 @@ function isLocallyAudible() {
   var interfaced = router.getProperties('Interfaced', localPlayerThing);
   if (!interfaced) return false; // should never happen
   return interfaced.interface.thingIsInPlayersSpace(this.audibleThing);
+},
+
+// is this currently sounding to the local player?
+function isSoundingLocally() {
+  return ('sources' in this);
 },
 
 // if we are to play the sound locally, immediately start
@@ -252,26 +261,25 @@ function startSounding() {
   var graph = this.makeGraph();
   this.sources = graph.srcs;
   this.envelopes = graph.envs;
-  this.destination = graph.destination;
+  this.destination = graph.dst;
   this.destination.connect(ctx.destination);
   this.sources.forEach(s => s.start());
 },
 
 // if we're playing the sound locally, put all envelopes in their release phases
 function releaseAllEnvelopes() {
-  if (!('envelopes' in this)) return;
+  if (!this.isSoundingLocally()) return;
   this.envelopes.forEach(e => { e.scheduleRelease(); });
 },
 
 // if we're playing the sound locally, immediately stop
 function stopSounding() {
-  if ('sources' in this) {
-    this.sources.forEach(s => s.stop()); // FIXME is this necessary?
-    this.destination.disconnect();
-    delete this.sources;
-    delete this.envelopes;
-    delete this.destination;
-  }
+  if (!this.isSoundingLocally()) return;
+  this.sources.forEach(s => s.stop()); // FIXME is this necessary?
+  this.carrierEnvelope.freeGainNode();
+  delete this.sources;
+  delete this.envelopes;
+  delete this.destination;
 },
 
 // remove this from audibleThing, and if this was the last PlayingSound in the
@@ -316,7 +324,7 @@ function makeGraph(thing) {
       envs = envs.concat(modEnvs);
       this.modulateFrequency(modDst, srcs[0]);
     }
-    var pitchModulated = router.getProperties('PitchModulated', thing);
+    var pitchModded = router.getProperties('PitchModulated', thing);
     if (pitchModded) {
       var { srcs: modSrcs, envs: modEnvs, dst: modDst } =
         this.makeGraph(pitchModded.modulator);
@@ -386,10 +394,12 @@ function makeToneSourceNode({ pitch, type, spectrum }) { // Tonal in sound.yp
     var imag = [0].concat(spectrum);
     osc.setPeriodicWave(ctx.createPeriodicWave(real, imag));
   }
+  return osc;
 },
 
 function makeNoiseSourceNode({ period }) { // Noisy in sound.yp
   // TODO make an AudioBuffer with random audio samples to fill period, and a corresponding AudioBufferSourceNode that loops over it infinitely
+  return null;
 },
 
 function makeFilterNode({ type, pitch, q, level }) { // Filtered in sound.yp

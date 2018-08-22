@@ -28,6 +28,7 @@ function Interface(player) {
     this.visible = router.getAdjectivePropertiesMap('Visible');
     router.on('becomeVisible', this.becomeVisible.bind(this));
     router.on('unbecomeVisible', this.unbecomeVisible.bind(this));
+    this.audible = router.getAdjectivePropertiesMap('Audible');
     this.located = router.getAdjectivePropertiesMap('Located');
     router.on('becomeLocated', this.becomeLocated.bind(this));
     router.on('unbecomeLocated', this.unbecomeLocated.bind(this));
@@ -158,11 +159,18 @@ function changeSpace() {
   }
   this.svg.innerHTML = ''; // remove all children from the old space
   // add all graphics of visible things located in the new space
+  // and adjust whether audible things are sounding locally
   for (var t in this.located) {
     t |= 0; // enforce integer thing IDs (not strings)
-    if (this.located[t].space == this.playerShipLocated.space &&
-        (t in this.visible)) {
-      this.becomeVisible(t, this.visible[t], undefined);
+    if (this.located[t].space == this.playerShipLocated.space) {
+      if (t in this.visible) {
+	this.becomeVisible(t, this.visible[t], undefined);
+      }
+      if (t in this.audible) {
+	this.audible[t].playingSounds.forEach(s => { s.startSounding(); });
+      }
+    } else if (t in this.audible) { // but not in the new space
+      this.audible[t].playingSounds.forEach(s => { s.stopSounding(); });
     }
   }
 },
