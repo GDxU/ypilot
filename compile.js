@@ -781,7 +781,8 @@ function compileOp(ast) {
     case 'new':
       // TODO? allow more constructors
       // TODO? disallow Interface (JS code makes that now)
-      if (!/^(Vec2|Array|SpatialIndex|Interface)$/.test(ast.constructor)) {
+      // TODO? check argument count/types
+      if (!/^(Vec2|Array|SpatialIndex|Interface|PlayingSound)$/.test(ast.constructor)) {
 	throw new Error("constructing a new " + ast.constructor + " not allowed");
       }
       ast.type = ['object', ast.constructor];

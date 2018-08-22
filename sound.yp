@@ -127,23 +127,23 @@ a FilterPitchModulated thing is Filtered and has
   a modulator which is a Soundable thing
 
 an Audible thing has # may be Located
-  # FIXME would like to have access to both the source node (for stopping) and the final gain node (for releasing/disconnecting from destination)
-  some audioSources which are AudioScheduledSourceNode objects
-  some notes which are Enveloped things (default [])
-  # map indices of notes to indices of audioSources
-  some noteSources which are numbers (default [])
+  some playingSounds which are PlayingSound objects
 
 # start playing a sound from ?x
 in the event ?x Sounds ?y then ?y is a Soundable thing
 # ?x may be Located
 # ?y may also be Filtered and/or Enveloped
 
-# when ?x Sounds ?y then ?x becomes Audible
-# (with properties determined by ?y)
+when ?x Sounds ?y and ?x is Audible with playingSounds ?oldSounds
+then ?x becomes Audible with playingSounds (?oldSounds + PlayingSound[?x, ?y])
+
+when ?x Sounds ?y and ?x is not Audible
+then ?x becomes Audible with playingSounds [PlayingSound[?x, ?y]]
 
 # stop playing all sound from ?x immediately (no release phase)
 in the event ?x IsSilenced then ?x is an Audible thing
-# when ?x IsSilenced then ?x becomes not Audible
+
+when ?x IsSilenced then ?x becomes not Audible
 
 # assuming ?y is one of the notes sounded by ?x, cause it to enter the release
 # phase of its volume envelope (eventually ending the note)

@@ -296,6 +296,7 @@ Constructors for a few JavaScript object types, with arguments in square bracket
 
     Array[?length]
     Interface[?player]
+    PlayingSound[?audible, ?soundable]
     SpatialIndex[]
     Vec2[?x, ?y]
 

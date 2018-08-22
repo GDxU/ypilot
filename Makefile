@@ -29,6 +29,7 @@ SRCS = \
 	parser.js \
 	parser-utils.js \
 	peer-connection.js \
+	playing-sound.js \
 	profile.js \
 	router.js \
 	ship-shapes.js \

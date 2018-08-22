@@ -7,6 +7,7 @@ window.router = new Router();
 window.Vec2 = require('./vec2.js');
 window.SpatialIndex = require('./space.js');
 window.Interface = require('./interface.js');
+window.PlayingSound = require('./playing-sound.js');
 window.Chat = require('./chat.js');
 const svgjs = require('./svg.js');
 window.stringToSVGGraphicsElement = svgjs.stringToSVGGraphicsElement;

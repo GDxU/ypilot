@@ -145,6 +145,10 @@ function getAdjectivePropertiesMap(adjective) {
   return this.adjectives[adjective];
 },
 
+function getProperties(adjective, thing) {
+  return this.getAdjectivePropertiesMap(adjective)[thing];
+},
+
 // return the value found by following the space-separated path of alternating
 // adjectives and properties from the given thing; return '' if the path
 // couldn't be completely followed
@@ -316,6 +320,21 @@ function convertAdjPropValFromJSON(prop2val, prop, alreadyConverted) {
 	if ('number' != typeof val.args[1])
 	  throw new Error('expected Vec2 second arg to be a number, but got ' + JSON.stringify(val.args[1]));
 	prop2val[prop] = new Vec2(val.args[0], val.args[1]);
+	break;
+      case 'PlayingSound':
+	if (!(('args' in val) &&
+	      (val.args instanceof Array) &&
+	      val.args.length == 4))
+	  throw new Error('expected exactly 4 args for PlayingSound, but got ' + JSON.stringify(val.args));
+	if ('number' != typeof val.args[0])
+	  throw new Error('expected PlayingSound first arg to be a number, but got ' + JSON.stringify(val.args[0]));
+	if ('number' != typeof val.args[1])
+	  throw new Error('expected PlayingSound second arg to be a number, but got ' + JSON.stringify(val.args[1]));
+	if ('number' != typeof val.args[2])
+	  throw new Error('expected PlayingSound third arg to be a number, but got ' + JSON.stringify(val.args[2]));
+	if (val.args[3] === null || 'number' != typeof val.args[3])
+	  throw new Error('expected PlayingSound fourth arg to be null or a number, but got ' + JSON.stringify(val.args[3]));
+	prop2val[prop] = new PlayingSound(...val.args);
 	break;
       case 'graphics':
 	if (!(('string' in val) && ('string' == typeof val.string)))
