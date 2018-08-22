@@ -6,7 +6,18 @@ const defineMethods = require('./define-methods.js');
 // for signed 16-bit audio this works out to half a quantum
 const ExpSilence = 1.0 / 65536;
 
-var ctx;
+// default values for Enveloped properties, resulting in the same behavior as
+// if without an envelope at all
+const DefaultEnveloped = {
+  attackDuration: 0,
+  peakLevel: 0,
+  decayDuration: 0,
+  sustainLevel: 0,
+  releaseDuration: 0,
+  durationUntilRelease: Number.MAX_VALUE // read: ∞
+};
+
+var ctx; // the AudioContext
 var now; // like ctx.currentTime, but in ticks instead of seconds
 
 function ensureContext() {
@@ -54,6 +65,97 @@ function expInterp(t0, t, t1, l0, l1) {
   return Math.pow(v1 / v0, (t - t0) / (t1 - t0)) * v0;
 }
 
+// represents an envelope as part of a sound currently being played
+function Envelope({ // Enveloped in sound.yp
+  attackDuration, peakLevel,
+  decayDuration,
+  sustainLevel,
+  releaseDuration, durationUntilRelease
+}, isLocal, triggerTime) {
+  this.triggerTime = (('number' == typeof triggerTime) ? triggerTime : now);
+  this.peakLevel = peakLevel;
+  this.peakTime = this.triggerTime + attackDuration;
+  this.sustainLevel = sustainLevel;
+  this.sustainTime = this.peakTime + decayDuration;
+  this.releaseDuration = releaseDuration;
+  if (isLocal) {
+    this.makeGainNode();
+  }
+  if (durationUntilRelease != Number.MAX_VALUE) {
+    this.scheduleRelease(this.triggerTime + durationUntilRelease);
+  }
+}
+
+defineMethods(Envelope, [
+
+function makeGainNode() {
+  var ct = ctx.currentTime;
+  this.gain = ctx.createGain();
+  // set the initial gain value according to the current envelope phase
+  if (now == this.triggerTime) { // very start (common case shortcut)
+    this.gain.gain.value = ExpSilence;
+  } else if (now < peakTime) { // attack
+    this.gain.gain.value =
+        expInterp(this.triggerTime, now, this.peakTime,
+		  ExpSilence, this.peakLevel);
+  } else if (now < sustainTime) { // decay
+    this.gain.gain.value =
+        expInterp(this.peakTime, now, this.sustainTime,
+		  this.peakLevel, this.sustainLevel);
+  } else if (('releaseTime' in this) || now < this.releaseTime) { // sustain
+    this.gain.gain.value = levelToGain(this.sustainLevel);
+  } else { // release
+    this.gain.gain.value =
+        expInterp(this.releaseTime, now, this.endTime,
+		  this.sustainLevel, ExpSilence);
+  }
+  // set scheduled gain value changes according to which phases are left to do
+  if (now < this.peakTime) { // attack
+    this.gain.gain.exponentialRampToValueAtTime(
+	levelToGain(this.peakLevel), ct + (this.peakTime - now) / fps);
+  }
+  if (now < sustainTime) { // decay
+    this.gain.gain.exponentialRampToValueAtTime(
+	levelToGain(this.sustainLevel), ct + (this.sustainTime - now) / fps);
+  }
+  if ('releaseTime' in this) {
+    this.scheduleReleaseGain();
+  }
+  return this.gain;
+},
+
+function freeGainNode() {
+  this.gain.disconnect();
+  delete this.gain;
+},
+
+// schedule the default release time, or specify an earlier release time (even
+// if the default was already scheduled)
+function scheduleRelease(releaseTime) {
+  this.releaseTime = (('number' == typeof releaseTime) ? releaseTime : now);
+  this.endTime = this.releaseTime + this.releaseDuration;
+  if ('gain' in this) {
+    this.scheduleReleaseGain();
+  }
+},
+
+function scheduleReleaseGain() {
+  if (now < this.releaseTime) { // now before beginning of release (in sustain?)
+    this.gain.gain.setValueAtTime(
+	levelToGain(this.sustainLevel), ct + (this.releaseTime - now) / fps);
+  }
+  if (now < this.endTime) { // now before end of release (should be always)
+    this.gain.gain.exponentialRampToValueAtTime(
+	ExpSilence, ct + (this.endTime - now) / fps);
+  }
+},
+
+function isFullyReleased() {
+  return (('endTime' in this) && now >= endTime);
+}
+
+]);
+
 /** represents a sound currently being played
  * audibleThing - the thing playing the sound (may be Located, will become Audible)
  * soundableThing - the description of the sound to be played (is Soundable)
@@ -61,11 +163,12 @@ function expInterp(t0, t, t1, l0, l1) {
  * releasedDuration - (optional) the duration for which this sound has already been released (in ticks)
  */
 function PlayingSound(audibleThing, soundableThing, playedDuration, releasedDuration) {
+  this.boundRemoveIfFullyReleased = this.removeIfFullyReleased.bind(this);
   ensureContext();
   this.audibleThing = audibleThing;
   this.soundableThing = soundableThing;
   this.isSilent = false;
-  router.on('IsSilenced', this.thingIsSilenced.bind(this));
+  router.on('IsSilenced', this.onThingIsSilenced.bind(this));
   if ('number' == typeof playedDuration) {
     this.triggerTime = now - playedDuration;
     if ('number' == typeof releasedDuration) {
@@ -113,16 +216,7 @@ function release() {
 
 function silence() {
   this.stopSounding();
-  this.isSilent = true;
-  // remove this from audibleThing, and if this was the last PlayingSound in
-  // the list, make it become not Audible
-  var audible = router.getProperties('Audible', this.audibleThing);
-  var sounds = audible.playingSounds.filter(x => (!x.isSilent));
-  if (sounds.length == 0) {
-    router.unbecome(this.audibleThing, 'Audible');
-  } else {
-    router.become(this.audibleThing, 'Audible', { playingSounds: sounds });
-  }
+  this.remove();
 },
 
 //
@@ -141,7 +235,20 @@ function isLocallyAudible() {
 
 // if we are to play the sound locally, immediately start
 function startSounding() {
-  if (!isLocallyAudible()) return;
+  var isLocal = this.isLocallyAudible();
+  // ensure we have an envelope for the carrier
+  if (!('carrierEnvelope' in this)) {
+    var enveloped = router.getProperties('Enveloped', this.soundableThing);
+    if (!enveloped) {
+      enveloped = DefaultEnveloped;
+    }
+    this.carrierEnvelope = new Envelope(enveloped, isLocal, this.triggerTime);
+    router.on('clockTick', this.boundRemoveIfFullyReleased);
+    if ('releaseTime' in this) {
+      this.carrierEnvelope.scheduleRelease(this.releaseTime);
+    }
+  }
+  if (!isLocal) return;
   var graph = this.makeGraph();
   this.sources = graph.srcs;
   this.envelopes = graph.envs;
@@ -153,9 +260,7 @@ function startSounding() {
 // if we're playing the sound locally, put all envelopes in their release phases
 function releaseAllEnvelopes() {
   if (!('envelopes' in this)) return;
-  this.envelopes.forEach(([enveloped, gainNode]) => {
-    this.releaseGainNodeForEnvelope(gainNode, enveloped);
-  });
+  this.envelopes.forEach(e => { e.scheduleRelease(); });
 },
 
 // if we're playing the sound locally, immediately stop
@@ -169,8 +274,18 @@ function stopSounding() {
   }
 },
 
+// remove this from audibleThing, and if this was the last PlayingSound in the
+// list, make it become not Audible
 function remove() {
-  // TODO remove this from audibleThing's Audible adjective's playingSounds property, and become not Audible if this is the last thing
+  router.removeListener('clockTick', this.boundRemoveIfFullyReleased);
+  this.isSilent = true;
+  var audible = router.getProperties('Audible', this.audibleThing);
+  var sounds = audible.playingSounds.filter(x => (!x.isSilent));
+  if (sounds.length == 0) {
+    router.unbecome(this.audibleThing, 'Audible');
+  } else {
+    router.become(this.audibleThing, 'Audible', { playingSounds: sounds });
+  }
 },
 
 //
@@ -245,11 +360,19 @@ function makeGraph(thing) {
     envs = envs.concat(modEnvs);
     dst = this.modulateAmplitude(modDst, dst);
   }
-  var enveloped = router.getProperties('Enveloped', thing);
-  if (enveloped) {
-    var envelope = this.makeGainNodeForEnvelope(enveloped);
-    dst.connect(envelope);
-    dst = envelope;
+  if (thing == this.soundableThing) { // top-level carrier
+    // use carrierEnvelope
+    dst.connect(this.carrierEnvelope.gain);
+    dst = this.carrierEnvelope.gain;
+    envs.push(this.carrierEnvelope);
+  } else { // modulator
+    var enveloped = router.getProperties('Enveloped', thing);
+    if (enveloped) {
+      var envelope = new Envelope(enveloped, true);
+      dst.connect(envelope.gain);
+      dst = envelope.gain;
+      envs.push(envelope);
+    }
   }
   return { srcs: srcs, envs: envs, dst: dst };
 },
@@ -280,66 +403,6 @@ function makeFilterNode({ type, pitch, q, level }) { // Filtered in sound.yp
   return filt;
 },
 
-function makeGainNodeForEnvelope({ // Enveloped in sound.yp
-  attackDuration, peakLevel,
-  decayDuration,
-  sustainLevel,
-  releaseDuration, durationUntilRelease
-}) {
-  var gain = ctx.createGain();
-  var ct = ctx.currentTime;
-  var peakTime = this.triggerTime + attackDuration;
-  var sustainTime = peakTime + decayDuration;
-  // set the initial gain value according to the current envelope phase
-  if (now == this.triggerTime) { // very start (common case shortcut)
-    gain.gain.value = ExpSilence;
-  } else if (now < peakTime) { // attack phase
-    gain.gain.value =
-        expInterp(this.triggerTime, now, peakTime, ExpSilence, peakLevel);
-  } else if (now < sustainTime) { // decay phase
-    gain.gain.value =
-        expInterp(peakTime, now, sustainTime, peakLevel, sustainLevel);
-  } else if ((!('releaseTime' in this)) || now < this.releaseTime) { // sustain
-    gain.gain.value = levelToGain(sustainLevel);
-  } else { // release
-    var endTime = this.releaseTime + releaseDuration;
-    gain.gain.value =
-        expInterp(this.releaseTime, now, endTime, sustainLevel, ExpSilence);
-  }
-  if (durationUntilRelease != Number.MAX_VALUE && !('releaseTime' in this)) {
-    this.releaseTime = this.triggerTime + durationUntilRelease;
-  }
-  // set scheduled gain value changes according to which phases are left to do
-  if (now < peakTime) { // attack phase
-    gain.gain.exponentialRampToValueAtTime(
-	levelToGain(peakLevel), ct + attackDuration / fps);
-  }
-  if (now < sustainTime) { // decay phase
-    gain.gain.exponentialRampToValueAtTime(
-	levelToGain(sustainLevel), ct + (attackDuration + decayDuration) / fps);
-  }
-  if ('releaseTime' in this) { // we know when the release phase starts
-    if (now < this.releaseTime) { // sustain phase
-      gain.gain.setValueAtTime(
-          levelToGain(sustainLevel), ct + this.releaseTime / fps);
-    }
-    var endTime = this.releaseTime + releaseDuration;
-    if (now < this.endTime) { // release phase (should always be true)
-      gain.gain.exponentialRampToValueAtTime(
-          ExpSilence, ct + endTime / fps);
-    }
-  }
-  // FIXME:
-  // - this should happen regardless of whether we're actually playing the sound locally
-  // - we can have multiple envelopes (for modulators); removal should only happen for the main one
-  router.on('clockTick', this.removeIfFullyReleased.bind(this));
-  return gain;
-},
-
-function releaseGainNodeForEnvelope(gain, { releaseDuration }) {
-  gain.gain.exponentialRampToValueAtTime(ExpSilence, ctx.currentTime + releaseDuration / fps);
-},
-
 function modulateAmplitude(modulator, carrier) {
   var gain = ctx.createGain();
   modulator.connect(gain.gain);
@@ -359,7 +422,7 @@ function modulatePitch(modulator, carrier) {
 // event handlers
 //
 
-function thingIsSilenced(thing) {
+function onThingIsSilenced(thing) {
   if (thing == this.audibleThing) {
     this.silence();
   }
@@ -367,9 +430,8 @@ function thingIsSilenced(thing) {
 
 // on clockTick for Enveloped sounds
 function removeIfFullyReleased() {
-  if (('number' == typeof this.releaseTime) &&
-      now >= this.releaseTime + this.releaseDuration) {
-    this.remove();
+  if (this.carrierEnvelope.isFullyReleased()) {
+    this.silence(); // calls remove()
   }
 }
 
