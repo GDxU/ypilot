@@ -53,7 +53,7 @@ function pitchToFrequency(pitch) {
 
 // given a volume level in -dBFS, return a linear gain value
 function levelToGain(level) {
-  return Math.pow(2, -level / 10);
+  return Math.pow(2, level / 10);
 }
 
 // if a gain is scheduled to exponentially ramp between times t0 and t1, with
@@ -92,25 +92,28 @@ function makeGainNode() {
   var ct = ctx.currentTime;
   this.gain = ctx.createGain();
   // set the initial gain value according to the current envelope phase
+  var initGain;
   if (now == this.peakTime) { // peak (common case shortcut)
-    this.gain.gain.value = levelToGain(this.peakLevel);
+    initGain = levelToGain(this.peakLevel);
   } else if (now == this.triggerTime) { // very start (common case shortcut)
-    this.gain.gain.value = ExpSilence;
+    initGain = ExpSilence;
   } else if (now < this.peakTime) { // attack
-    this.gain.gain.value =
+    initGain =
         expInterp(this.triggerTime, now, this.peakTime,
 		  ExpSilence, this.peakLevel);
   } else if (now < this.sustainTime) { // decay
-    this.gain.gain.value =
+    initGain =
         expInterp(this.peakTime, now, this.sustainTime,
 		  this.peakLevel, this.sustainLevel);
   } else if (('releaseTime' in this) || now < this.releaseTime) { // sustain
-    this.gain.gain.value = levelToGain(this.sustainLevel);
+    initGain = levelToGain(this.sustainLevel);
   } else { // release
-    this.gain.gain.value =
+    initGain =
         expInterp(this.releaseTime, now, this.endTime,
 		  this.sustainLevel, ExpSilence);
   }
+  // NOTE: "this.gain.gain.value = initGain;" doesn't work properly in Firefox
+  this.gain.gain.setValueAtTime(initGain, ct);
   //console.log('initial gain set to ' + this.gain.gain.value);
   // set scheduled gain value changes according to which phases are left to do
   if (now < this.peakTime) { // attack
@@ -302,9 +305,12 @@ function remove() {
 
 // make the whole AudioNode graph for a soundable thing (recursing on
 // modulators)
-function makeGraph(thing) {
+function makeGraph(thing, fundamentalPitch) {
   if ('undefined' == typeof thing) {
     thing = this.soundableThing;
+  }
+  if ('undefined' == typeof fundamentalPitch) {
+    fundamentalPitch = 0;
   }
   var tonal = router.getProperties('Tonal', thing);
   var noisy = router.getProperties('Noisy', thing);
@@ -315,11 +321,11 @@ function makeGraph(thing) {
   var envs = []; // [Enveloped, GainNode] pairs
   var dst; // destination to be .connect()ed
   if (tonal) {
-    srcs.push(this.makeToneSourceNode(tonal));
+    srcs.push(this.makeToneSourceNode(tonal, fundamentalPitch));
     var freqModded = router.getProperties('FrequencyModulated', thing);
     if (freqModded) {
       var { srcs: modSrcs, envs: modEnvs, dst: modDst } =
-        this.makeGraph(freqModded.modulator);
+        this.makeGraph(freqModded.modulator, tonal.pitch + fundamentalPitch);
       srcs = srcs.concat(modSrcs);
       envs = envs.concat(modEnvs);
       this.modulateFrequency(modDst, srcs[0]);
@@ -385,9 +391,12 @@ function makeGraph(thing) {
   return { srcs: srcs, envs: envs, dst: dst };
 },
 
-function makeToneSourceNode({ pitch, type, spectrum }) { // Tonal in sound.yp
+function makeToneSourceNode(
+    { pitch, type, spectrum }, // Tonal in sound.yp
+    fundamentalPitch
+) {
   var osc = ctx.createOscillator();
-  osc.frequency.value = pitchToFrequency(pitch);
+  osc.frequency.value = pitchToFrequency(pitch + fundamentalPitch);
   osc.type = type;
   if (type == "custom") {
     var real = new Array(spectrum.length + 1).fill(0);
@@ -421,11 +430,19 @@ function modulateAmplitude(modulator, carrier) {
 },
 
 function modulateFrequency(modulator, carrier) {
-  modulator.connect(carrier.frequency);
+  var ampToFreq = ctx.createGain();
+  ampToFreq.gain.setValueAtTime(carrier.frequency.value, ctx.currentTime);
+  modulator.connect(ampToFreq);
+  ampToFreq.connect(carrier.frequency);
 },
 
 function modulatePitch(modulator, carrier) {
-  modulator.connect(carrier.detune); // TODO? insert a GainNode to convert semitones to cents
+  // connect modulator to carrier detune parameter through a GainNode that
+  // converts semitones to cents by multiplying by 1200
+  var semitonesToCents = ctx.createGain();
+  semitonesToCents.gain.setValueAtTime(1200, ctx.currentTime);
+  modulator.connect(semitonesToCents);
+  semitonesToCents.connect(carrier.detune);
 },
 
 //

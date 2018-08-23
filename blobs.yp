@@ -121,8 +121,11 @@ then
 when ?bullet is added and
   ?bullet is a Bullet
 then
+  a new Tone ?pewpewmod is added which is
+    Tonal with pitch (-12)
   a new Tone ?pewpew is added which is
-    Tonal
-    Enveloped with peakLevel 2 and releaseDuration 20 and durationUntilRelease 0
+    Tonal with pitch 81
+    FrequencyModulated with modulator ?pewpewmod
+    Enveloped with peakLevel (-2) and releaseDuration 20 and durationUntilRelease 0
   ?bullet Sounds ?pewpew
 

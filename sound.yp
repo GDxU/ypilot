@@ -101,10 +101,11 @@ an AmplitudeModulated thing is Tonal and has
 # uses another Soundable thing to modulate the fundamental frequency of the
 # generated wave; useful for FM synthesis
 # For Tonal modulators, the pitch is treated as relative to the carrier pitch,
-# e.g. a modulator with pitch -1 on a carrier with pitch 42 will modulate at
-# a pitch of 41. This is only true for FrequencyModulated, not other modulation
-# modes.
+# e.g. a modulator with pitch -1 on a carrier with pitch 42 will modulate at a
+# pitch of 41.
 # FIXME maybe then there should be two different AmplitudeModulateds, one for tremolo (absolute modulator pitch) and another for AM synthesis (relative modulator pitch)?
+# The modulator output is multiplied by the carrier frequency, so modulator
+# output 1 doubles the carrier frequency, and -1 cancels it to 0.
 # Note that linear frequencies are modulated, not exponential pitches.
 # Also note that most hardware digital "FM" synthesizers actually use phase
 # modulation, which for sine waves is identical modulo a phase shift, but may
