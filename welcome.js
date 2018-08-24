@@ -122,8 +122,8 @@ function updatePlayersTable() {
 
 function onClickStart(evt) {
   Game.loadFromProfile(evt.target.id.replace(/^start-game-/,'') | 0).
-  then(router.startNewGame.bind(router));
-  // TODO catch
+  then(router.startNewGame.bind(router)).
+  catch(err => errors.reportError(err, "while starting game:\n"));
 }
 
 function addNewGameRow(game, i) {
