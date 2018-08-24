@@ -407,8 +407,18 @@ function makeToneSourceNode(
 },
 
 function makeNoiseSourceNode({ period }) { // Noisy in sound.yp
-  // TODO make an AudioBuffer with random audio samples to fill period, and a corresponding AudioBufferSourceNode that loops over it infinitely
-  return null;
+  // make an AudioBuffer with random audio samples to fill period, and a corresponding AudioBufferSourceNode that loops over it infinitely
+  var l = Math.floor(period * 44100);
+  var a = new Float32Array(l);
+  for (var i = 0; i < l; i++) {
+    a[i] = Math.random() * 2 - 1;
+  }
+  var b = ctx.createBuffer(1, l, 44100);
+  b.copyToChannel(a, 0);
+  var node = ctx.createBufferSource();
+  node.buffer = b;
+  node.loop = true;
+  return node;
 },
 
 function makeFilterNode({ type, pitch, q, level }) { // Filtered in sound.yp

@@ -57,11 +57,11 @@ a Filtered thing is Soundable and has
   a type which is a string (default "none")
   # the center pitch of the central feature of the above figures
   # (corresponds to log(frequency) in BiquadFilterNode)
-  a pitch which is a number
+  a pitch which is a number (default 69)
   # the width of the feature (corresponds to log(Q))
-  a q which is a number
+  a q which is a number (default 1)
   # the (log) height of the feature (corresponds to gain)
-  a level which is a number
+  a level which is a number (default 1)
 
 #  P
 #  ^\_
