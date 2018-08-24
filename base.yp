@@ -1,41 +1,62 @@
 # base.yp - base library for YPilot, always used implicitly
 
+# Adjectives defined in this file are used by the core JS code of YPilot. Often
+# corresponding nouns are also defined, but these are not used in the core JS
+# code, they are only included for the convenience of using them from .yp code.
+
+# Has a name (or handle).
 a Named thing has 
   a name which is a string
 
-# nominal subtype of the intersection of the listed supertypes
+# Serves as a type for other things. Used by the compiler.
+# A Typing thing is a nominal subtype of the intersection of the listed
+# supertypes.
 a Typing thing is Named and has
   some supertypes which are Typing things
 
-# this identifies the nominal type of the entity it is on, independent of the
-# types of its components
+# Has a type (everything should have a type). Used by the compiler.
+# This identifies the nominal type of the entity it is on, independent of the
+# types of its components (adjectives).
 a Typed thing has
   a type which is a Typing thing
 
+# Spatial describes spaces in which collisions may be detected.
 a Spatial thing has
   an index which is a SpatialIndex object (default SpatialIndex[])
 
-a Space is Spatial # for convenience
+a Space is Spatial
 
+# Has a single physical location in a space. Used by the SpatialIndex object
+# for collision detection, by Interface objects for drawing, and by the map
+# reading functionality.
 a Located thing has
   a space which is a Spatial thing
   a position which is a Vec2 object (default Vec2[0,0])
 
 a Point is Located
 
+# Toroidal describes bounded spaces where the edges wrap, so that anything that
+# becomes Located outside of one edge ends up Located inside of the opposite
+# edge, giving the space a toroidal topology. That functionality is implemented
+# in base.yp itself (not JS), but Toroidal is also used by Interface objects in
+# order to display the opposite edge when you're near an edge.
 a Toroidal thing is Spatial and has
   a size which is a Vec2 object
 
+# Wrap a thing Located outside the bounds of a Toroidal space to the opposite
+# edge of the space.
 when ?x becomes Located with space ?sp and position ?p and
   ?sp is Toroidal with size ?sz
   (?p["x"] < 0 or ?p["y"] < 0 or ?p["x"] >= ?sz["x"] or ?p["y"] >= ?sz["y"])
 then
   ?x becomes Located with position ((?p + ?sz) % ?sz)
 
-# tangible things participate in collisions
+# Participates in collision detection (whether they bounce, blow up, or
+# something else). Used by the SpatialIndex object.
 a Tangible thing is Located and has
   a shape which is an Array of Vec2 objects
 
+# Can be read as a map.
 a Mapped thing is Located and has
   a blockSize which is a Vec2 object (default Vec2[32,32]) # in pixels
   a mapSize which is a Vec2 object (default Vec2[4,4]) # in blocks
@@ -43,14 +64,18 @@ a Mapped thing is Located and has
 
 a Map is Mapped
 
+# Has a non-trivial orientation. Used by the SpatialIndex object for collision
+# detection, and by Interface objects for drawing.
 an Oriented thing has
   an orientation which is a number (default 0) # angle in radians
 
-# can be moved
+# Moves and/or spins through space. Used by the SpatialIndex object for
+# collision detection. The actual motion is implemented in base.yp below.
 a Mobile thing is Located and Oriented and has
   a velocity which is a Vec2 object (default Vec2[0,0])
   an angularVelocity which is a number (default 0) # radians per tick
 
+# Translate all Mobile things for each clock tick.
 when the clock ticks and
   there is a thing ?m which is
     Mobile with velocity ?v
@@ -58,6 +83,7 @@ when the clock ticks and
 then
   ?m becomes Located with position (?p + ?v)
 
+# Rotate all Mobile things for each clock tick.
 when the clock ticks and
   there is a thing ?m which is
     Mobile with angularVelocity ?av
@@ -65,33 +91,48 @@ when the clock ticks and
 then
   ?m becomes Oriented with orientation (?o + ?av)
 
-# can be seen if Located or OnScreen
+# Can be seen (drawn on screen), if Located or OnScreen. Used by Interface
+# objects.
 a Visible thing has
   some graphics which are SVGGeometryElement objects
 
-# by default Visible's graphics are the same as Tangible's shape, in white
+# By default, Visible's graphics are the same as Tangible's shape, in white.
 when ?thing becomes Visible with graphics nothing and
   ?thing is Tangible with shape ?shape
 then ?thing becomes
   Visible with graphics [<polygon points="?shape" stroke="white" />]
 
-# defines Audible (among other things)
+# Defines Audible (among other things).
 use "standard:sound.yp"
 
-# this is the only requirement for a ship in the JS core, but you probably want
-# to add other things like Tangible and Motile and Visible in a subtype
+# A ship that can be piloted (by a player).
+# This is the only requirement for a ship in the JS core, but you probably want
+# to add other things like Tangible and Motile and Visible in a subtype.
 a BasicShip is Located
+
+# Piloting describes players that are currently controlling a BasicShip. Used
+# by the players' Interface objects.
 a Piloting thing has
   a ship which is a BasicShip
 
+# Interfaced describes players who are playing through a user interface (not
+# NPCs), and thus have an Interface object. This includes both local and remote
+# players.
 an Interfaced thing has
   an interface which is an Interface object
   a shipShape which is an Array of Vec2 objects
 
+# A Player is added when a player joins the game, and removed when they leave
+# it. Players are Named with their handles, and given a fresh Interface object.
+# This is implemented in uplink.js.
+# Note that the player's ship is not automatically added; that must be
+# specified in the .yp file. You can detect when a player joins the game with a
+# rule that starts with when ?player is added and ?player is a Player ....
 a Player is Named and Interfaced
 
-# can be seen on someone's screen (as opposed to in a Space)
-# This is an alternative to Located.
+# Appears on a player's screen without being Located in a Space (e.g. part of a
+# heads-up display). Used by Interface objects. This is an alternative to
+# Located.
 # If screenDims is the screen's dimensions in pixels, then the thing's position
 # on the screen, in pixels, is:
 #   screenDims * positionPercent / 100 + positionPixels
@@ -100,12 +141,20 @@ an OnScreen thing is Visible and has
   a positionPercent which is a Vec2 object (default Vec2[0,0])
   a positionPixels which is a Vec2 object (default Vec2[0,0])
 
+# Columnar describes columns in the Board. Used by Interface objects. The value
+# in a cell of a Board table is obtained by following a path of adjectives and
+# their properties from the row thing.
 a Columnar thing is Named and has
   a cellPath which is a string
   a reverseSort flag (default false)
 
 a Column is Columnar
 
+# BoardLike describes things like scoreboards, which appear as a table in the
+# lower left corner. Used by Interface objects. There should only be one board
+# in a game at any given time. The columns of the table are their own special
+# things (see above) and may be used to sort the rows, but the rows represent
+# anything in the game of a particular type or types.
 a BoardLike thing has
   some columns which are Columnar things
   some rowTypes which are Typing things

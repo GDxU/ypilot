@@ -329,79 +329,13 @@ Which uses the standard library called `mortal`, which defines the adjectives `M
 
 In this case, the `mortal.yp` standard library is loaded first, and then `fish.yp` is loaded. The `use` statement in `fish.yp` sees that `mortal.yp` is already loaded and does nothing. So we only see the definitions of `Mortal` and `Respawning` once.
 
-## Built-in adjectives
+## Base library
 
-These adjectives are defined in the YPilot language, but since the core JavaScript code refers to them, they are always included. They are defined in [base.yp](base.yp), along with other adjectives that they use, and some nouns and rules that use them. See that file for the precise definitions; described below is only how each is used by the core JavaScript code.
+Several adjectives, and a few related nouns, events, and rules, are defined in YPilot's base library, [`base.yp`](base.yp). These are defined in the YPiloy language, but since the core JavaScript code refers to them, they are always included.
 
-    Audible
+`base.yp` itself uses [`sound.yp`](sound.yp) to define `Audible` and make other sound-related definitions, so that file is also effectively part of the base library, and is always included.
 
-Describes things that can be heard. Used by `Interface` objects (or will be, when I implement it).
-
-    BoardLike
-
-Describes things like scoreboards, which appear as a table in the lower left corner. Used by `Interface` objects. The noun `Board` is also defined as a convenience. There should only be one board in a game at any given time. The columns of the table are their own special things (see below) and may be used to sort the rows, but the rows represent anything in the game of a particular type or types. 
-
-    Columnar
-
-Describes columns in the Board. Used by `Interface` objects. The noun `Column` is also defined as a convenience. The value in a cell of a `Board` table is obtained by following a path of adjectives and their properties from the row thing.
-
-    Interfaced
-
-Describes players who are playing through a user interface (not NPCs), and thus have an `Interface` object. This includes both local and remote players.
-
-    Located
-
-Describes things that have a single physical location in a space. Used by the `SpatialIndex` object for collision detection, by `Interface` objects for drawing, and by the map reading functionality. For convenience the noun `Point` is also defined in base.yp, as `a Point is Located`, but `Point` isn't used in the JS code, only `Located`.
-
-    Mapped
-
-Describes things that can be `read` as a map. For convenience the noun `Map` is also defined in base.yp, as `a Map is Mapped`, but `Map` isn't used in the JS code, only `Mapped`.
-
-    Mobile
-
-Describes things that move and/or spin through space. Used by the `SpatialIndex` object for collision detection.
-
-    Named
-
-Describes things that have a name (or handle).
-
-    OnScreen
-
-Describes things that appear on a player's screen without being `Located` in a space (e.g. they're part of a heads-up display). Used by `Interface` objects.
-
-    Oriented
-
-Describes things that have a non-trivial orientation. Used by the `SpatialIndex` object for collision detection, and by `Interface` objects for drawing.
-
-    Piloting
-
-Describes players that are currently controlling a `BasicShip`. Used by the players' `Interface` objects.
-
-    Spatial
-
-Describes spaces in which collisions may be detected. Has a `SpatialIndex` object. For convenience the noun `Space` is also defined in base.yp, as `a Space is Spatial`, but `Space` isn't used in the JS code, only `Spatial`.
-
-    Tangible
-
-Describes things that participate in collision detection (whether they bounce, blow up, or something else). Used by the `SpatialIndex` object.
-
-    Toroidal
-
-Describes bounded spaces where the edges wrap, so that anything that becomes `Located` outside of one edge ends up `Located` inside of the opposite edge, giving the space a toroidal topology. That functionality is implemented in base.yp itself (not JS), but `Toroidal` is also used by `Interface` objects in order to display the opposite edge when you're near an edge.
-
-    Typed
-
-Describes things that have a type, which should be everything. Used by the compiler.
-
-    Typing
-
-Describes things that serve as types for other things, and may have supertypes. Used by the compiler.
-
-    Visible
-
-Describes things that can be seen (drawn on screen). Used by `Interface` objects.
-
-Note that when a player joins the game, a `Player` is added to the game which is `Named` with the player's handle, and `Interfaced` with a new `Interface` object. The player's ship is not automatically added; that must be specified in the `.yp` file. You can detect when a player joins the game with a rule that starts with `when ?player is added and ?player is a Player ...`.
+See those files for the precise definitions, as well as comments describing how each is used by the core JavaScript code, and may be used by your `.yp` code.
 
 ## Standard libraries
 

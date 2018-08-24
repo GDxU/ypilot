@@ -1,8 +1,21 @@
-# properties in this file use the following units:
+# sound.yp - interface for making music and sound effects in YPilot
+# part of the base library for YPilot, always used implicitly via base.yp
+# The corresponding JS code is in playing-sound.js.
+
+# There are three main concepts here that it's important to distinguish:
+# - Soundable things are descriptions of potential sounds.
+# - PlayingSound objects are actual instances of sounds that are currently
+# being played (this is what's defined in playing-sound.js).
+# - Audible things are the in-game things that players might perceive as
+# emitting sound.
+
+# Properties in this file use the following units:
 #
-# pitches are logarithmic frequencies, and correspond to MIDI note numbers, but
-#   may be fractional
-# durations are in clock ticks
+# pitches are in semitones (they are logarithmic frequencies), and correspond
+#   to MIDI note numbers, but may be fractional (e.g. pitch 42.3 is 30 cents
+#   above MIDI note 42) and/or negative (e.g. -1 is 1 semitone below MIDI note
+#   0)
+# durations are in clock ticks (1/20 second)
 # volume levels are in dBFS
 #   (full volume is 0, and silence is technically -∞, but practically around
 #   -48 suffices for 16-bit audio samples)
@@ -14,10 +27,11 @@
 #   (i.e. a 0dBFS wave will go between -1 and 1; a -10dBFS wave will go between
 #   -0.5 and 0.5, etc.)
 
-# capable of being sounded, i.e. either Tonal or Noisy
+# Capable of being sounded, i.e. either Tonal or Noisy.
 # (please don't add things that are Soundable but not Tonal or Noisy)
 a Soundable thing has nothing
 
+# Soundable and has a definite fundamental pitch.
 a Tonal thing is Soundable and has
   # fundamental pitch of the wave to generate
   a pitch which is a number (default 69) # MIDI note 69 == A 440Hz
@@ -32,13 +46,17 @@ a Tonal thing is Soundable and has
 
 a Tone is Tonal
 
-# loops a randomly generated buffer of white noise
+# Soundable without a definite pitch; loops a randomly generated buffer of
+# white noise.
 a Noisy thing is Soundable and has
   # the duration of the loop (the noise itself continues until it is stopped)
   a period which is a number (default 1)
 
 a Noise is Noisy
 
+# Has a filter applied to it, changing the frequency distribution (or in the
+# case of an "allpass" filter, the relative phase of different frequency
+# components).
 # see the BiquadFilterNode in the Web Audio API spec here for precise details:
 # https://webaudio.github.io/web-audio-api/#biquadfilternode
 a Filtered thing is Soundable and has
@@ -63,6 +81,8 @@ a Filtered thing is Soundable and has
   # the (log) height of the feature (corresponds to gain)
   a level which is a number (default 1)
 
+# Has a volume envelope applied to it:
+#
 #  P
 #  ^\_
 # /   \
@@ -90,16 +110,16 @@ an Enveloped thing is Soundable and has
 # (use an Enveloped modulator to control modulation depth)
 #
 
-# uses another Soundable thing to modulate the amplitude of the generated wave;
-# useful for tremolo and AM synthesis
+# Uses another Soundable thing to modulate the amplitude of the generated wave;
+# useful for tremolo and AM synthesis.
 # Note that linear amplitudes are modulated, not exponential levels. There is
 # no exponential "LevelModulated" because web audio doesn't really support it.
 # FIXME maybe fake that with envelopes (GainNode with exponential ramps)? won't work for sine or custom waves, or noisy things
 an AmplitudeModulated thing is Tonal and has
   a modulator which is a Soundable thing
 
-# uses another Soundable thing to modulate the fundamental frequency of the
-# generated wave; useful for FM synthesis
+# Uses another Soundable thing to modulate the fundamental frequency of the
+# generated wave; useful for FM synthesis.
 # For Tonal modulators, the pitch is treated as relative to the carrier pitch,
 # e.g. a modulator with pitch -1 on a carrier with pitch 42 will modulate at a
 # pitch of 41.
@@ -115,39 +135,44 @@ an AmplitudeModulated thing is Tonal and has
 a FrequencyModulated thing is Tonal and has
   a modulator which is a Soundable thing
 
-# like FrequencyModulated, but exponential; useful for vibrato
+# Like FrequencyModulated, but exponential; useful for vibrato.
 a PitchModulated thing is Tonal and has
   a modulator which is a Soundable thing
 
-# uses another Soundable thing to modulate the central frequency of the filter
+# Uses another Soundable thing to modulate the central frequency of the filter.
 a FilterFrequencyModulated thing is Filtered and has
   a modulator which is a Soundable thing
 
-# like FilterFrequencyModulated, but exponential
+# Like FilterFrequencyModulated, but exponential.
 a FilterPitchModulated thing is Filtered and has
   a modulator which is a Soundable thing
 
-an Audible thing has # may be Located
+# Can be heard. If an Audible thing is Located, it will only be heard by
+# players in the same space; otherwise it will be heard everywhere.
+an Audible thing has
   some playingSounds which are PlayingSound objects
 
-# start playing a sound from ?x
+# Start playing a sound described by ?y, from ?x, which will be Audible.
 in the event ?x Sounds ?y then ?y is a Soundable thing
 # ?x may be Located
-# ?y may also be Filtered and/or Enveloped
+# ?y may also be Filtered, Enveloped, and/or modulated in some way.
 
+# When an already-Audible thing Sounds a sound, add the sound to its list.
 when ?x Sounds ?y and ?x is Audible with playingSounds ?oldSounds
 then ?x becomes Audible with playingSounds (?oldSounds + PlayingSound[?x, ?y])
 
+# When an inAudible thing Sounds a sound, it becomes Audible with just that
+# sound.
 when ?x Sounds ?y and ?x is not Audible
 then ?x becomes Audible with playingSounds [PlayingSound[?x, ?y]]
 
-# stop playing all sound from ?x immediately (no release phase)
+# Stop playing all sound from ?x immediately (no release phase).
 in the event ?x IsSilenced then ?x is an Audible thing
 
 when ?x IsSilenced then ?x becomes not Audible
 
-# assuming ?y is one of the notes sounded by ?x, cause it to enter the release
-# phase of its volume envelope (eventually ending the note)
+# Assuming ?y is one of the notes sounded by ?x, cause it to enter the release
+# phase of its volume envelope (eventually ending the note).
 in the event ?x ReleasesNote ?y then
   ?x is an Audible thing
   ?y is an Enveloped thing
@@ -169,18 +194,12 @@ in the event ?x ReleasesNote ?y then
 # This graph will go away when silenced, or after the release phase finishes
 # (if Enveloped).
 #
-# *Modulated sounds (carriers) will also add the graph for their modulator,
+# Modulated sounds (carriers) will also add the graph for their modulator,
 # except the connection to the destination will be replaced by a connection to
 # the appropriate AudioParam, and some of the modulator's parameters may be
 # adjusted to relate it to the carrier.
 
 # TODO:
-# # AM
-#	another sound ->\
-#	ON -> (BQFN) -> GN -> d
-# # FM
-#	another sound -> ON -> (BQFN) -> (GN) -> d
-# # modulate filter frequency
 # ? global GainNode (and/or GN per Audible thing)
 #	... \
 #	... --> GN -> d
@@ -191,5 +210,5 @@ in the event ?x ReleasesNote ?y then
 #   > essentially just soundable things whose pitch properties are relative to the note pitch
 #   > ...but, need to distinguish different notes played at the same time on the same instrument
 #  ? tempo (define beat units)
-#  - MIDI-like channels and note on/off events
-#   - string encoding
+#  ? MIDI-like channels and note on/off events
+#  - string encoding
