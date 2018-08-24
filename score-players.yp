@@ -4,6 +4,5 @@ when ?player is added and ?player is a Player
 then ?player becomes Scored with score 0 # FIXME default not working
 
 when ?board is added and
-  there is a thing ?playerType which is Named with name "Player"
   ?board is BoardLike with rowTypes ?oldTypes
-then ?board becomes BoardLike with rowTypes (?oldTypes + ?playerType)
+then ?board becomes BoardLike with rowTypes (?oldTypes + the Typing thing "Player")

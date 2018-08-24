@@ -106,6 +106,18 @@ when the game starts
 then
   a new Team ?red is added which is Named with name "red"
   a new Team ?blue is added which is Named with name "blue"
+  a new Tone ?pewpewmod is added which is
+    Tonal with pitch (-12)
+  a new Tone ?pewpew is added which is
+    Named with name "PewPew"
+    Tonal with pitch 81
+    FrequencyModulated with modulator ?pewpewmod
+    Enveloped with peakLevel (-2) and releaseDuration 20 and durationUntilRelease 0
+  a new Noise ?bang is added which is
+    Named with name "Bang"
+    Noisy with period 1
+    Filtered with type "lowpass" and pitch 57 and q 24
+    Enveloped with peakLevel 1 and releaseDuration 20 and durationUntilRelease 0
 
 # everyone respawns with 3 lives when the round begins
 when ?round Begins and
@@ -121,15 +133,5 @@ then
 when ?bullet is added and
   ?bullet is a Bullet
 then
-#  a new Tone ?pewpewmod is added which is
-#    Tonal with pitch (-12)
-#  a new Tone ?pewpew is added which is
-#    Tonal with pitch 81
-#    FrequencyModulated with modulator ?pewpewmod
-#    Enveloped with peakLevel (-2) and releaseDuration 20 and durationUntilRelease 0
-#  ?bullet Sounds ?pewpew
-  a new Noise ?bang is added which is
-    Noisy with period 1
-    Filtered with type "lowpass" and pitch 57 and q 24
-    Enveloped with peakLevel 1 and releaseDuration 20 and durationUntilRelease 0
-  ?bullet Sounds ?bang
+#  ?bullet Sounds the Soundable thing "PewPew"
+  ?bullet Sounds the Soundable thing "Bang"

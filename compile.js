@@ -435,6 +435,7 @@ function getType(ast) {
       if (ast == null) {
 	return 'nothing';
       } else if ('type' in ast) {
+	types.assertValid(ast.type);
 	return ast.type;
       } else {
 	throw new Error('ast has no type: ' + JSON.stringify(ast));
@@ -778,6 +779,11 @@ function compileOp(ast) {
     case 'const':
       ast.type = 'number';
       return ast.name;
+    case 'the':
+      var nameStr = compile(ast.name);
+      var nameType = getType(ast.name);
+      types.assertSubsumes('string', nameType, 'name after "the <thing type>"')
+      return 'router.getNamedThing(' + JSON.stringify(ast.type) + ', ' + nameStr + ')';
     case 'new':
       // TODO? allow more constructors
       // TODO? disallow Interface (JS code makes that now)

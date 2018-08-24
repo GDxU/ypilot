@@ -6,12 +6,10 @@ then ?team becomes Scored with score 0 # FIXME default not working
 
 when ?board is added and
   ?board is BoardLike with columns ?oldColumns and rowTypes ?oldTypes
-  there is a thing ?teamType which is Named with name "Team"
-  ?teamType is Typing # FIXME should be able to include this in line above
 then
   a new Column ?teamColumn is added which is
     Named with name "team"
     Columnar with cellPath "Aligned team Named name"
   ?board becomes BoardLike with
     columns (?oldColumns + ?teamColumn) and
-    rowTypes (?oldTypes + ?teamType)
+    rowTypes (?oldTypes + the Typing thing "Team")

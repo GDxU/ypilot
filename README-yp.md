@@ -300,6 +300,16 @@ Constructors for a few JavaScript object types, with arguments in square bracket
     SpatialIndex[]
     Vec2[?x, ?y]
 
+Unique references to things by their names and optionally their types, e.g.:
+
+    the thing "Charlie" # the thing which is Named with name "Charlie"
+    the Space "Foo" # the thing which is a Space and is named "Foo"
+    the Soundable thing "Mew" # the thing which is Soundable and named "Mew"
+    the thing ?foo # the thing which is named by the contents of ?foo
+
+(References like this that could refer to more than one thing, or refer to
+nothing, cause an error.)
+
 Array literals in square brackets, e.g. `[1, 2, "buckle my shoe"]`.
 
 Array/string indexing, e.g. `?array[?index]`. Indexes start from 0. Indexing into a string yields a one-character string, and the index counts characters (not bytes).

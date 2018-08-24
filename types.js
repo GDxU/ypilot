@@ -12,7 +12,6 @@
  * ['object', 'ConstructorName']
  * ['thing', 'AdjName1'[, 'AdjName2'...]] (intersection of adjectives)
  * ['thing', ['Typed', 'NounName']]
- * TODO
  * ['thing', ['Typed', 'NounName'], 'AdjName1'[, 'AdjName2'...]]
  *
  * The first couple of functions deal with adjective and nouns at compile time,
@@ -92,6 +91,18 @@ function compileTimeNominalSubsumes(ancestor, descendant) {
   return (ancestor == descendant ||
           module.exports.nounSupertypes[descendant].
 	    some(t => compileTimeNominalSubsumes(ancestor, t)));
+}
+
+// is the (runtime) thing an instance of the (compile-time) thing type?
+// (note this is only for thing types, not value types)
+function isInstanceOf(thing, compileTimeType) {
+  return compileTimeType.slice(1).every(desc => {
+    if ('string' == typeof desc) { // adjective
+      return (thing in router.adjectives[desc]);
+    } else { // ['Typed', noun]
+      return runTimeSubsumes(desc[1], router.adjectives.Typed[thing].type);
+    }
+  });
 }
 
 // is ancestor a (non-strict) ancestor of descendant, in the compile-time type
@@ -261,14 +272,74 @@ function assertSubsumes(a, b, desc) {
   }
 }
 
+// assert that type is a valid type, in particular that it is well-formed and
+// any adjectives or nouns named in it are defined
+function assertValid(type) {
+  try {
+    switch (typeof type) {
+      case 'string':
+	if (!'bottom top nothing string number boolean'.split(' ').
+	     includes(type)) {
+	  throw new TypeError('bogus simple type');
+	}
+	break;
+      case 'object':
+	if (!Array.isArray(type)) {
+	  throw new TypeError('bogus type object');
+	}
+	if (type.length < 2) {
+	  throw new TypeError('expected type array to have at least 2 elements, but got ' + type.length);
+	}
+	switch (type[0]) {
+	  case 'Array':
+	    assertValid(type[1]);
+	    break;
+	  case 'object':
+	    // TODO (not bothering with this case because the valid object
+	    // types are listed elsewhere and I don't want to duplicate that)
+	    break;
+	  case 'thing':
+	    type.slice(1).forEach(desc => {
+	      if ('string' == typeof desc) {
+		if (!(desc in module.exports.adjectiveDependencies)) {
+		  throw new TypeError('undefined adjective ' + desc);
+		}
+	      } else if (Array.isArray(desc) && desc.length == 2 &&
+			 desc[0] == 'Typed' && 'string' == typeof desc[1]) {
+		if (!(desc[1] in module.exports.nounSupertypes)) {
+		  throw new TypeError('undefined noun ' + desc[1]);
+		}
+	      } else {
+		throw new TypeError('bogus thing descriptor: ' +
+				    JSON.stringify(desc));
+	      }
+	    });
+	    break;
+	  default:
+	    throw new TypeError('bogus first element of a type: ' + JSON.stringify(type[0]));
+	}
+	break;
+      default:
+	throw new TypeError('bogus kind of type');
+    }
+  } catch (err) {
+    if (!/^undefined /.test(err.message)) {
+      err.message = 'invalid type ' + JSON.stringify(type) + ': ' + err.message;
+    }
+    throw err;
+  }
+}
+
 module.exports = {
   expandNounDefaultAdjectives: expandNounDefaultAdjectives,
   runTimeSubsumes: runTimeSubsumes,
+  isInstanceOf: isInstanceOf,
   compileTimeSubsumes: compileTimeSubsumes,
   leastCommonSubsumer: leastCommonSubsumer,
   format: format,
   aAn: aAn,
   assertSubsumes: assertSubsumes,
+  assertValid: assertValid,
   adjectiveDependencies: {},
   nounDefaultAdjectives: {},
   nounSupertypes: {}

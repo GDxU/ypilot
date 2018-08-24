@@ -1,4 +1,5 @@
 const Uplink = require('./uplink.js');
+const types = require('./types.js');
 const stringToSVGGraphicsElementSafely = require('./svg.js').stringToSVGGraphicsElementSafely;
 const defineMethods = require('./define-methods.js');
 
@@ -11,6 +12,8 @@ function Router() {
   this.onceListeners = {};
   this.permissionConditions = {};
   this.numPendingListeners = 0;
+  this.nameToThings = {};
+  this.listenForNames();
   this.playerKeysDown = {};
   this.listenForKeyState();
   this.eventLog = [];
@@ -222,6 +225,51 @@ function remove(thing) {
 },
 
 //
+// names
+//
+
+function listenForNames() {
+  this.on('becomeNamed', this.becomeNamed.bind(this));
+  this.on('unbecomeNamed', this.unbecomeNamed.bind(this));
+},
+
+function becomeNamed(thing, { name }, oldNamed) {
+  if (oldNamed) {
+    this.unbecomeNamed(thing, oldNamed);
+  }
+  if (!(name in this.nameToThings)) {
+    this.nameToThings[name] = [thing];
+  } else {
+    this.nameToThings[name].push(thing);
+  }
+},
+
+function unbecomeNamed(thing, { name }) {
+  if (!(name in this.nameToThings)) return;
+  var i = this.nameToThings[name].indexOf(thing);
+  if (i >= 0) {
+    this.nameToThings[name].splice(i, 1);
+  }
+},
+
+// get the unique thing of the given compile-time type that is Named with name
+function getNamedThing(compileTimeType, name) {
+  if (!(name in this.nameToThings)) {
+    throw new Error("there is nothing named " + JSON.stringify(name));
+  }
+  var matches = this.nameToThings[name].filter(thing => types.isInstanceOf(thing, compileTimeType));
+  if (matches.length == 0) {
+    throw new Error("there is nothing named " + JSON.stringify(name) + " that is of type " + types.format(compileTimeType));
+  } else if (matches.length > 1) {
+    throw new Error("reference 'the " + types.format(compileTimeType) + " " +
+					JSON.stringify(name) +
+		    "' is ambiguous; it could refer to any of these things: " +
+		    matches.join(', '));
+  }
+  return matches[0];
+},
+
+//
 // map reading
 //
 
@@ -243,6 +291,7 @@ function readMap(mapThing) {
 //
 // key state tracking
 //
+
 function listenForKeyState() {
   this.on('press',   (player,code) => this.playerKeyState(player, code, true));
   this.on('release', (player,code) => this.playerKeyState(player, code, false));
@@ -353,6 +402,10 @@ function setState(msg) {
   }
   this.nextThing = msg.nextThing;
   this.adjectives = msg.adjectives;
+  this.nameToThings = {};
+  for (var thing in this.adjectives.Named) {
+    this.becomeNamed(thing, this.adjective.Named[thing]);
+  }
   this.playerKeysDown = msg.playerKeysDown;
   // reverse toJSON->{op:...} conversions
   // map stringified JSON to final objects for SpatialIndex and Interface, so
@@ -399,6 +452,7 @@ function finishGame() {
     this.listeners = {};
     this.onceListeners = {};
     this.permissionConditions = {};
+    this.listenForNames();
     this.listenForKeyState();
   });
   this.emit('finish');

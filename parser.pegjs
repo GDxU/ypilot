@@ -194,6 +194,7 @@ value_expr
 value_expr_no_subscript
   = variable
   / constant
+  / named_thing
   / parens
   / constructor
   / math
@@ -353,24 +354,33 @@ defalt
 object_type
   = constructor:type_name 'object' { return ['object', constructor]; }
 
-thing_type
-  = first_adj:type_name adjs:(',' sp adj:type_name { return adj; })* 'thing'
+descriptive_thing_type
+  = 'thing' { return ['thing', 'Typed']; }
+  / first_adj:type_name adjs:(',' sp adj:type_name { return adj; })* 'thing'
     { return ['thing', first_adj, ...adjs]; }
 
-simple_type
-  = 'boolean' / 'number' / 'string'
-
-singular_type
-  = 'Array' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
-  / object_type / thing_type / simple_type
-  / first_adj:type_name adjs:(',' sp adj1:type_name { return adj; })*
+nominal_thing_type
+  = first_adj:type_name adjs:(',' sp adj1:type_name { return adj; })*
     noun:type_name
     { return ['thing', ['Typed', noun], first_adj, ...adjs]; }
   / noun1:type_name { return ['thing', ['Typed', noun1]]; }
 
+simple_type
+  = 'boolean' / 'number' / 'string'
+
+singular_thing_type
+  = descriptive_thing_type / nominal_thing_type
+
+singular_type
+  = 'Array' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
+  / object_type / simple_type / singular_thing_type
+
+// NOTE: plural_type is like singular_type, but some things are spelled out in
+// order to make plural versions of them
 plural_type
   = 'Arrays' ilsp 'of' sp eltype:plural_type { return ['Array', eltype]; }
-  / scalar:( object_type / thing_type / simple_type ) 's' { return scalar; }
+  / scalar:( object_type / simple_type / descriptive_thing_type ) 's'
+    { return scalar; }
   / first_adj:type_name adjs:(',' sp adj1:type_name { return adj; })*
     noun:plural_type_name
     { return ['thing', ['Typed', noun], first_adj, ...adjs]; }
@@ -399,6 +409,10 @@ constant
 // NOTE: JavaScript does have an Infinity constant that would be more
 // appropriate than Number.MAX_VALUE, but it doesn't survive the trip to and
 // from JSON (it becomes null)
+
+named_thing
+  = 'the' sp type:singular_thing_type sp name:value_expr
+    { return { op: 'the', type: type, name: name }; }
 
 id_char
   = '_' / [0-9] / [a-z]i
